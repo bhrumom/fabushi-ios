@@ -33,7 +33,7 @@ let SAND_CLIENT_PAUSE_BLOCKED_MESSAGE = encodeSandBoxBlockedMessage(.init(
 ))
 
 func findSandBoxBlockedMessage(_ error: Error?) -> String? {
-    var current: NSError? = error as NSError?
+    var current: NSError? = error.map { $0 as NSError }
     var seen = Set<ObjectIdentifier>()
     while let node = current {
         let identifier = ObjectIdentifier(node)
