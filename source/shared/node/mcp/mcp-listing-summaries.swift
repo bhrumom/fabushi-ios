@@ -21,8 +21,8 @@ struct McpBoxEntry: Equatable, Sendable {
 struct McpServerSummary: Equatable, Sendable {
     let id: String
     let name: String
-    let serverIdentifier: String
-    let accountKey: String
+    var serverIdentifier: String
+    var accountKey: String
     let rowServerIdentifier: String
     let transport: McpTransport
     var command: String? = nil
