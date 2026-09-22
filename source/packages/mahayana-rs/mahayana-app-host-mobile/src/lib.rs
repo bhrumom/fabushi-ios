@@ -234,6 +234,22 @@ mod package_hooks_validators_post_tool_use_response;
 mod package_hooks_validators_stop_response;
 #[path = "../../../hooks/validators/subagentStopResponse.rs"]
 mod package_hooks_validators_subagent_stop_response;
+#[path = "../../../hooks/validators/preCompactResponse.rs"]
+mod package_hooks_validators_pre_compact_response;
+#[path = "../../../hooks/validators/subagentStartResponse.rs"]
+mod package_hooks_validators_subagent_start_response;
+#[path = "../../../hooks/validators/workspaceOpenResponse.rs"]
+mod package_hooks_validators_workspace_open_response;
+#[path = "../../../hooks/validators/beforeReadFileResponse.rs"]
+mod package_hooks_validators_before_read_file_response;
+#[path = "../../../hooks/validators/beforePromptSubmitResponse.rs"]
+mod package_hooks_validators_before_prompt_submit_response;
+#[path = "../../../hooks/validators/beforeTabFileReadResponse.rs"]
+mod package_hooks_validators_before_tab_file_read_response;
+#[path = "../../../hooks/validators/beforeCommandExecutionHookResponse.rs"]
+mod package_hooks_validators_before_command_execution_hook_response;
+#[path = "../../../hooks/validators/sessionStartResponse.rs"]
+mod package_hooks_validators_session_start_response;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;

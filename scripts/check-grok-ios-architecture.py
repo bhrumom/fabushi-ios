@@ -164,6 +164,14 @@ required = [
     "source/packages/hooks/validators/postToolUseResponse.rs",
     "source/packages/hooks/validators/stopResponse.rs",
     "source/packages/hooks/validators/subagentStopResponse.rs",
+    "source/packages/hooks/validators/preCompactResponse.rs",
+    "source/packages/hooks/validators/subagentStartResponse.rs",
+    "source/packages/hooks/validators/workspaceOpenResponse.rs",
+    "source/packages/hooks/validators/beforeReadFileResponse.rs",
+    "source/packages/hooks/validators/beforePromptSubmitResponse.rs",
+    "source/packages/hooks/validators/beforeTabFileReadResponse.rs",
+    "source/packages/hooks/validators/beforeCommandExecutionHookResponse.rs",
+    "source/packages/hooks/validators/sessionStartResponse.rs",
     "mobile/ios/FabushiTests/DevControlsParityTests.swift",
 ]
 for relative in required:
