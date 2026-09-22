@@ -104,7 +104,7 @@ final class MahayanaHostRuntime: MahayanaHostRequesting, @unchecked Sendable {
     }
 
     @MainActor
-    func request(method: String, params: [String: Any]) async throws -> MahayanaHostJSONResult {
+    func request(method: String, params: [String: Any] = [:]) async throws -> MahayanaHostJSONResult {
         let data = try JSONSerialization.data(withJSONObject: ["method": method, "params": params])
         guard let request = String(data: data, encoding: .utf8) else { throw HostError.invalidResponse }
         return try await withCheckedThrowingContinuation { continuation in
