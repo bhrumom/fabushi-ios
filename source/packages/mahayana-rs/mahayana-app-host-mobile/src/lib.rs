@@ -72,6 +72,10 @@ mod package_constants_sand_supervisor;
 mod package_constants_agent_store_ids;
 #[path = "../../../constants/repo-label.rs"]
 mod package_constants_repo_label;
+#[path = "../../../agent-core/conversation-actions/context-injection.rs"]
+mod package_agent_core_context_injection;
+#[path = "../../../agent-core/goal-pursuit-guidelines.rs"]
+mod package_agent_core_goal_pursuit_guidelines;
 #[path = "../../../agent-core/domain-utils.rs"]
 mod package_agent_core_domain_utils;
 #[path = "../../../agent-core/goal-continuation.rs"]
