@@ -68,6 +68,10 @@ mod mcp_server_resolution;
 mod box_store_object_store_port;
 #[path = "../../../../host/extensions/box-lifecycle/box-lifecycle-service.rs"]
 mod box_lifecycle_service;
+#[path = "../../../../host/runner/site-visit-tracking.rs"]
+mod site_visit_tracking;
+#[path = "../../../../host/host-event-bus.rs"]
+mod host_event_bus;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
 mod box_monitor_layout;
 #[path = "../../../../host/box/box-store-backend-policy.rs"]
