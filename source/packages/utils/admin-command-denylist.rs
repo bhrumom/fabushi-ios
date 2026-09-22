@@ -92,7 +92,7 @@ mod tests {
     fn normalizes_reference_separator_set_to_single_spaces() {
         assert_eq!(
             normalize_admin_command_denylist_text("  aws\t\n\u{00a0}s3\u{200b}rm  "),
-            "aws s3 rm "
+            "aws s3 rm"
         );
     }
 
