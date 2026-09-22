@@ -56,6 +56,14 @@ mod transcript_mirror;
 mod legacy_transcript_mirror;
 #[path = "../../../../host/transcript-mirror/production-provider.rs"]
 mod production_provider;
+#[path = "../../../../host/extensions/box-store-sync/files.rs"]
+mod box_store_sync_files;
+#[path = "../../../../host/extensions/local-exec/local-exec-failure-classifier.rs"]
+mod local_exec_failure_classifier;
+#[path = "../../../../host/extensions/transcript/sand-automation-failure.rs"]
+mod sand_automation_failure;
+#[path = "../../../../host/runner/tools/mcp-server-resolution.rs"]
+mod mcp_server_resolution;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
 mod box_monitor_layout;
 #[path = "../../../../host/box/box-store-backend-policy.rs"]
