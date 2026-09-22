@@ -48,19 +48,23 @@ final class SharedChannelsPersistenceParityTests: XCTestCase {
         let files = InMemoryPersistenceFiles()
         let store = SandClientPersistenceStore(dir: "/store", files: files, maxValueBytes: 8, maxTotalBytes: 12)
         try await store.write("sand.a", value: "1234")
-        XCTAssertEqual(try await store.read("sand.a"), "1234")
+        let storedA = try await store.read("sand.a")
+        XCTAssertEqual(storedA, "1234")
 
         do {
             try await store.write("sand.big", value: "123456789")
             XCTFail("per-key cap must fail")
         } catch is ClientPersistenceCapError {}
 
-        XCTAssertTrue(await store.migrateFromLocalStorage([
+        let migrated = await store.migrateFromLocalStorage([
             (key: "sand.b", value: "5678"),
             (key: "other.skip", value: "ignored"),
-        ]))
-        XCTAssertEqual(await store.listKeys(prefix: "sand."), ["sand.a", "sand.b"])
-        XCTAssertTrue(await store.hasCompletedOneShotMigration())
+        ])
+        XCTAssertTrue(migrated)
+        let keys = await store.listKeys(prefix: "sand.")
+        XCTAssertEqual(keys, ["sand.a", "sand.b"])
+        let hasMarker = await store.hasCompletedOneShotMigration()
+        XCTAssertTrue(hasMarker)
     }
 
     func testChannelOutboundAndWakeFormatting() {
@@ -110,8 +114,10 @@ final class SharedChannelsPersistenceParityTests: XCTestCase {
             },
             reportLoadFailure: { _ in XCTFail("load should not fail") }
         )
-        XCTAssertEqual(await resolver.resolveRules(), ["r1"])
+        let initial = await resolver.resolveRules()
+        XCTAssertEqual(initial, ["r1"])
         await resolver.refresh()
-        XCTAssertEqual(await resolver.resolveRules(), ["r1"])
+        let afterIncompleteRefresh = await resolver.resolveRules()
+        XCTAssertEqual(afterIncompleteRefresh, ["r1"])
     }
 }
