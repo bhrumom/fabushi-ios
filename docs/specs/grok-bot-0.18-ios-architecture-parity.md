@@ -297,7 +297,7 @@ SwiftUI Models/Views must not independently recreate coordinator behavior.
 
 `source/host/**` is iOS-owned and sits behind Coordinator.
 
-It must map Android-relevant—correction: **iOS-relevant**—Grok Host responsibilities, including:
+It must map **iOS-relevant** Grok Host responsibilities, including:
 
 - `agent-isolation/**`;
 - `agents/**`;
