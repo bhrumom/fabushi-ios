@@ -172,6 +172,33 @@ mod package_agent_utils_token_estimate;
 #[path = "../../../agent/utils/prompt-xml-escape.rs"]
 mod package_agent_utils_prompt_xml_escape;
 
+#[path = "../../../local-exec/pending-decision-provider.rs"]
+mod package_local_exec_pending_decision_provider;
+#[path = "../../../mcp-core/config/mcp-tool-call-timeout.rs"]
+mod package_mcp_core_tool_call_timeout;
+#[path = "../../../local-exec/agent-data-cleanup.rs"]
+mod package_local_exec_agent_data_cleanup;
+#[path = "../../../agent/prompts/user-info.rs"]
+mod package_agent_prompts_user_info;
+#[path = "../../../local-exec/services/cloud-rules-service.rs"]
+mod package_local_exec_cloud_rules_service;
+#[path = "../../../local-exec/ignore-rules.rs"]
+mod package_local_exec_ignore_rules;
+#[path = "../../../cursor-plugins/plugin-variables.rs"]
+mod package_cursor_plugins_plugin_variables;
+#[path = "../../../cursor-plugins/capabilities.rs"]
+mod package_cursor_plugins_capabilities;
+#[path = "../../../hooks-carriers/collect.rs"]
+mod package_hooks_carriers_collect;
+#[path = "../../../agent/tools/core/worktree-paths.rs"]
+mod package_agent_tools_core_worktree_paths;
+#[path = "../../../local-exec/team-repo-filters.rs"]
+mod package_local_exec_team_repo_filters;
+#[path = "../../../agent/tools/subagent-model-force-policy.rs"]
+mod package_agent_tools_subagent_model_force_policy;
+#[path = "../../../agent/tools/subagent-composer-model-ids.rs"]
+mod package_agent_tools_subagent_composer_model_ids;
+
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
 #[path = "../../../../host/notify-drain-gate.rs"]
