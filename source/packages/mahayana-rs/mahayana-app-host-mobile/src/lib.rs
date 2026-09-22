@@ -106,6 +106,14 @@ mod package_agent_exec_background_completion_dispatch;
 mod package_agent_exec_subagent_lifecycle_state_machine;
 #[path = "../../../agent-exec/subagent-queue.rs"]
 mod package_agent_exec_subagent_queue;
+#[path = "../../../agent-exec/subagent-lifecycle-store.rs"]
+mod package_agent_exec_subagent_lifecycle_store;
+#[path = "../../../agent-store-sync/etag.rs"]
+mod package_agent_store_sync_etag;
+#[path = "../../../agent-store-sync/conflict-notice-claim-state.rs"]
+mod package_agent_store_sync_conflict_notice_claim_state;
+#[path = "../../../agent-store-sync/validation.rs"]
+mod package_agent_store_sync_validation;
 #[path = "../../../agent-exec/background-work-metadata.rs"]
 mod package_agent_exec_background_work_metadata;
 #[path = "../../../agent-exec/common.rs"]
