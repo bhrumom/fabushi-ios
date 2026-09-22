@@ -149,6 +149,7 @@ required = [
     "source/packages/agent/state-utils.rs",
     "source/packages/context/browser-bridge.rs",
     "source/packages/hooks/sanitize-system-reminder.rs",
+    "source/packages/hooks/hook-step.rs",
     "source/packages/local-exec/int32.rs",
     "source/packages/local-exec/mcp.rs",
     "source/packages/hooks/validators/base.rs",
@@ -172,6 +173,7 @@ required = [
     "source/packages/hooks/validators/beforeTabFileReadResponse.rs",
     "source/packages/hooks/validators/beforeCommandExecutionHookResponse.rs",
     "source/packages/hooks/validators/sessionStartResponse.rs",
+    "source/packages/hooks/validators/preToolUseResponse.rs",
     "mobile/ios/FabushiTests/DevControlsParityTests.swift",
 ]
 for relative in required:
@@ -402,6 +404,8 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         "cursor-plugins/plugin-variables.rs",
         "cursor-plugins/capabilities.rs",
         "hooks-carriers/collect.rs",
+        "hooks/hook-step.rs",
+        "hooks/validators/preToolUseResponse.rs",
         "agent/tools/core/worktree-paths.rs",
         "local-exec/team-repo-filters.rs",
         "agent/tools/subagent-model-force-policy.rs",
