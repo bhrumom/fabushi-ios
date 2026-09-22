@@ -126,6 +126,8 @@ mod host_diagnostics;
 mod session_diagnostics;
 #[path = "../../../../host/transcript-mutation-events.rs"]
 mod transcript_mutation_events;
+#[path = "../../../../host/workflows/stat-keyed-parse-cache.rs"]
+mod stat_keyed_parse_cache;
 #[path = "../../../../host/ports/user-computer.rs"]
 mod user_computer;
 #[path = "../../../../host/ports/transport.rs"]
