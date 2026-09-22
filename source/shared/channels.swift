@@ -4,7 +4,7 @@ let DISCORD_PLATFORM = "discord"
 let SLACK_PLATFORM = "slack"
 
 struct ConnectorManifest: Codable, Equatable, Sendable {
-    enum Availability: String, Codable, Sendable {
+    enum Availability: String, Codable, Equatable, Sendable {
         case available
         case comingSoon = "coming-soon"
     }
@@ -45,11 +45,11 @@ func findConnectorManifest(_ platform: String) -> ConnectorManifest? {
     CONNECTOR_MANIFESTS.first { $0.platform == platform }
 }
 
-func hasChannelsToShow(
+func hasChannelsToShow<Connection>(
     manifests: [ConnectorManifest],
-    connectionCount: Int
+    connections: [Connection]
 ) -> Bool {
-    manifests.contains { $0.availability == .available } || connectionCount > 0
+    manifests.contains { $0.availability == .available } || !connections.isEmpty
 }
 
 func formatChannelAddress(_ address: ChannelAddress) -> String {
