@@ -188,7 +188,8 @@ func accountMcpConfigJson(_ config: AccountMcpConfig) throws -> String {
     return string
 }
 
-func normalizeMcpAccountLabel(_ rawLabel: String) -> String {
+// Grok exports this helper from both account-mcp.ts and shared/mcp.ts.
+private func normalizeMcpAccountLabel(_ rawLabel: String) -> String {
     rawLabel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 }
 
