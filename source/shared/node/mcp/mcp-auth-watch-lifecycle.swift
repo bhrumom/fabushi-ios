@@ -53,6 +53,7 @@ struct SandMcpAuthWatchDependencies: @unchecked Sendable {
         _ requireFreshRead: Bool
     ) async throws -> DisplayServer?
     let reload: @Sendable () async -> Void
+    var registerOAuthCallback: (@Sendable (_ authorizationUrl: String, _ serverName: String) async -> Bool)? = nil
     var onConnectorAuth: (@Sendable (McpConnectorAuthEvent) -> Void)? = nil
     var nowMs: @Sendable () -> Int64 = {
         Int64(Date().timeIntervalSince1970 * 1_000)
@@ -207,6 +208,25 @@ actor SandMcpAuthWatchLifecycle {
                     serverName: server.name,
                     message: "Only HTTPS authentication URLs are supported unless both the connector and authentication endpoint are loopback URLs."
                 )
+            }
+
+            if let registerOAuthCallback = deps.registerOAuthCallback {
+                guard await registerOAuthCallback(authorizationUrl, server.name) else {
+                    if forceReauth {
+                        _ = clearPendingAuthWatchInternal(serverId, accountKey, emitCancelled: true)
+                        await deps.reload()
+                    }
+                    emitRefused(
+                        reason: "invalid_auth_url",
+                        serverId: serverId,
+                        serverName: server.name
+                    )
+                    return .init(
+                        status: .notSupported,
+                        serverName: server.name,
+                        message: "The connector sign-in URL did not target Fabushi's registered iOS OAuth callback."
+                    )
+                }
             }
 
             let slotIdentifier = server.accounts.first {
