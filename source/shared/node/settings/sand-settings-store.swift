@@ -494,4 +494,49 @@ final class SandSettingsStore: @unchecked Sendable {
     func getResolvedLocalToolPermission() -> SandLocalToolPermission {
         resolveSandLocalToolPermission(getLocalToolPermission(), adminCeiling: getLocalToolPermissionCeiling())
     }
+    func getInferenceProvider() -> SandInferenceProvider {
+        load().inferenceProvider ?? .cursor
+    }
+
+    func setInferenceProvider(_ provider: SandInferenceProvider) {
+        update { $0.inferenceProvider = provider }
+    }
+
+    func getInferenceRouterUsage() -> SandInferenceRouterUsage {
+        load().inferenceRouterUsage ?? emptySandInferenceRouterUsage()
+    }
+
+    func recordInferenceUsage(
+        provider: SandInferenceProvider,
+        inputTokens: Int? = nil,
+        outputTokens: Int? = nil,
+        cacheReadTokens: Int? = nil,
+        cacheWriteTokens: Int? = nil,
+        now: Date = Date()
+    ) {
+        func safe(_ value: Int?) -> Int {
+            guard let value, value >= 0 else { return 0 }
+            return value
+        }
+        update {
+            var usage = $0.inferenceRouterUsage ?? emptySandInferenceRouterUsage()
+            var previous = usage.providers[provider] ?? .init(
+                requests: 0,
+                inputTokens: 0,
+                outputTokens: 0,
+                cacheReadTokens: 0,
+                cacheWriteTokens: 0,
+                lastUsedAt: nil
+            )
+            previous.requests += 1
+            previous.inputTokens += safe(inputTokens)
+            previous.outputTokens += safe(outputTokens)
+            previous.cacheReadTokens += safe(cacheReadTokens)
+            previous.cacheWriteTokens += safe(cacheWriteTokens)
+            previous.lastUsedAt = ISO8601DateFormatter().string(from: now)
+            usage.providers[provider] = previous
+            $0.inferenceRouterUsage = usage
+        }
+    }
+
 }
