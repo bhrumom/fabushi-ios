@@ -4,15 +4,12 @@ import WebKit
 
 struct GlobalDharmaMiniAppView: View {
     let model: MarketplaceModel
-    let bridge: IOSPreloadBridge
-
     @Environment(\.dismiss) private var dismiss
-    @State private var bridge: GlobalDharmaMiniAppBridge
+    @State private var miniAppBridge: GlobalDharmaMiniAppBridge
 
     init(model: MarketplaceModel, bridge: IOSPreloadBridge) {
         self.model = model
-        self.bridge = bridge
-        _bridge = State(initialValue: GlobalDharmaMiniAppBridge(bridge: bridge))
+        _miniAppBridge = State(initialValue: GlobalDharmaMiniAppBridge(bridge: bridge))
     }
 
     var body: some View {
@@ -32,7 +29,7 @@ struct GlobalDharmaMiniAppView: View {
             .background(.ultraThinMaterial)
 
             GlobalDharmaWebView(
-                bridge: bridge,
+                bridge: miniAppBridge,
                 accountName: model.accountName,
                 accountEmail: model.accountEmail,
                 loggedIn: model.loggedIn
