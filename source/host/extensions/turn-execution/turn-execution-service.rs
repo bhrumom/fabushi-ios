@@ -150,9 +150,10 @@ mod tests {
         let registry = TurnExecutionRegistry::new();
         assert!(!registry.can_execute());
         assert!(!registry.is_run_ready().await);
-        let error = registry
-            .create_runner(value("session"), value("hooks"))
-            .unwrap_err();
+        let error = match registry.create_runner(value("session"), value("hooks")) {
+            Ok(_) => panic!("unbound registry unexpectedly created a runner"),
+            Err(error) => error,
+        };
         assert_eq!(error, TurnExecutionRegistryError::Unbound);
         assert_eq!(error.to_string(), UNBOUND_EXECUTION_MESSAGE);
     }
