@@ -80,6 +80,7 @@ actor SandMcpAuthWatchLifecycle {
     private let deps: SandMcpAuthWatchDependencies
     private var pending: [String: Watch] = [:]
     private var observer: (@Sendable (McpAuthCompletion) -> Void)?
+    private var sceneActive = true
 
     init(deps: SandMcpAuthWatchDependencies) {
         self.deps = deps
@@ -320,15 +321,8 @@ actor SandMcpAuthWatchLifecycle {
             pollTask: nil
         )
 
-        if deps.autoPollEnabled {
-            let interval = max(1, deps.authWatchPollIntervalMs)
-            watch.pollTask = Task { [weak self] in
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: .milliseconds(interval))
-                    guard !Task.isCancelled else { return }
-                    await self?.pollPendingAuthWatch(key: key)
-                }
-            }
+        if deps.autoPollEnabled && sceneActive {
+            watch.pollTask = makePollingTask(key: key)
         }
         pending[key] = watch
     }
@@ -382,6 +376,42 @@ actor SandMcpAuthWatchLifecycle {
 
     func pendingWatchCount() -> Int {
         pending.count
+    }
+
+    func activeAutoPollTaskCount() -> Int {
+        pending.values.filter { $0.pollTask != nil }.count
+    }
+
+    /// iOS may suspend immediately after entering background. Stop all interval
+    /// work here; pending auth state remains in memory and is checked on resume.
+    func sceneEnteredBackground() {
+        sceneActive = false
+        for key in Array(pending.keys) {
+            guard var watch = pending[key] else { continue }
+            watch.pollTask?.cancel()
+            watch.pollTask = nil
+            pending[key] = watch
+        }
+    }
+
+    /// Resume with an immediate validation pass before restarting foreground-only
+    /// interval polling. This closes the completion gap after iOS suspension.
+    func sceneBecameActive() async {
+        sceneActive = true
+        await pollAllPendingAuthWatches()
+        for key in Array(pending.keys) {
+            guard var watch = pending[key],
+                  watch.pollTask == nil,
+                  deps.autoPollEnabled else { continue }
+            watch.pollTask = makePollingTask(key: key)
+            pending[key] = watch
+        }
+    }
+
+    func pollAllPendingAuthWatches() async {
+        for key in Array(pending.keys) {
+            await pollPendingAuthWatch(key: key)
+        }
     }
 
     func pollPendingAuthWatch(
@@ -470,6 +500,17 @@ actor SandMcpAuthWatchLifecycle {
         )
         notifyCompleted(watch)
         await deps.reload()
+    }
+
+    private func makePollingTask(key: String) -> Task<Void, Never> {
+        let interval = max(1, deps.authWatchPollIntervalMs)
+        return Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(interval))
+                guard !Task.isCancelled else { return }
+                await self?.pollPendingAuthWatch(key: key)
+            }
+        }
     }
 
     private func markPollingFinished(key: String, token: UUID) {
