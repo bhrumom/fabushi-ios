@@ -40,6 +40,12 @@ mod worker_blob_store;
 mod transcript_mirror_offload;
 #[path = "../../../../host/agent-isolation/transcript-mirror-worker.rs"]
 mod transcript_mirror_worker;
+#[path = "../../../../host/transcript-mirror/conversation-state-binary.rs"]
+mod conversation_state_binary;
+#[path = "../../../../host/transcript-mirror/transcript-journal-codec.rs"]
+mod transcript_journal_codec;
+#[path = "../../../../host/transcript-mirror/transcript-mirror-router.rs"]
+mod transcript_mirror_router;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
 mod box_monitor_layout;
 #[path = "../../../../host/box/box-store-backend-policy.rs"]
