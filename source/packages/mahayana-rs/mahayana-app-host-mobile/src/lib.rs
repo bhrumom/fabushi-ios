@@ -34,6 +34,14 @@ mod protected_path_guard;
 mod box_mcp;
 #[path = "../../../../host/box/box-factory.rs"]
 mod box_factory;
+#[path = "../../../../host/box/box-windows.rs"]
+mod box_windows;
+#[path = "../../../../host/box/box-file-transfer.rs"]
+mod box_file_transfer;
+#[path = "../../../../host/box/box-transfer.rs"]
+mod box_transfer;
+#[path = "../../../../host/box/exec-daemon-process.rs"]
+mod exec_daemon_process;
 
 fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
     serde_json::to_string(&HostResponse {
