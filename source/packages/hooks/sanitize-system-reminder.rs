@@ -1,5 +1,11 @@
-const OPEN_TAG: &str = "<system_reminder>";
-const CLOSE_TAG: &str = "</system_reminder>";
+const OPEN_TAG: &[u8] = b"<system_reminder>";
+const CLOSE_TAG: &[u8] = b"</system_reminder>";
+
+fn matches_ascii_case_insensitive(bytes: &[u8], index: usize, pattern: &[u8]) -> bool {
+    bytes
+        .get(index..index.saturating_add(pattern.len()))
+        .is_some_and(|candidate| candidate.eq_ignore_ascii_case(pattern))
+}
 
 pub fn sanitize_system_reminder_content(content: &str) -> String {
     let bytes = content.as_bytes();
@@ -8,26 +14,25 @@ pub fn sanitize_system_reminder_content(content: &str) -> String {
     let mut index = 0usize;
 
     while index < bytes.len() {
-        let remaining = &content[index..];
-        if remaining.len() >= CLOSE_TAG.len()
-            && remaining[..CLOSE_TAG.len()].eq_ignore_ascii_case(CLOSE_TAG)
-        {
+        if matches_ascii_case_insensitive(bytes, index, CLOSE_TAG) {
             output.push_str(&content[last..index]);
             output.push_str("</system_reminder_>");
             index += CLOSE_TAG.len();
             last = index;
             continue;
         }
-        if remaining.len() >= OPEN_TAG.len()
-            && remaining[..OPEN_TAG.len()].eq_ignore_ascii_case(OPEN_TAG)
-        {
+        if matches_ascii_case_insensitive(bytes, index, OPEN_TAG) {
             output.push_str(&content[last..index]);
             output.push_str("<system_reminder_>");
             index += OPEN_TAG.len();
             last = index;
             continue;
         }
-        index += content[index..].chars().next().map(char::len_utf8).unwrap_or(1);
+        index += content[index..]
+            .chars()
+            .next()
+            .map(char::len_utf8)
+            .unwrap_or(1);
     }
 
     output.push_str(&content[last..]);
@@ -49,7 +54,13 @@ mod tests {
     }
 
     #[test]
-    fn leaves_non_matching_text_unchanged() {
+    fn unicode_prefixes_never_create_invalid_utf8_slice_boundaries() {
+        assert_eq!(
+            sanitize_system_reminder_content(
+                "前置🙂abcdefghijklmno<SYSTEM_REMINDER>内容</SYSTEM_REMINDER>"
+            ),
+            "前置🙂abcdefghijklmno<system_reminder_>内容</system_reminder_>"
+        );
         assert_eq!(sanitize_system_reminder_content("系统 reminder"), "系统 reminder");
     }
 }

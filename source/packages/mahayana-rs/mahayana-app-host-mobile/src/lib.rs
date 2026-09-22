@@ -226,6 +226,14 @@ mod package_hooks_validators_after_shell_execution_response;
 mod package_hooks_validators_after_tab_file_edit_response;
 #[path = "../../../hooks/validators/sessionEndResponse.rs"]
 mod package_hooks_validators_session_end_response;
+#[path = "../../../hooks/validators/postToolUseFailureResponse.rs"]
+mod package_hooks_validators_post_tool_use_failure_response;
+#[path = "../../../hooks/validators/postToolUseResponse.rs"]
+mod package_hooks_validators_post_tool_use_response;
+#[path = "../../../hooks/validators/stopResponse.rs"]
+mod package_hooks_validators_stop_response;
+#[path = "../../../hooks/validators/subagentStopResponse.rs"]
+mod package_hooks_validators_subagent_stop_response;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;

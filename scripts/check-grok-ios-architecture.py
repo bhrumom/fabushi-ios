@@ -160,6 +160,10 @@ required = [
     "source/packages/hooks/validators/afterShellExecutionResponse.rs",
     "source/packages/hooks/validators/afterTabFileEditResponse.rs",
     "source/packages/hooks/validators/sessionEndResponse.rs",
+    "source/packages/hooks/validators/postToolUseFailureResponse.rs",
+    "source/packages/hooks/validators/postToolUseResponse.rs",
+    "source/packages/hooks/validators/stopResponse.rs",
+    "source/packages/hooks/validators/subagentStopResponse.rs",
     "mobile/ios/FabushiTests/DevControlsParityTests.swift",
 ]
 for relative in required:
