@@ -256,6 +256,12 @@ mod package_agent_tools_tool_execution_timeout;
 mod package_agent_tools_core_read_common;
 #[path = "../../../local-exec/services/team-settings-service.rs"]
 mod package_local_exec_services_team_settings_service;
+#[path = "../../../agent/actions/background-shell-action-handler.rs"]
+mod package_agent_actions_background_shell_action_handler;
+#[path = "../../../agent/actions/background-subagent-action-handler.rs"]
+mod package_agent_actions_background_subagent_action_handler;
+#[path = "../../../agent/actions/cancel-action-handler.rs"]
+mod package_agent_actions_cancel_action_handler;
 #[path = "../../../agent/state-utils.rs"]
 mod package_agent_state_utils;
 #[path = "../../../agent/constants.rs"]
