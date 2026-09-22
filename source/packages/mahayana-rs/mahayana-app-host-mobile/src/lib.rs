@@ -26,6 +26,16 @@ mod package_utils_attempt;
 mod package_utils_canvas_path;
 #[path = "../../../utils/ttl-cache.rs"]
 mod package_utils_ttl_cache;
+#[path = "../../../utils/admin-command-denylist.rs"]
+mod package_utils_admin_command_denylist;
+#[path = "../../../utils/path-matchers.rs"]
+mod package_utils_path_matchers;
+#[path = "../../../utils/git-provider-url.rs"]
+mod package_utils_git_provider_url;
+#[path = "../../../utils/local-pr-creation-forge.rs"]
+mod package_utils_local_pr_creation_forge;
+#[path = "../../../utils/encoding-browser.rs"]
+mod package_utils_encoding_browser;
 #[path = "../../../constants/composer.rs"]
 mod package_constants_composer;
 #[path = "../../../constants/structured-log.rs"]
