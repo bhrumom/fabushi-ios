@@ -11,7 +11,7 @@ struct SandModelCatalogValue: Codable, Equatable, Sendable {
 }
 
 struct SandModelCatalogParameter: Codable, Equatable, Sendable {
-    enum ParameterType: String, Codable, Sendable {
+    enum ParameterType: String, Codable, Equatable, Sendable {
         case boolean
         case enumeration = "enum"
     }
