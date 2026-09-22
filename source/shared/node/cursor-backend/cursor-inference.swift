@@ -191,10 +191,11 @@ func resolveSandRunPrivacyMode(
         guard accountCacheScope(currentToken) == accountScopeAtStart else {
             return SAND_RUN_PRIVACY_MODE_FALLBACK
         }
+        guard let privacyMode else { return SAND_RUN_PRIVACY_MODE_FALLBACK }
         switch privacyMode {
         case .noStorage, .noTraining, .usageDataTrainingAllowed, .usageCodebaseTrainingAllowed:
-            return privacyMode!
-        default:
+            return privacyMode
+        case .unspecified:
             return SAND_RUN_PRIVACY_MODE_FALLBACK
         }
     } catch {
