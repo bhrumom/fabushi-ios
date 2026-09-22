@@ -88,7 +88,7 @@ mod package_redaction_privacy_mode;
 mod package_redaction_classification;
 #[path = "../../../redaction/privacy-context.rs"]
 mod package_redaction_privacy_context;
-#[path = "../../../redaction/should-redact.rs"]
+#[path = "../../../redaction/shouldRedact.rs"]
 mod package_redaction_should_redact;
 #[path = "../../../git-core/redaction.rs"]
 mod package_git_core_redaction;
