@@ -325,6 +325,7 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         "host/transcript-mirror/transcript-occurrence-deriver.rs",
         "host/transcript-mirror/transcript-mirror.rs",
         "host/transcript-mirror/legacy-transcript-mirror.rs",
+        "host/transcript-mirror/production-provider.rs",
         "host/extensions/extension-ids.generated.rs",
         "host/extensions/session/session-diagnostics.rs",
         "host/extensions/telemetry/send-trace-sampler.rs",
