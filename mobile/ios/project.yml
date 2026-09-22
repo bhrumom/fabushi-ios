@@ -11,7 +11,7 @@ settings:
     CODE_SIGN_STYLE: Automatic
     CLANG_ENABLE_MODULES: YES
     HEADER_SEARCH_PATHS:
-      - $(SRCROOT)/../native/include
+      - $(SRCROOT)/../../source/host/include
     LIBRARY_SEARCH_PATHS:
       - $(SRCROOT)/Frameworks
     OTHER_LDFLAGS:
@@ -23,6 +23,14 @@ targets:
     platform: iOS
     sources:
       - path: Fabushi
+        excludes:
+          - MahayanaHost.swift
+      - path: ../../source/host/MahayanaHostRuntime.swift
+      - path: ../../source/mahayana-agent-coordinator
+      - path: ../../source/ios-main
+      - path: ../../source/ios-preload
+      - path: ../../source/local-exec-daemon
+      - path: ../../source/box-exec-daemon
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ombhrum.fabushi
