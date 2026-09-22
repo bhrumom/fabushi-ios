@@ -17,7 +17,18 @@ jobs:
       - uses: actions/checkout@v4
       - run: python3 scripts/check-grok-ios-architecture.py
 
+  rust-host:
+    needs: architecture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test iOS-owned Rust Host modules
+        run: cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-app-host-mobile --lib --profile ci
+
   build-and-test:
+    needs:
+      - architecture
+      - rust-host
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
