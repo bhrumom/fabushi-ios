@@ -27,6 +27,7 @@ targets:
           - MahayanaHost.swift
       - path: ../../frontend
       - path: ../../source/internal
+      - path: ../../source/mime-types.types.swift
       - path: ../../source/shared
       - path: ../../source/ios-dev-controls
       - path: ../../source/host/MahayanaHostRuntime.swift

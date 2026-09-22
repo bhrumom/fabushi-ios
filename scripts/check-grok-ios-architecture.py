@@ -64,6 +64,25 @@ required = [
     "source/ios-main/FabushiRuntime.swift",
     "source/ios-preload/preload.swift",
     "source/ios-preload/coordinator-port-bridge.swift",
+    "source/ios-preload/box-vnc-clipboard-paste.swift",
+    "source/ios-preload/box-vnc-liveness.swift",
+    "source/ios-preload/box-vnc-visibility-gate.swift",
+    "source/ios-preload/main-rpc-runtime.swift",
+    "source/ios-preload/passkey-stall.swift",
+    "source/ios-preload/preload-browser-base.swift",
+    "source/ios-preload/preload-dev-controls.swift",
+    "source/ios-preload/preload-vnc.swift",
+    "source/ios-preload/preload-webview.swift",
+    "source/ios-preload/rpc-edge-runtime.swift",
+    "source/ios-preload/runtime/DevControlsPreloadEntrypoint.swift",
+    "source/ios-preload/runtime/primary.swift",
+    "source/ios-preload/runtime/VNCPreloadEntrypoint.swift",
+    "source/ios-preload/runtime/webview.swift",
+    "source/local-exec-daemon/invariant-violation-log.swift",
+    "source/local-exec-daemon/production-executor.swift",
+    "source/box-exec-daemon/cli.swift",
+    "source/box-exec-daemon/server.swift",
+    "source/mime-types.types.swift",
     "source/ios-dev-controls/IOSDevControls.swift",
     "source/mahayana-agent-coordinator/MahayanaCoordinator.swift",
     "source/mahayana-agent-coordinator/renderer-port-server.swift",
@@ -97,6 +116,13 @@ for path in (ROOT / "mobile/ios/Fabushi").glob("*.swift"):
     text = path.read_text()
     if "MahayanaHost" in text:
         errors.append(f"presentation/platform source bypasses coordinator through Host: {path.relative_to(ROOT)}")
+
+for root in ["source/box-exec-daemon", "source/local-exec-daemon"]:
+    for path in (ROOT / root).rglob("*.swift"):
+        text = path.read_text()
+        for forbidden in ["Process(", "NSTask", "posix_spawn", "/bin/sh", "/bin/bash"]:
+            if forbidden in text:
+                errors.append(f"iOS runner emulates forbidden desktop process semantics ({forbidden}): {path.relative_to(ROOT)}")
 
 for root in ["source/box-exec-daemon", "source/local-exec-daemon", "source/host"]:
     for path in (ROOT / root).rglob("*.swift"):
@@ -136,6 +162,7 @@ project = (ROOT / "mobile/ios/project.yml").read_text()
 for required_source in [
     "../../frontend",
     "../../source/internal",
+    "../../source/mime-types.types.swift",
     "../../source/shared",
     "../../source/ios-dev-controls",
     "../../source/ios-main",
