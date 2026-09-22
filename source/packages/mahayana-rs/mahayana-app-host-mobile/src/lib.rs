@@ -26,6 +26,34 @@ mod package_utils_attempt;
 mod package_utils_canvas_path;
 #[path = "../../../utils/ttl-cache.rs"]
 mod package_utils_ttl_cache;
+#[path = "../../../constants/composer.rs"]
+mod package_constants_composer;
+#[path = "../../../constants/structured-log.rs"]
+mod package_constants_structured_log;
+#[path = "../../../constants/project-send-message.rs"]
+mod package_constants_project_send_message;
+#[path = "../../../constants/smart-mode-classifier.rs"]
+mod package_constants_smart_mode_classifier;
+#[path = "../../../constants/system-notification.rs"]
+mod package_constants_system_notification;
+#[path = "../../../constants/environment-setup.rs"]
+mod package_constants_environment_setup;
+#[path = "../../../constants/project-conversation.rs"]
+mod package_constants_project_conversation;
+#[path = "../../../constants/cloud-agent.rs"]
+mod package_constants_cloud_agent;
+#[path = "../../../constants/auto-spillover-ui.rs"]
+mod package_constants_auto_spillover_ui;
+#[path = "../../../constants/git-diff.rs"]
+mod package_constants_git_diff;
+#[path = "../../../constants/sand-box-archive.rs"]
+mod package_constants_sand_box_archive;
+#[path = "../../../constants/ask-question.rs"]
+mod package_constants_ask_question;
+#[path = "../../../constants/mcp.rs"]
+mod package_constants_mcp;
+#[path = "../../../constants/permissions.rs"]
+mod package_constants_permissions;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
