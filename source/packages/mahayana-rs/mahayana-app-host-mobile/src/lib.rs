@@ -98,6 +98,14 @@ mod package_agent_core_mcp_auth_flow;
 mod package_analytics_client_deferred_buffer;
 #[path = "../../../agent-exec/await-outcome.rs"]
 mod package_agent_exec_await_outcome;
+#[path = "../../../agent-exec/agent-skill-metadata.rs"]
+mod package_agent_exec_agent_skill_metadata;
+#[path = "../../../agent-exec/background-completion-dispatch.rs"]
+mod package_agent_exec_background_completion_dispatch;
+#[path = "../../../agent-exec/subagent-lifecycle-state-machine.rs"]
+mod package_agent_exec_subagent_lifecycle_state_machine;
+#[path = "../../../agent-exec/subagent-queue.rs"]
+mod package_agent_exec_subagent_queue;
 #[path = "../../../agent-exec/background-work-metadata.rs"]
 mod package_agent_exec_background_work_metadata;
 #[path = "../../../agent-exec/common.rs"]
