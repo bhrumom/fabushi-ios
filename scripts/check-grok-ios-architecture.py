@@ -61,6 +61,9 @@ required = [
     "frontend/src/production/ProductionRenderer.view.swift",
     "frontend/src/recovered/features/app-shell/ContentView.swift",
     "source/ios-main/IOSMainRuntime.swift",
+    "source/ios-main/deep-link/deep-link-controller.swift",
+    "source/ios-main/lifecycle/ios-lifecycle-recovery.swift",
+    "source/ios-main/telemetry/desktop-lifecycle-telemetry.swift",
     "source/ios-main/FabushiRuntime.swift",
     "source/ios-preload/preload.swift",
     "source/ios-preload/coordinator-port-bridge.swift",
@@ -129,6 +132,17 @@ for forbidden in ["CoordinatorControlPortClient", "main.dispatch("]:
         errors.append(f"iOS preload bypasses renderer coordinator-port boundary: {forbidden}")
 if "IOSCoordinatorPortClient" not in preload:
     errors.append("iOS preload does not use its renderer-facing coordinator-port client")
+
+
+runtime = (ROOT / "source/ios-main/FabushiRuntime.swift").read_text()
+for required_token in ["IOSDeepLinkController", "resyncAfterLifecycleRecovery", "resumeAfterBackground"]:
+    if required_token not in runtime:
+        errors.append(f"FabushiRuntime is missing production lifecycle/deep-link integration: {required_token}")
+
+ios_main = (ROOT / "source/ios-main/IOSMainRuntime.swift").read_text()
+for required_token in ["IOSLifecycleRecoveryStore", "lifecycleReporter", "markResyncCompleted"]:
+    if required_token not in ios_main:
+        errors.append(f"IOSMainRuntime is missing lifecycle recovery integration: {required_token}")
 
 app = (ROOT / "mobile/ios/Fabushi/FabushiApp.swift").read_text()
 for forbidden in ["MahayanaHost", "MahayanaCoordinator", "MarketplaceModel(", "MessagingModel("]:
