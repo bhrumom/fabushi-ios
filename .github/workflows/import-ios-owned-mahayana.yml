@@ -4,14 +4,17 @@ on:
   push:
     branches:
       - spec/grok-bot-018-ios-parity-20260922
-    paths:
-      - .github/workflows/import-ios-owned-mahayana.yml
 
 permissions:
   contents: write
 
+concurrency:
+  group: ios-runtime-source-import-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   import-runtime-source:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +22,18 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
+      - name: Detect existing import
+        id: state
+        shell: bash
+        run: |
+          if [[ -f source/packages/IOS_RUNTIME_SOURCE_IMPORT.json ]]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Import pinned Fabushi-owned runtime source
+        if: steps.state.outputs.needed == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -58,6 +72,11 @@ jobs:
           }
           JSON
 
+      - name: Commit imported source
+        if: steps.state.outputs.needed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add source/packages
