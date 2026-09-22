@@ -480,7 +480,10 @@ mod tests {
         assert!(content.contains("Visible"));
         assert!(!content.contains("private"));
         assert!(content.contains("Binary data omitted from transcript: 2 bytes"));
-        assert!(!content.contains("first bootstrap"));
+        // Pinned Grok 0.18 only drops the leading bootstrap when the hydrated
+        // transcript itself starts with two user messages. Summary archives are
+        // hydrated first, so an archived assistant message keeps this root prompt.
+        assert!(content.contains("first bootstrap"));
         let _ = fs::remove_dir_all(root);
     }
 
