@@ -159,7 +159,7 @@ internal struct ClothGhostAvatar: View {
 
 private struct MobileBotChat: View {
     let bot: MobileBotSummary
-    let host: MahayanaHost
+    let bridge: IOSPreloadBridge
     let model: MarketplaceModel
     let appAgentSurface: FabushiAppAgentSurface
     let onClose: () -> Void
@@ -274,7 +274,7 @@ private struct MobileBotChat: View {
         .accessibilityIdentifier("mobile-bot-chat")
         .task(id: semanticFingerprint) { publishAppAgentSurface() }
         .fullScreenCover(isPresented: $openedMiniApp) {
-            GlobalDharmaMiniAppView(model: model, host: host)
+            GlobalDharmaMiniAppView(model: model, bridge: bridge)
         }
     }
 
@@ -405,7 +405,7 @@ private struct MobileBotChat: View {
         }
 
         do {
-            let result = try await host.request(
+            let result = try await bridge.request(
                 method: "feature.execute",
                 params: ["command": ["type": "chat.send", "requestId": requestId, "text": text, "agentId": bot.id, "mode": "agent"]]
             )
@@ -434,7 +434,7 @@ private struct MobileBotChat: View {
             actionStatus: "running"
         ))
         do {
-            let bridge = GlobalDharmaMiniAppBridge(host: host)
+            let bridge = GlobalDharmaMiniAppBridge(bridge: bridge)
             let routed = try await bridge.routeInput(pluginId: pluginId, input: text)
             guard let execution = routed["execution"] as? [String: Any] else {
                 removeThinking(operationId)
@@ -463,7 +463,7 @@ private struct MobileBotChat: View {
                   let tool = execution["tool"] as? String,
                   !tool.isEmpty
             else {
-                throw MahayanaHost.HostError.requestFailed("iOS Mini App Bot only accepts governed mcp-http execution")
+                throw MahayanaCoordinator.CoordinatorError.requestFailed("iOS Mini App Bot only accepts governed mcp-http execution")
             }
             let arguments = routed["arguments"] as? [String: Any] ?? [:]
             let result = try await bridge.callOfficialMcpTool(pluginId: pluginId, name: tool, arguments: arguments)
@@ -489,7 +489,7 @@ private struct MobileBotChat: View {
     @MainActor
     private func stop() async {
         guard bot.miniAppId == nil, let activeOperationId else { return }
-        _ = try? await host.request(method: "feature.interrupt", params: ["operationId": activeOperationId])
+        _ = try? await bridge.request(method: "feature.interrupt", params: ["operationId": activeOperationId])
     }
 
     @MainActor
@@ -497,7 +497,7 @@ private struct MobileBotChat: View {
         for _ in 0..<1800 {
             if Task.isCancelled { return }
             do {
-                let result = try await host.request(method: "feature.receive", params: ["timeoutMs": 250])
+                let result = try await bridge.request(method: "feature.receive", params: ["timeoutMs": 250])
                 guard let event = result.value as? [String: Any], let type = event["type"] as? String else {
                     try? await Task.sleep(for: .milliseconds(60)); continue
                 }
@@ -565,7 +565,7 @@ private struct MobileBotChat: View {
 internal struct GrokMobileShell: View {
     @Bindable var model: MarketplaceModel
     @Bindable var messaging: MessagingModel
-    let host: MahayanaHost
+    let bridge: IOSPreloadBridge
     let appAgentSurface: FabushiAppAgentSurface
 
     @State private var query = ""
@@ -588,7 +588,7 @@ internal struct GrokMobileShell: View {
         } else if let selectedBot {
             MobileBotChat(
                 bot: selectedBot,
-                host: host,
+                bridge: bridge,
                 model: model,
                 appAgentSurface: appAgentSurface,
                 onClose: { self.selectedBot = nil },
@@ -879,7 +879,7 @@ internal struct GrokMobileShell: View {
 
     @MainActor
     private func loadBots() async {
-        let canonical = (try? await GlobalDharmaMiniAppBridge(host: host).installedMiniAppBots()) ?? []
+        let canonical = (try? await GlobalDharmaMiniAppBridge(bridge: bridge).installedMiniAppBots()) ?? []
         let installedBots = canonical.map {
             MobileBotSummary(
                 id: $0.id,
@@ -891,9 +891,9 @@ internal struct GrokMobileShell: View {
         }
         let requestId = "ios-mobile-bot-list-\(UUID().uuidString.lowercased())"
         do {
-            _ = try await host.request(method: "feature.execute", params: ["command": ["type": "bot.list", "requestId": requestId]])
+            _ = try await bridge.request(method: "feature.execute", params: ["command": ["type": "bot.list", "requestId": requestId]])
             for _ in 0..<32 {
-                let result = try await host.request(method: "feature.receive", params: ["timeoutMs": 80])
+                let result = try await bridge.request(method: "feature.receive", params: ["timeoutMs": 80])
                 guard let event = result.value as? [String: Any], let type = event["type"] as? String else { continue }
                 if type == "bot.listed", let rows = event["bots"] as? [[String: Any]] {
                     let surfaceBots = rows.compactMap(Self.parseBot).filter { $0.id != "mahayana-assistant" }
@@ -915,7 +915,7 @@ internal struct GrokMobileShell: View {
         botError = nil
         let requestId = "ios-mobile-bot-create-\(UUID().uuidString.lowercased())"
         do {
-            _ = try await host.request(method: "feature.execute", params: ["command": ["type": "bot.create", "requestId": requestId, "name": String(name.prefix(72)), "description": String(botDescription.trimmingCharacters(in: .whitespacesAndNewlines).prefix(240))]])
+            _ = try await bridge.request(method: "feature.execute", params: ["command": ["type": "bot.create", "requestId": requestId, "name": String(name.prefix(72)), "description": String(botDescription.trimmingCharacters(in: .whitespacesAndNewlines).prefix(240))]])
             botName = ""
             botDescription = ""
             createBotOpen = false
