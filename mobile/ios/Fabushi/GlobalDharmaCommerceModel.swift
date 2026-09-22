@@ -70,20 +70,20 @@ final class GlobalDharmaCommerceModel {
         return "¥\(lifetimeOffer.amount / 100)"
     }
 
-    private let host: MahayanaHost
+    private let bridge: IOSPreloadBridge
     private let platformBaseURL: URL
     private let paymentBaseURL: URL
     private let session: URLSession
     private let canonicalLedgerTestMode: Bool
 
     init(
-        host: MahayanaHost,
+        bridge: IOSPreloadBridge,
         platformBaseURL: URL = URL(string: "https://api.ombhrum.com")!,
         paymentBaseURL: URL = URL(string: "https://pay.ombhrum.com")!,
         session: URLSession = .shared,
         canonicalLedgerTestMode: Bool? = nil
     ) {
-        self.host = host
+        self.bridge = bridge
         self.platformBaseURL = platformBaseURL
         self.paymentBaseURL = paymentBaseURL
         self.session = session
@@ -189,8 +189,8 @@ final class GlobalDharmaCommerceModel {
             let storeKit = FabushiPayStoreKit(
                 serviceBaseURL: paymentBaseURL,
                 session: session,
-                accessTokenProvider: { @MainActor [host] in
-                    try await Self.currentAccessToken(from: host)
+                accessTokenProvider: { @MainActor [bridge] in
+                    try await Self.currentAccessToken(from: bridge)
                 }
             )
             let receipt = try await storeKit.purchaseAdvancedCommerce(
@@ -233,8 +233,8 @@ final class GlobalDharmaCommerceModel {
             let storeKit = FabushiPayStoreKit(
                 serviceBaseURL: paymentBaseURL,
                 session: session,
-                accessTokenProvider: { @MainActor [host] in
-                    try await Self.currentAccessToken(from: host)
+                accessTokenProvider: { @MainActor [bridge] in
+                    try await Self.currentAccessToken(from: bridge)
                 }
             )
             let receipt = try await storeKit.restore(expectedSku: Self.lifetimeSku)
@@ -354,7 +354,7 @@ final class GlobalDharmaCommerceModel {
         guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else {
             throw GlobalDharmaCommerceError.invalidResponse
         }
-        let token = try await Self.currentAccessToken(from: host)
+        let token = try await Self.currentAccessToken(from: bridge)
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -376,8 +376,8 @@ final class GlobalDharmaCommerceModel {
         return object
     }
 
-    private static func currentAccessToken(from host: MahayanaHost) async throws -> String {
-        let result = try await host.request(method: "feature.auth.deviceAgentSession")
+    private static func currentAccessToken(from bridge: IOSPreloadBridge) async throws -> String {
+        let result = try await bridge.request(method: "feature.auth.deviceAgentSession")
         guard let object = result.value as? [String: Any],
               let token = object["accessToken"] as? String,
               token.count >= 24,
