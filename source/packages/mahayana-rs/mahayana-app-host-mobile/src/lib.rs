@@ -120,6 +120,10 @@ mod package_redaction_classification;
 mod package_redaction_privacy_context;
 #[path = "../../../redaction/shouldRedact.rs"]
 mod package_redaction_should_redact;
+#[path = "../../../agent-analytics/commit-scoring/git-repo-utils.rs"]
+mod package_agent_analytics_git_repo_utils;
+#[path = "../../../mcp-agent-exec/mcp.rs"]
+mod package_mcp_agent_exec_mcp;
 #[path = "../../../git-core/redaction.rs"]
 mod package_git_core_redaction;
 #[path = "../../../git-core/diagnostics.rs"]
