@@ -49,20 +49,20 @@ pub fn resolve_box_workspace_path(box_path: &str) -> String {
 pub trait TransferBox<Context>: Send + Sync {
     type Error: std::fmt::Display + Send + Sync + 'static;
 
-    async fn download_file(
-        &self,
-        context: &Context,
-        agent_id: &str,
-        path: &str,
-    ) -> Result<Vec<u8>, Self::Error>;
+    fn download_file<'a>(
+        &'a self,
+        context: &'a Context,
+        agent_id: &'a str,
+        path: &'a str,
+    ) -> impl std::future::Future<Output = Result<Vec<u8>, Self::Error>> + Send + 'a;
 
-    async fn upload_file(
-        &self,
-        context: &Context,
-        agent_id: &str,
-        path: &str,
-        data: &[u8],
-    ) -> Result<(), Self::Error>;
+    fn upload_file<'a>(
+        &'a self,
+        context: &'a Context,
+        agent_id: &'a str,
+        path: &'a str,
+        data: &'a [u8],
+    ) -> impl std::future::Future<Output = Result<(), Self::Error>> + Send + 'a;
 }
 
 pub async fn transfer_file_between_boxes<Context, Source, Dest>(
@@ -226,24 +226,28 @@ mod tests {
     impl TransferBox<()> for BoxStub {
         type Error = Infallible;
 
-        async fn download_file(
-            &self,
-            _context: &(),
-            _agent_id: &str,
-            path: &str,
-        ) -> Result<Vec<u8>, Self::Error> {
-            Ok(self.files.lock().unwrap().get(path).cloned().unwrap_or_default())
+        fn download_file<'a>(
+            &'a self,
+            _context: &'a (),
+            _agent_id: &'a str,
+            path: &'a str,
+        ) -> impl std::future::Future<Output = Result<Vec<u8>, Self::Error>> + Send + 'a {
+            async move {
+                Ok(self.files.lock().unwrap().get(path).cloned().unwrap_or_default())
+            }
         }
 
-        async fn upload_file(
-            &self,
-            _context: &(),
-            _agent_id: &str,
-            path: &str,
-            data: &[u8],
-        ) -> Result<(), Self::Error> {
-            self.files.lock().unwrap().insert(path.into(), data.to_vec());
-            Ok(())
+        fn upload_file<'a>(
+            &'a self,
+            _context: &'a (),
+            _agent_id: &'a str,
+            path: &'a str,
+            data: &'a [u8],
+        ) -> impl std::future::Future<Output = Result<(), Self::Error>> + Send + 'a {
+            async move {
+                self.files.lock().unwrap().insert(path.into(), data.to_vec());
+                Ok(())
+            }
         }
     }
 
