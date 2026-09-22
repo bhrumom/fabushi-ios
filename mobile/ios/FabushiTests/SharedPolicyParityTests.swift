@@ -5,12 +5,13 @@ final class SharedPolicyParityTests: XCTestCase {
     func testDesktopAndFabushiDeepLinks() {
         XCTAssertEqual(FabushiDesktopPolicy.buildPluginDeepLink(pluginID: "123"), "fabushi://app/v1/plugin/add?id=123")
         XCTAssertNil(FabushiDesktopPolicy.buildPluginDeepLink(pluginID: "abc"))
-        let parsed = FabushiDeepLinkPolicy.parse("fabushi://app/v1/info?topic=deep-links")
-        XCTAssertEqual(parsed?.link, .info(source: .customProtocol))
-        XCTAssertEqual(parsed?.canonicalURL, "fabushi://app/v1/info?topic=deep-links")
-        XCTAssertNil(FabushiDeepLinkPolicy.parse("fabushi://user:pass@app/v1/open"))
-        XCTAssertNil(FabushiDeepLinkPolicy.parse("fabushi://app/v1/../open"))
-        XCTAssertNil(FabushiDeepLinkPolicy.parse("fabushi://app/v1/info?topic=deep-links&topic=deep-links"))
+        let parsed = FabushiDeepLinkParser.parse("fabushi://app/v1/info?topic=deep-links")
+        XCTAssertEqual(parsed?.route, .info(topic: "deep-links"))
+        XCTAssertEqual(parsed?.source, .customScheme)
+        XCTAssertEqual(parsed?.canonicalURL.absoluteString, "fabushi://app/v1/info?topic=deep-links")
+        XCTAssertNil(FabushiDeepLinkParser.parse("fabushi://user:pass@app/v1/open"))
+        XCTAssertNil(FabushiDeepLinkParser.parse("fabushi://app/v1/../open"))
+        XCTAssertNil(FabushiDeepLinkParser.parse("fabushi://app/v1/info?topic=deep-links&topic=deep-links"))
     }
 
     func testExternalAndLinkPreviewPolicies() {
