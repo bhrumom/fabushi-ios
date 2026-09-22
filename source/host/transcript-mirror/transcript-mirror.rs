@@ -38,6 +38,41 @@ struct FileState {
 
 type OutcomeReporter = Arc<dyn Fn(JournalOutcome) + Send + Sync>;
 
+fn report_operation<T>(
+    reporter: &OutcomeReporter,
+    op: &'static str,
+    conversation_id: &str,
+    operation: impl FnOnce() -> Result<(T, Option<usize>, Option<u64>), TranscriptJournalCorruptionError>,
+) -> Result<T, TranscriptJournalCorruptionError> {
+    let started = Instant::now();
+    match operation() {
+        Ok((value, entry_count, bytes)) => {
+            reporter(JournalOutcome {
+                op,
+                outcome: "ok",
+                conversation_id: conversation_id.to_owned(),
+                entry_count,
+                bytes,
+                duration_ms: started.elapsed().as_secs_f64() * 1000.0,
+                cause: None,
+            });
+            Ok(value)
+        }
+        Err(error) => {
+            reporter(JournalOutcome {
+                op,
+                outcome: "failed",
+                conversation_id: conversation_id.to_owned(),
+                entry_count: None,
+                bytes: None,
+                duration_ms: started.elapsed().as_secs_f64() * 1000.0,
+                cause: Some(error.to_string()),
+            });
+            Err(error)
+        }
+    }
+}
+
 fn corruption(message: impl Into<String>) -> TranscriptJournalCorruptionError {
     TranscriptJournalCorruptionError(message.into())
 }
@@ -220,41 +255,6 @@ impl<Deriver> FileTranscriptMirror<Deriver> {
             return Ok(());
         }
         install_atomic(&self.mode_path_for(conversation_id)?, b"1\n")
-    }
-
-    fn report<T>(
-        &self,
-        op: &'static str,
-        conversation_id: &str,
-        operation: impl FnOnce() -> Result<(T, Option<usize>, Option<u64>), TranscriptJournalCorruptionError>,
-    ) -> Result<T, TranscriptJournalCorruptionError> {
-        let started = Instant::now();
-        match operation() {
-            Ok((value, entry_count, bytes)) => {
-                (self.report_outcome)(JournalOutcome {
-                    op,
-                    outcome: "ok",
-                    conversation_id: conversation_id.to_owned(),
-                    entry_count,
-                    bytes,
-                    duration_ms: started.elapsed().as_secs_f64() * 1000.0,
-                    cause: None,
-                });
-                Ok(value)
-            }
-            Err(error) => {
-                (self.report_outcome)(JournalOutcome {
-                    op,
-                    outcome: "failed",
-                    conversation_id: conversation_id.to_owned(),
-                    entry_count: None,
-                    bytes: None,
-                    duration_ms: started.elapsed().as_secs_f64() * 1000.0,
-                    cause: Some(error.to_string()),
-                });
-                Err(error)
-            }
-        }
     }
 
     fn read_pending(
@@ -454,7 +454,8 @@ impl<Deriver> FileTranscriptMirror<Deriver> {
         Store: TranscriptOccurrenceBlobStore,
         Deriver: TranscriptDeriver<Store>,
     {
-        self.report("replay", conversation_id, || {
+        let reporter = Arc::clone(&self.report_outcome);
+        report_operation(&reporter, "replay", conversation_id, || {
             let pending = self.read_pending(conversation_id)?;
             let mut state = self.states.get(conversation_id).cloned();
             let hash = checkpoint_identity(checkpoint);
@@ -511,7 +512,8 @@ impl<Deriver> FileTranscriptMirror<Deriver> {
         Store: TranscriptOccurrenceBlobStore,
         Deriver: TranscriptDeriver<Store>,
     {
-        self.report("checkpoint", conversation_id, || {
+        let reporter = Arc::clone(&self.report_outcome);
+        report_operation(&reporter, "checkpoint", conversation_id, || {
             if self.read_pending(conversation_id)?.is_some() {
                 return Err(corruption(
                     "pending transcript checkpoint must recover before preparing another",
@@ -590,7 +592,8 @@ impl<Deriver> FileTranscriptMirror<Deriver> {
         &mut self,
         conversation_id: &str,
     ) -> Result<(), TranscriptJournalCorruptionError> {
-        self.report("append", conversation_id, || {
+        let reporter = Arc::clone(&self.report_outcome);
+        report_operation(&reporter, "append", conversation_id, || {
             let pending = self
                 .read_pending(conversation_id)?
                 .ok_or_else(|| corruption("prepared transcript WAL is missing at commit"))?;
