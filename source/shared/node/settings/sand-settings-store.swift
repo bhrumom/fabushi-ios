@@ -540,3 +540,63 @@ final class SandSettingsStore: @unchecked Sendable {
     }
 
 }
+
+
+extension SandSettingsStore: McpSettingsPort {
+    func migrateMcpCustomInstructionToServerId(
+        serverId: String,
+        displayName: String
+    ) {
+        update { settings in
+            guard settings.mcpCustomInstructionsByServerId[serverId] == nil,
+                  let legacy = settings.mcpCustomInstructions[displayName] else {
+                return
+            }
+            settings.mcpCustomInstructionsByServerId[serverId] =
+                clampMcpCustomInstruction(legacy)
+        }
+    }
+
+    func setMcpCustomInstructionByServerId(
+        serverId: String,
+        displayName: String,
+        value: String,
+        mirrorLegacyName: Bool
+    ) {
+        update { settings in
+            let clamped = clampMcpCustomInstruction(value)
+            if clamped.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                settings.mcpCustomInstructionsByServerId.removeValue(forKey: serverId)
+                if mirrorLegacyName {
+                    settings.mcpCustomInstructions.removeValue(forKey: displayName)
+                }
+                return
+            }
+            settings.mcpCustomInstructionsByServerId[serverId] = clamped
+            if mirrorLegacyName {
+                settings.mcpCustomInstructions[displayName] = clamped
+            }
+        }
+    }
+
+    func getRawMcpCustomInstruction(_ displayName: String) -> String? {
+        load().mcpCustomInstructions[displayName]
+    }
+
+    func getRawMcpCustomInstructionByServerId(_ serverId: String) -> String? {
+        load().mcpCustomInstructionsByServerId[serverId]
+    }
+
+    func deleteMcpCustomInstructionByServerId(
+        serverId: String,
+        displayName: String,
+        deleteLegacyName: Bool
+    ) {
+        update { settings in
+            settings.mcpCustomInstructionsByServerId.removeValue(forKey: serverId)
+            if deleteLegacyName {
+                settings.mcpCustomInstructions.removeValue(forKey: displayName)
+            }
+        }
+    }
+}
