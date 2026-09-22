@@ -200,8 +200,12 @@ mod package_agent_tools_subagent_model_force_policy;
 mod package_agent_tools_subagent_composer_model_ids;
 #[path = "../../../agent/state-utils.rs"]
 mod package_agent_state_utils;
+#[path = "../../../agent/constants.rs"]
+mod package_agent_constants;
 #[path = "../../../context/browser-bridge.rs"]
 mod package_context_browser_bridge;
+#[path = "../../../agent-store-sync/sync-client-config.rs"]
+mod package_agent_store_sync_client_config;
 #[path = "../../../hooks/sanitize-system-reminder.rs"]
 mod package_hooks_sanitize_system_reminder;
 #[path = "../../../local-exec/int32.rs"]
