@@ -2,14 +2,17 @@
 import argparse
 import csv
 import json
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_REFERENCE = "a9f633e09d49a85829b8236331b9e21f7e612634"
 EXPECTED_FILES = 2046
+VALID_STATUSES = {"mapped", "implemented", "verified", "not-applicable"}
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--strict", action="store_true")
+parser.add_argument("--complete", action="store_true", help="require every Grok row to be verified or explicitly not-applicable")
 args = parser.parse_args()
 
 errors = []
@@ -33,6 +36,27 @@ if len(set(paths)) != EXPECTED_FILES:
 if set(paths) != {row["path"] for row in manifest["files"]}:
     errors.append("ledger and pinned reference manifest differ")
 
+status_counts = Counter()
+materialized = 0
+for row in rows:
+    status = row["implementation_status"].strip()
+    target = row["ios_target_path"].strip()
+    target_exists = bool(target) and (ROOT / target).is_file()
+    status_counts[status] += 1
+    materialized += int(target_exists)
+
+    if status not in VALID_STATUSES:
+        errors.append(f"{row['grok_path']}: invalid implementation_status={status!r}")
+        continue
+    if status in {"implemented", "verified"} and not target_exists:
+        errors.append(f"{row['grok_path']}: {status} target is missing: {target}")
+    if status == "verified" and not row["test_evidence"].strip():
+        errors.append(f"{row['grok_path']}: verified row has no test_evidence")
+    if status == "not-applicable" and not row["adaptation_reason"].strip():
+        errors.append(f"{row['grok_path']}: not-applicable row has no adaptation_reason")
+    if args.complete and status not in {"verified", "not-applicable"}:
+        errors.append(f"{row['grok_path']}: completion gate still has status={status}")
+
 required = [
     "frontend/src/production/ProductionRenderer.view.swift",
     "frontend/src/recovered/features/app-shell/ContentView.swift",
@@ -40,10 +64,13 @@ required = [
     "source/ios-main/FabushiRuntime.swift",
     "source/ios-preload/preload.swift",
     "source/mahayana-agent-coordinator/main.swift",
+    "source/mahayana-agent-coordinator/renderer-port-server.swift",
+    "source/mahayana-agent-coordinator/control-port-client.swift",
     "source/host/MahayanaHostRuntime.swift",
     "source/local-exec-daemon/main.swift",
     "source/box-exec-daemon/main.swift",
     "source/shared/rpc/coordinator-port.swift",
+    "source/shared/rpc/coordinator.swift",
 ]
 for relative in required:
     if not (ROOT / relative).is_file():
@@ -61,9 +88,18 @@ for path in (ROOT / "mobile/ios/Fabushi").glob("*.swift"):
     if "MahayanaHost" in text:
         errors.append(f"presentation/platform source bypasses coordinator through Host: {path.relative_to(ROOT)}")
 
+for root in ["source/box-exec-daemon", "source/local-exec-daemon", "source/host"]:
+    for path in (ROOT / root).rglob("*.swift"):
+        text = path.read_text()
+        if "IOSPreloadBridge" in text:
+            errors.append(f"lower runtime layer depends on renderer preload bridge: {path.relative_to(ROOT)}")
+
 project = (ROOT / "mobile/ios/project.yml").read_text()
 for required_source in [
     "../../frontend",
+    "../../source/internal",
+    "../../source/shared",
+    "../../source/ios-dev-controls",
     "../../source/ios-main",
     "../../source/ios-preload",
     "../../source/mahayana-agent-coordinator",
@@ -89,6 +125,11 @@ if args.strict and (ROOT / "mobile/ios/Fabushi/GrokMobileShell.swift").exists():
 if args.strict and (ROOT / "mobile/ios/Fabushi/ContentView.swift").exists():
     errors.append("legacy giant ContentView.swift still exists")
 
+print(
+    "INFO: parity materialized="
+    f"{materialized}/{EXPECTED_FILES} status="
+    + ",".join(f"{key}:{status_counts[key]}" for key in sorted(status_counts))
+)
 if warnings:
     for warning in warnings:
         print(f"WARNING: {warning}")
@@ -96,4 +137,7 @@ if errors:
     for error in errors:
         print(f"ERROR: {error}")
     raise SystemExit(1)
-print(f"PASS: Grok iOS architecture ledger={len(rows)} reference={EXPECTED_REFERENCE} strict={args.strict}")
+print(
+    f"PASS: Grok iOS architecture ledger={len(rows)} "
+    f"reference={EXPECTED_REFERENCE} strict={args.strict} complete={args.complete}"
+)

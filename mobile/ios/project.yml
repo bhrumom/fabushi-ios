@@ -26,6 +26,9 @@ targets:
         excludes:
           - MahayanaHost.swift
       - path: ../../frontend
+      - path: ../../source/internal
+      - path: ../../source/shared
+      - path: ../../source/ios-dev-controls
       - path: ../../source/host/MahayanaHostRuntime.swift
       - path: ../../source/mahayana-agent-coordinator
       - path: ../../source/ios-main
