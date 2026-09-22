@@ -24,6 +24,16 @@ mod box_shell_command;
 mod host_request_context;
 #[path = "../../../../host/agent-isolation/worker-blob-store.rs"]
 mod worker_blob_store;
+#[path = "../../../../host/box/box-monitor-layout.rs"]
+mod box_monitor_layout;
+#[path = "../../../../host/box/box-store-backend-policy.rs"]
+mod box_store_backend_policy;
+#[path = "../../../../host/box/protected-path-guard.rs"]
+mod protected_path_guard;
+#[path = "../../../../host/box/box-mcp.rs"]
+mod box_mcp;
+#[path = "../../../../host/box/box-factory.rs"]
+mod box_factory;
 
 fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
     serde_json::to_string(&HostResponse {
