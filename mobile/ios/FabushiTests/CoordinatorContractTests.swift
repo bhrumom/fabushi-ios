@@ -100,6 +100,42 @@ final class CoordinatorContractTests: XCTestCase {
         )
     }
 
+    @MainActor
+    func testIOSPreloadPortClientUsesRendererCoordinatorBoundary() async throws {
+        let pair = InProcessCoordinatorPort.makePair()
+        let server = RendererPortServer(port: pair.server) { method, args in
+            .ok(.object([
+                "method": .string(method),
+                "args": args,
+            ]))
+        }
+
+        pair.server.onFrame = { [weak server] frame in
+            server?.receive(frame)
+        }
+        pair.server.onClose = { [weak server] in
+            server?.portClosed()
+        }
+
+        let client = IOSCoordinatorPortClient(port: pair.client)
+        XCTAssertTrue(client.readyObserved)
+
+        let response = try await client.request(
+            method: "feature.auth.status",
+            args: .object(["refresh": .bool(true)])
+        )
+        XCTAssertEqual(
+            response,
+            .object([
+                "method": .string("feature.auth.status"),
+                "args": .object(["refresh": .bool(true)]),
+            ])
+        )
+
+        client.shutdown()
+        XCTAssertEqual(client.settlement, .shutdownRequested)
+    }
+
     func testSSEDecoderPreservesEventDataBoundaries() {
         var decoder = SSEBlockDecoder()
         XCTAssertEqual(decoder.append("event: transcript\nid: 7\ndata: one\n"), [])
