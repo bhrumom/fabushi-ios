@@ -7,7 +7,7 @@ struct FabushiApp: App {
 
     var body: some Scene {
         WindowGroup {
-            GrokMobileShell(
+            ProductionRenderer(
                 model: runtime.marketplace,
                 messaging: runtime.messaging,
                 bridge: runtime.bridge,
