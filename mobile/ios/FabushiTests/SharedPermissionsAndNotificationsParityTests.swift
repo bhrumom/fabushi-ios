@@ -1,0 +1,197 @@
+import XCTest
+@testable import Fabushi
+
+private struct TestLocalToolGate: SandLocalToolGate {
+    let decision: SandLocalToolDecision
+
+    func authorize(
+        scope: SandLocalToolScope?,
+        request: SandLocalToolRequest
+    ) async -> SandLocalToolDecision {
+        decision
+    }
+}
+
+final class SharedPermissionsAndNotificationsParityTests: XCTestCase {
+    func testLocalExecProcessIdentityRequiresExactGenerationArguments() {
+        let command = "/opt/fabushi/local-exec --sand-local-exec-generation=g-1 --serve"
+        XCTAssertTrue(commandCarriesLocalExecGeneration(
+            command,
+            entryRealpath: "/opt/fabushi/local-exec",
+            generationToken: "g-1"
+        ))
+        XCTAssertFalse(commandCarriesLocalExecGeneration(
+            command + "-suffix",
+            entryRealpath: "/opt/fabushi/local-exec",
+            generationToken: "g-1"
+        ))
+
+        let identity = LocalExecProcessIdentity(
+            pid: 42,
+            startEpochMs: 1_000,
+            command: command,
+            entryRealpath: "/opt/fabushi/local-exec",
+            generationToken: "g-1"
+        )
+        XCTAssertTrue(sameLocalExecProcessIdentity(identity, identity))
+        XCTAssertTrue(localExecDiscoveryTimeMatchesProcess(
+            1_020,
+            processStartEpochMs: 1_000,
+            observedAtMs: 1_030
+        ))
+        XCTAssertFalse(localExecDiscoveryTimeMatchesProcess(
+            70_001,
+            processStartEpochMs: 1_000,
+            observedAtMs: 70_001
+        ))
+    }
+
+    func testLocalToolPermissionCeilingAndResourceCoverage() {
+        XCTAssertTrue(isSandLocalToolAction("read-file"))
+        XCTAssertFalse(isSandLocalToolAction("spawn-daemon"))
+        XCTAssertEqual(normalizeSandLocalToolPermission("bogus"), "ask")
+        XCTAssertEqual(resolveSandLocalToolPermission("always", adminCeiling: "ask"), "ask")
+        XCTAssertEqual(resolveSandLocalToolPermission("never", adminCeiling: "always"), "never")
+
+        XCTAssertEqual(
+            sandTerminalFilePath("/tmp/terminals/", shellId: "shell-1"),
+            "/tmp/terminals/shell-1.txt"
+        )
+        XCTAssertTrue(isTerminalFile("/tmp/terminals/shell-1.txt", terminalsFolder: "/tmp/terminals"))
+        XCTAssertFalse(isTerminalFile("/tmp/terminals/nested/shell-1.txt", terminalsFolder: "/tmp/terminals"))
+
+        let approval = SandLocalToolApproval(
+            action: "run-command",
+            target: "swift test",
+            resourcePath: "/tmp/terminals"
+        )
+        let attachedRead = SandLocalToolRequest(
+            action: "read-file",
+            target: "/tmp/terminals/shell-1.txt",
+            attachToResourcePath: "/tmp/terminals"
+        )
+        XCTAssertTrue(localToolApprovalCovers(approval, request: attachedRead))
+    }
+
+    func testDescribeLocalExecMapsOnlyKnownCapabilityMessages() {
+        let shell = describeLocalExec(
+            .init(message: .init(
+                caseName: "backgroundShellSpawnArgs",
+                value: .init(command: "swift test", isBackground: true)
+            )),
+            terminalsFolder: "/tmp/terminals"
+        )
+        XCTAssertEqual(shell?.action, "run-command")
+        XCTAssertEqual(shell?.target, "swift test")
+        XCTAssertEqual(shell?.outlivesScope, true)
+
+        XCTAssertNil(describeLocalExec(
+            .init(message: .init(caseName: "spawnArbitraryProcess", value: .init())),
+            terminalsFolder: "/tmp/terminals"
+        ))
+    }
+
+    func testLocalToolAuthorizationFailsClosed() async {
+        let denied = TestLocalToolGate(decision: .init(allowed: false, reason: "denied"))
+        do {
+            _ = try await authorizeLocalToolAction(
+                gate: denied,
+                scope: .init(agentId: "agent-1"),
+                request: .init(action: "read-file", target: "/tmp/example")
+            )
+            XCTFail("denied local action must throw")
+        } catch let error as SandLocalToolPermissionDeniedError {
+            XCTAssertEqual(error.reason, "denied")
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+    }
+
+    func testMcpCustomInstructionSelectionIsBoundedDeduplicatedAndStable() {
+        XCTAssertEqual(clampMcpCustomInstruction(String(repeating: "x", count: 700)).count, 500)
+        XCTAssertFalse(getDefaultMcpCustomInstruction(" Hex ").isEmpty)
+
+        let entries = selectConnectedMcpCustomInstructions(
+            ["zeta", "hex", "zeta"],
+            instructionsByServer: ["zeta": "  keep raw values  "]
+        )
+        XCTAssertEqual(entries.map(\.name), ["hex", "zeta"])
+        XCTAssertEqual(entries.last?.instructions, "keep raw values")
+
+        let section = buildMcpCustomInstructionsSystemPromptSection(
+            ["zeta"],
+            instructionsByServer: ["zeta": "use the API"]
+        )
+        XCTAssertTrue(section?.contains("- zeta: use the API") == true)
+    }
+
+    func testOAuthCallbackPageEscapesUntrustedConnectorName() {
+        let success = renderMcpOAuthSuccessPage(serverName: "<Hex & Co>")
+        XCTAssertTrue(success.contains("&lt;Hex &amp; Co&gt; connected"))
+        XCTAssertFalse(success.contains("<Hex & Co> connected"))
+
+        let failure = renderMcpOAuthErrorPage(serverName: "GitHub")
+        XCTAssertTrue(failure.contains("GitHub — Authentication failed"))
+        XCTAssertTrue(failure.contains("OAuth callback failed."))
+    }
+
+    func testNotificationDeciderNeedsNewMessageAndRespectsFocusAndThrottle() {
+        let baseline = NotificationSnapshot(
+            id: "agent-1",
+            name: "Builder",
+            isRunning: true,
+            awaitingReason: nil,
+            notifyEnabled: true,
+            isHiddenFromSidebar: false,
+            lastMessageId: "m1",
+            lastMessagePreview: "Working"
+        )
+        let done = NotificationSnapshot(
+            id: "agent-1",
+            name: "Builder",
+            isRunning: false,
+            awaitingReason: nil,
+            notifyEnabled: true,
+            isHiddenFromSidebar: false,
+            lastMessageId: "m2",
+            lastMessagePreview: "Finished"
+        )
+
+        let decider = SandOsNotificationDecider()
+        decider.seedBaseline([baseline])
+        let first = decider.decide(agents: [done], isWindowFocused: false, nowMs: 10_000)
+        XCTAssertEqual(first.map(\.kind), [.agentDone])
+        XCTAssertEqual(buildNotificationContent(first[0]).body, "Finished")
+
+        XCTAssertTrue(decider.decide(
+            agents: [done],
+            isWindowFocused: false,
+            nowMs: 11_000
+        ).isEmpty)
+
+        let focusedDecider = SandOsNotificationDecider()
+        focusedDecider.seedBaseline([baseline])
+        XCTAssertTrue(focusedDecider.decide(
+            agents: [done],
+            isWindowFocused: true,
+            nowMs: 20_000
+        ).isEmpty)
+    }
+
+    func testIosWebauthnAvailabilityUsesNativeSignerPlatforms() {
+        XCTAssertTrue(sandWebauthnSignerShips("ios"))
+        XCTAssertTrue(sandWebauthnSignerShips("iPadOS"))
+        XCTAssertFalse(sandWebauthnSignerShips("win32"))
+        XCTAssertTrue(sandWebauthnProxyMirroredEnablement(true, platform: "ios"))
+        XCTAssertFalse(sandWebauthnProxyMirroredEnablement(false, platform: "ios"))
+    }
+
+    func testWindowChromeKeepsPureCompatibilityMathWithoutEmulatingDesktopChrome() {
+        XCTAssertTrue(IOS_USES_NATIVE_SCENE_CHROME)
+        XCTAssertEqual(blendRgbaOverHex((255, 255, 255), alpha: 0.5, backgroundHex: "#000000"), "#808080")
+        XCTAssertEqual(titleBarOverlaySymbolColor("#000000"), "#FFFFFF")
+        XCTAssertEqual(titleBarOverlaySymbolColor("#FFFFFF"), "#000000")
+        XCTAssertEqual(windowsTitleBarOverlayHeight(true), 43)
+        XCTAssertEqual(windowsTitleBarOverlayHeight(false), 51)
+    }
+}
