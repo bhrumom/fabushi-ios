@@ -319,6 +319,7 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         "host/agent-isolation/transcript-mirror-offload.rs",
         "host/agent-isolation/transcript-mirror-worker.rs",
         "host/transcript-mirror/conversation-state-binary.rs",
+        "host/transcript-mirror/generated-occurrence-codec.rs",
         "host/transcript-mirror/transcript-journal-codec.rs",
         "host/transcript-mirror/transcript-mirror-router.rs",
         "host/transcript-mirror/transcript-occurrence-deriver.rs",
