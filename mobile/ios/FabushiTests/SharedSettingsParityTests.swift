@@ -1,6 +1,31 @@
 import XCTest
 @testable import Fabushi
 
+@MainActor
+private final class SettingsParityHost: MahayanaHostRequesting {
+    func request(method: String, params: [String: Any]) async throws -> MahayanaHostJSONResult {
+        .init(value: ["method": method])
+    }
+    @MainActor
+    func testCoordinatorOwnsAndScopesSettingsWithoutRendererHostBypass() throws {
+        let root = try makeRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = SandSettingsStore(settingsPath: root.appendingPathComponent("settings.json").path)
+        store.setMcpCustomInstructions(["GitHub": "owner-a"])
+        store.scopeToAccount("owner-a")
+
+        let host = SettingsParityHost()
+        let supervisor = MahayanaLocalHostSupervisor(host: host, factory: { host })
+        let coordinator = MahayanaCoordinator(hostSupervisor: supervisor, settingsStore: store)
+
+        XCTAssertEqual(coordinator.sharedSettingsSnapshot().mcpCustomInstructions["GitHub"], "owner-a")
+        coordinator.updateAccountSettingsScope("owner-b")
+        XCTAssertTrue(coordinator.sharedSettingsSnapshot().mcpCustomInstructions.isEmpty)
+        coordinator.updateAccountSettingsScope(nil)
+        XCTAssertNil(coordinator.sharedSettingsSnapshot().mcpCustomInstructionsAccountScope)
+    }
+}
+
 final class SharedSettingsParityTests: XCTestCase {
     private func makeRoot() throws -> URL {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
