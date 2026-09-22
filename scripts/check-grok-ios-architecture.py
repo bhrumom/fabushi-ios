@@ -347,6 +347,8 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         "host/extensions/box-lifecycle/box-lifecycle-service.rs",
         "host/runner/site-visit-tracking.rs",
         "host/host-event-bus.rs",
+        "host/extensions/turn-execution/turn-execution-service.rs",
+        "host/extensions/turn-execution/extension.rs",
         "host/workflows/stat-keyed-parse-cache.rs",
     ]:
         if required_module not in mobile_ffi_text:
