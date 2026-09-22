@@ -61,7 +61,8 @@ final class SharedCursorInferenceParityTests: XCTestCase {
         )
         XCTAssertEqual(one, .usageDataTrainingAllowed)
         XCTAssertEqual(two, .usageDataTrainingAllowed)
-        XCTAssertEqual(await counter.value(), 1)
+        let sameAccountFetches = await counter.value()
+        XCTAssertEqual(sameAccountFetches, 1)
 
         _ = await resolveCachedSandPrivacyMode(
             options: .init(
@@ -72,7 +73,8 @@ final class SharedCursorInferenceParityTests: XCTestCase {
             fetchPrivacyMode: { options in await counter.fetch(options) },
             nowMs: { 1_002 }
         )
-        XCTAssertEqual(await counter.value(), 2)
+        let crossAccountFetches = await counter.value()
+        XCTAssertEqual(crossAccountFetches, 2)
     }
 
     func testRunPrivacyFallsBackWhenAccountChangesMidLookup() async {
