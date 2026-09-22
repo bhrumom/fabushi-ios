@@ -277,7 +277,7 @@ mod tests {
             Some("one".to_owned())
         );
         std::thread::sleep(Duration::from_millis(2));
-        let mut handle = OpenOptions::new().append(true).open(&file).unwrap();
+        let mut handle = fs::OpenOptions::new().append(true).open(&file).unwrap();
         handle.write_all(b"-two").unwrap();
         handle.sync_all().unwrap();
 
