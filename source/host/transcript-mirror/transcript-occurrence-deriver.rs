@@ -101,23 +101,23 @@ fn required_blob<Store: TranscriptOccurrenceBlobStore>(
 fn remove_tag_blocks(mut text: String, tag: &str) -> String {
     let open_prefix = format!("<{tag}");
     let close = format!("</{tag}>");
+    let mut search_from = 0usize;
     loop {
         let lower = text.to_lowercase();
-        let Some(start) = lower.find(&open_prefix) else {
+        if search_from >= lower.len() {
+            break;
+        }
+        let Some(relative_start) = lower[search_from..].find(&open_prefix) else {
             break;
         };
+        let start = search_from + relative_start;
         let after_name = start + open_prefix.len();
         let valid_open = lower
             .as_bytes()
             .get(after_name)
             .is_some_and(|byte| *byte == b'>' || byte.is_ascii_whitespace());
         if !valid_open {
-            let next = after_name.min(text.len());
-            let (head, tail) = text.split_at(next);
-            let mut rewritten = head.to_owned();
-            rewritten.push('\u{0}');
-            rewritten.push_str(tail);
-            text = rewritten;
+            search_from = after_name;
             continue;
         }
         let Some(open_end_rel) = lower[after_name..].find('>') else {
@@ -129,8 +129,9 @@ fn remove_tag_blocks(mut text: String, tag: &str) -> String {
         };
         let end = content_start + close_rel + close.len();
         text.replace_range(start..end, "");
+        search_from = start;
     }
-    text.replace('\u{0}', "")
+    text
 }
 
 fn normalize_newlines(mut text: String) -> String {
@@ -297,7 +298,7 @@ impl<Codec: TranscriptOccurrenceCodec> ArtifactTranscriptOccurrenceDeriver<Codec
                 || user
                     .text_blob_id
                     .as_ref()
-                    .is_none_or(|blob_id| blob_id.is_empty())
+                    .map_or(true, |blob_id| blob_id.is_empty())
             {
                 user.text
             } else {
@@ -569,6 +570,16 @@ mod tests {
                 _ => Ok(DecodedTranscriptStep::Empty),
             }
         }
+    }
+
+    #[test]
+    fn context_stripping_preserves_similar_non_tag_text_without_looping() {
+        let text = strip_context_tags(
+            "prefix <user_information>keep</user_information> <user_info>drop</user_info> suffix",
+        );
+        assert!(text.contains("<user_information>keep</user_information>"));
+        assert!(!text.contains(">drop<"));
+        assert!(text.ends_with("suffix"));
     }
 
     #[test]
