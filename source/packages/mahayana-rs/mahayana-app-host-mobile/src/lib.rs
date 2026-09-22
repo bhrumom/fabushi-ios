@@ -240,6 +240,10 @@ mod package_local_exec_team_repo_filters;
 mod package_agent_tools_subagent_model_force_policy;
 #[path = "../../../agent/tools/subagent-composer-model-ids.rs"]
 mod package_agent_tools_subagent_composer_model_ids;
+#[path = "../../../agent/self-summary/constants.rs"]
+mod package_agent_self_summary_constants;
+#[path = "../../../agent/tools/task-tool-name.rs"]
+mod package_agent_tools_task_tool_name;
 #[path = "../../../agent/state-utils.rs"]
 mod package_agent_state_utils;
 #[path = "../../../agent/constants.rs"]
