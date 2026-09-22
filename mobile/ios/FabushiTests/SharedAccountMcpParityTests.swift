@@ -158,7 +158,8 @@ final class SharedAccountMcpParityTests: XCTestCase {
             getBackendUrl: { "https://api.example.test" },
             createClient: { _ in client }
         )
-        let result = try XCTUnwrap(await fetchAccountMcpServers(deps))
+        let fetched = await fetchAccountMcpServers(deps)
+        let result = try XCTUnwrap(fetched)
 
         XCTAssertEqual(result.cacheScope, accountCacheScope("token-a"))
         XCTAssertEqual(result.servers.map(\.id), ["1", "2", "3"])
@@ -230,7 +231,8 @@ final class SharedAccountMcpParityTests: XCTestCase {
         XCTAssertEqual(effective.first?.installMode, .teamRequired)
         XCTAssertEqual(effective.first?.displayName, "required")
 
-        XCTAssertEqual(await backfillUserPluginInstalls(deps), ["55"])
+        let backfilled = await backfillUserPluginInstalls(deps)
+        XCTAssertEqual(backfilled, ["55"])
         XCTAssertEqual(client.installed, [55])
 
         let writer = createAccountMcpWriter(deps)
