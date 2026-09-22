@@ -244,6 +244,14 @@ mod package_agent_tools_subagent_composer_model_ids;
 mod package_agent_self_summary_constants;
 #[path = "../../../agent/tools/task-tool-name.rs"]
 mod package_agent_tools_task_tool_name;
+#[path = "../../../cursor-plugins/schema-version.rs"]
+mod package_cursor_plugins_schema_version;
+#[path = "../../../cursor-plugins/validate-subpath.rs"]
+mod package_cursor_plugins_validate_subpath;
+#[path = "../../../cursor-plugins/environment-filter.rs"]
+mod package_cursor_plugins_environment_filter;
+#[path = "../../../agent/tools/tool-execution-timeout.rs"]
+mod package_agent_tools_tool_execution_timeout;
 #[path = "../../../agent/state-utils.rs"]
 mod package_agent_state_utils;
 #[path = "../../../agent/constants.rs"]
