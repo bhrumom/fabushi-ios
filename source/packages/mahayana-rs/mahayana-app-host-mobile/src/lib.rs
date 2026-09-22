@@ -72,6 +72,10 @@ mod box_lifecycle_service;
 mod site_visit_tracking;
 #[path = "../../../../host/host-event-bus.rs"]
 mod host_event_bus;
+#[path = "../../../../host/extensions/turn-execution/turn-execution-service.rs"]
+mod turn_execution_service;
+#[path = "../../../../host/extensions/turn-execution/extension.rs"]
+mod turn_execution_extension;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
 mod box_monitor_layout;
 #[path = "../../../../host/box/box-store-backend-policy.rs"]
