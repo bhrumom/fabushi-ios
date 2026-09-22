@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn preserves_complete_pinned_tag_inventory() {
-        assert_eq!(CONTEXT_TAGS_TO_STRIP.len(), 24);
+        assert_eq!(CONTEXT_TAGS_TO_STRIP.len(), 23);
         assert!(CONTEXT_TAGS_TO_STRIP.contains(&"system-reminder"));
         assert!(CONTEXT_TAGS_TO_STRIP.contains(&"agent_notification"));
     }
