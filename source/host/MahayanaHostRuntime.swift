@@ -46,10 +46,17 @@ private enum MobileAuthStoragePassphrase {
     }
 }
 
-final class MahayanaHostRuntime: @unchecked Sendable {
-    struct JSONResult: @unchecked Sendable {
-        let value: Any
-    }
+struct MahayanaHostJSONResult: @unchecked Sendable {
+    let value: Any
+}
+
+@MainActor
+protocol MahayanaHostRequesting: AnyObject {
+    func request(method: String, params: [String: Any]) async throws -> MahayanaHostJSONResult
+}
+
+final class MahayanaHostRuntime: MahayanaHostRequesting, @unchecked Sendable {
+    typealias JSONResult = MahayanaHostJSONResult
 
     enum HostError: LocalizedError {
         case initializationFailed
@@ -61,6 +68,15 @@ final class MahayanaHostRuntime: @unchecked Sendable {
             case .initializationFailed: return "Mahayana Rust Host 初始化失败"
             case .invalidResponse: return "Mahayana Rust Host 返回了无效响应"
             case .requestFailed(let message): return message
+            }
+        }
+
+        var requiresRecovery: Bool {
+            switch self {
+            case .initializationFailed, .invalidResponse:
+                return true
+            case .requestFailed(let message):
+                return message.hasPrefix("host_fault[")
             }
         }
     }
@@ -88,13 +104,13 @@ final class MahayanaHostRuntime: @unchecked Sendable {
     }
 
     @MainActor
-    func request(method: String, params: [String: Any] = [:]) async throws -> JSONResult {
+    func request(method: String, params: [String: Any]) async throws -> MahayanaHostJSONResult {
         let data = try JSONSerialization.data(withJSONObject: ["method": method, "params": params])
         guard let request = String(data: data, encoding: .utf8) else { throw HostError.invalidResponse }
         return try await withCheckedThrowingContinuation { continuation in
             queue.async { [self, request] in
                 do {
-                    continuation.resume(returning: JSONResult(value: try requestSync(request)))
+                    continuation.resume(returning: MahayanaHostJSONResult(value: try requestSync(request)))
                 } catch {
                     continuation.resume(throwing: error)
                 }
