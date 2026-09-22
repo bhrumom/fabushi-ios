@@ -105,6 +105,4 @@ extension ContentView {
             }
         }
     }
-
-    @ViewBuilder
 }
