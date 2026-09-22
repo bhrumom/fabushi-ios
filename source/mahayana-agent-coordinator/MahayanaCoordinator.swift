@@ -38,6 +38,7 @@ final class MahayanaCoordinator {
 
     private let hostSupervisor: MahayanaLocalHostSupervisor
     private let settingsStore: SandSettingsStore?
+    private let experimentService: SandExperimentService?
     private let webAuthnSigner: CoordinatorWebAuthnSigner?
     private(set) var lifecycleState: LifecycleState = .starting
     private var inFlight = Set<String>()
@@ -45,10 +46,12 @@ final class MahayanaCoordinator {
     init(
         hostSupervisor: MahayanaLocalHostSupervisor,
         passkeyProvider: (any PasskeyProviding)? = nil,
-        settingsStore: SandSettingsStore? = nil
+        settingsStore: SandSettingsStore? = nil,
+        experimentService: SandExperimentService? = nil
     ) {
         self.hostSupervisor = hostSupervisor
         self.settingsStore = settingsStore
+        self.experimentService = experimentService
         webAuthnSigner = passkeyProvider.map {
             CoordinatorWebAuthnSigner(
                 passkeys: CoordinatorPasskeyProvider(provider: $0)
@@ -66,7 +69,14 @@ final class MahayanaCoordinator {
         featureHostTest: Bool = false,
         passkeyProvider: (any PasskeyProviding)? = nil
     ) throws -> MahayanaCoordinator {
-        MahayanaCoordinator(
+        let experimentCacheDirectory = appDataDirectory
+            .appendingPathComponent("experiments", isDirectory: true)
+        let experimentService = SandExperimentService(
+            getCacheDir: { experimentCacheDirectory.path },
+            isDevBuild: featureHostTest
+        )
+        experimentService.startFromCache()
+        return MahayanaCoordinator(
             hostSupervisor: try MahayanaLocalHostSupervisor.make(
                 appDataDirectory: appDataDirectory,
                 featureHostTest: featureHostTest
@@ -74,12 +84,27 @@ final class MahayanaCoordinator {
             passkeyProvider: passkeyProvider,
             settingsStore: SandSettingsStore(
                 settingsPath: appDataDirectory.appendingPathComponent("sand-settings.json").path
-            )
+            ),
+            experimentService: experimentService
         )
     }
 
     func sharedSettingsSnapshot() -> SandStoredSettings {
         settingsStore?.load() ?? emptySandSettings()
+    }
+
+    func experimentSnapshot() -> SandExperimentSnapshot? {
+        experimentService?.getSnapshot()
+    }
+
+    func featureGate(_ name: String) -> Bool {
+        experimentService?.checkFeatureGate(name)
+            ?? BUNDLED_FEATURE_FLAGS[name]?.defaultValue
+            ?? false
+    }
+
+    func configuredDefaultModel() -> SandAgentModelSelection? {
+        experimentService?.getConfiguredDefaultModel()
     }
 
     func updateAccountSettingsScope(_ accountScope: String?) {
@@ -181,5 +206,6 @@ final class MahayanaCoordinator {
     func beginShutdown() {
         lifecycleState = .shuttingDown
         inFlight.removeAll()
+        experimentService?.dispose()
     }
 }
