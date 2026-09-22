@@ -54,6 +54,14 @@ mod package_constants_ask_question;
 mod package_constants_mcp;
 #[path = "../../../constants/permissions.rs"]
 mod package_constants_permissions;
+#[path = "../../../constants/sand-box.rs"]
+mod package_constants_sand_box;
+#[path = "../../../constants/sand-supervisor.rs"]
+mod package_constants_sand_supervisor;
+#[path = "../../../constants/agent-store-ids.rs"]
+mod package_constants_agent_store_ids;
+#[path = "../../../constants/repo-label.rs"]
+mod package_constants_repo_label;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
