@@ -24,7 +24,13 @@ actor LocalCapabilityRunner {
     }
 
     func supports(_ capability: Capability) -> Bool {
-        true
+        switch capability {
+        case .shareItem:
+            // Requires an explicit presentation context owned by the UI layer.
+            return false
+        case .openExternalURL, .backgroundTransfer, .clipboardRead, .clipboardWrite:
+            return true
+        }
     }
 
     func rejectDesktopProcessSemantic(_ name: String) throws -> Never {

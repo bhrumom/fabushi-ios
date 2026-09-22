@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 actor IOSNativeLocalCapabilityBackend: IOSLocalCapabilityBackend {
     enum BackendError: LocalizedError, Equatable {
@@ -46,7 +47,22 @@ actor IOSNativeLocalCapabilityBackend: IOSLocalCapabilityBackend {
                 UIPasteboard.general.string = value
             }
             return .object(["written": .bool(true)])
-        case .openExternalURL, .shareItem:
+        case .openExternalURL:
+            guard case .object(let object) = params,
+                  case .string(let rawURL)? = object["url"],
+                  let components = URLComponents(string: rawURL),
+                  ["https", "http"].contains(components.scheme?.lowercased() ?? ""),
+                  components.user == nil,
+                  components.password == nil,
+                  let url = components.url
+            else {
+                throw BackendError.invalidPayload
+            }
+            await MainActor.run {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
+            return .object(["accepted": .bool(true)])
+        case .shareItem:
             throw BackendError.unsupportedCapability(capability.rawValue)
         }
     }

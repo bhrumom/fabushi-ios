@@ -19,7 +19,7 @@ actor IOSProductionLocalExecutor {
 
     init(
         capabilityRunner: LocalCapabilityRunner = LocalCapabilityRunner(),
-        localBackend: any IOSLocalCapabilityBackend,
+        localBackend: any IOSLocalCapabilityBackend = IOSNativeLocalCapabilityBackend(),
         remoteTransport: any RemoteRunnerTransport
     ) {
         self.capabilityRunner = capabilityRunner

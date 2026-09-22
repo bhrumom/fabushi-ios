@@ -61,6 +61,8 @@ required = [
     "frontend/src/production/ProductionRenderer.view.swift",
     "frontend/src/recovered/features/app-shell/ContentView.swift",
     "source/ios-main/IOSMainRuntime.swift",
+    "source/ios-main/background-transfer/ios-background-transfer-service.swift",
+    "source/ios-main/adapters/ios-native-local-capability-backend.swift",
     "source/ios-main/auth/ios-passkey-provider.swift",
     "source/ios-main/deep-link/deep-link-controller.swift",
     "source/ios-main/lifecycle/ios-lifecycle-recovery.swift",
@@ -143,6 +145,17 @@ if "IOSCoordinatorPortClient" not in preload:
     errors.append("iOS preload does not use its renderer-facing coordinator-port client")
 
 
+
+
+background_transfer = (ROOT / "source/ios-main/background-transfer/ios-background-transfer-service.swift").read_text()
+for required_token in [
+    "URLSessionConfiguration.background",
+    "sessionSendsLaunchEvents = true",
+    "handleEvents(",
+    "urlSessionDidFinishEvents",
+]:
+    if required_token not in background_transfer:
+        errors.append(f"background-transfer lifecycle is incomplete: {required_token}")
 
 passkey_provider = (ROOT / "source/ios-main/auth/ios-passkey-provider.swift").read_text()
 for required_token in [
