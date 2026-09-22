@@ -95,6 +95,34 @@ mod attachment_paths;
 #[path = "../../../../host/durable-file-policy.rs"]
 mod durable_file_policy;
 
+
+#[path = "../../../../host/ports/product-analytics.rs"]
+mod product_analytics;
+#[path = "../../../../host/ports/sand-analytics-types.rs"]
+mod sand_analytics_types;
+#[path = "../../../../host/host-diagnostics.rs"]
+mod host_diagnostics;
+#[path = "../../../../host/extensions/session/session-diagnostics.rs"]
+mod session_diagnostics;
+#[path = "../../../../host/transcript-mutation-events.rs"]
+mod transcript_mutation_events;
+#[path = "../../../../host/ports/user-computer.rs"]
+mod user_computer;
+#[path = "../../../../host/ports/transport.rs"]
+mod transport;
+#[path = "../../../../host/sand-user-identity.rs"]
+mod sand_user_identity;
+#[path = "../../../../host/runner/clock-skew-guard.rs"]
+mod clock_skew_guard;
+#[path = "../../../../host/selected-image-inputs.rs"]
+mod selected_image_inputs;
+#[path = "../../../../host/extensions/extension-ids.generated.rs"]
+mod extension_ids_generated;
+#[path = "../../../../host/runner/video-container.rs"]
+mod video_container;
+#[path = "../../../../host/extensions/telemetry/send-trace-sampler.rs"]
+mod send_trace_sampler;
+
 fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
     serde_json::to_string(&HostResponse {
         id: None,
