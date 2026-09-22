@@ -8,6 +8,23 @@ mod host_extensions;
 #[path = "../../../../internal/scheduling.rs"]
 mod scheduling;
 
+#[path = "../../../../host/process-crash-guard.rs"]
+mod process_crash_guard;
+#[path = "../../../../host/notify-drain-gate.rs"]
+mod notify_drain_gate;
+#[path = "../../../../host/mcp-auth/mcp-auth-wait-registry.rs"]
+mod mcp_auth_wait_registry;
+
+fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
+    serde_json::to_string(&HostResponse {
+        id: None,
+        ok: false,
+        result: None,
+        error: Some(format!("host_fault[{}]: {}", fault.scope, fault.message)),
+    })
+    .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"host fault\"}".to_owned())
+}
+
 /// Creates a native app-host handle.
 ///
 /// # Safety
@@ -112,7 +129,13 @@ pub unsafe extern "C" fn mahayana_app_host_dispatch_with_handle(
             .into_raw();
     }
     let input = unsafe { CStr::from_ptr(request_json) }.to_string_lossy();
-    let output = dispatch_json(unsafe { &*host }, &input);
+    let host_ref = unsafe { &*host };
+    let output = match process_crash_guard::catch_host_fault("mahayana-app-host", || {
+        dispatch_json(host_ref, &input)
+    }) {
+        Ok(output) => output,
+        Err(fault) => host_fault_response(fault),
+    };
     CString::new(output)
         .unwrap_or_else(|_| CString::new("{\"ok\":false,\"error\":\"invalid response\"}").unwrap())
         .into_raw()
@@ -145,7 +168,12 @@ pub unsafe extern "C" fn mahayana_app_host_dispatch(request_json: *const c_char)
     }
     let input = unsafe { CStr::from_ptr(request_json) }.to_string_lossy();
     let output = match UnifiedAppHost::new(default_app_data_dir()) {
-        Ok(host) => dispatch_json(&host, &input),
+        Ok(host) => match process_crash_guard::catch_host_fault("mahayana-app-host-temporary", || {
+            dispatch_json(&host, &input)
+        }) {
+            Ok(output) => output,
+            Err(fault) => host_fault_response(fault),
+        },
         Err(error) => serde_json::to_string(&HostResponse {
             id: None,
             ok: false,
