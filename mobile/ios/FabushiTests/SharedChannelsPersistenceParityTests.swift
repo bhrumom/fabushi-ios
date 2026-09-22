@@ -1,11 +1,11 @@
 import XCTest
 @testable import Fabushi
 
-private final class InMemoryPersistenceFiles: ClientPersistenceFiles {
+private actor InMemoryPersistenceFiles: ClientPersistenceFiles {
     var storage: [String: String] = [:]
     var directories = Set<String>()
 
-    func joinPath(_ dir: String, _ name: String) -> String { "\(dir)/\(name)" }
+    nonisolated func joinPath(_ dir: String, _ name: String) -> String { "\(dir)/\(name)" }
     func ensureDir(_ dir: String) async throws { directories.insert(dir) }
     func listFiles(_ dir: String) async throws -> [String] {
         let prefix = "\(dir)/"

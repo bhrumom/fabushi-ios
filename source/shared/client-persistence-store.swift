@@ -61,7 +61,7 @@ struct ClientPersistenceCapError: Error, Equatable, Sendable {
     let message: String
 }
 
-protocol ClientPersistenceFiles {
+protocol ClientPersistenceFiles: Sendable {
     func joinPath(_ dir: String, _ name: String) -> String
     func ensureDir(_ dir: String) async throws
     func listFiles(_ dir: String) async throws -> [String]
