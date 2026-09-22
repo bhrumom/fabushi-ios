@@ -14,6 +14,16 @@ mod process_crash_guard;
 mod notify_drain_gate;
 #[path = "../../../../host/mcp-auth/mcp-auth-wait-registry.rs"]
 mod mcp_auth_wait_registry;
+#[path = "../../../../host/box/box-env.rs"]
+mod box_env;
+#[path = "../../../../host/box/box-capabilities.rs"]
+mod box_capabilities;
+#[path = "../../../../host/box/box-shell-command.rs"]
+mod box_shell_command;
+#[path = "../../../../host/host-request-context.rs"]
+mod host_request_context;
+#[path = "../../../../host/agent-isolation/worker-blob-store.rs"]
+mod worker_blob_store;
 
 fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
     serde_json::to_string(&HostResponse {
