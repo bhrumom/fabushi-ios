@@ -90,6 +90,8 @@ mod package_agent_core_domain_utils;
 mod package_agent_core_goal_continuation;
 #[path = "../../../agent-core/mcp-auth-flow.rs"]
 mod package_agent_core_mcp_auth_flow;
+#[path = "../../../analytics-client/deferred-buffer.rs"]
+mod package_analytics_client_deferred_buffer;
 #[path = "../../../agent-exec/await-outcome.rs"]
 mod package_agent_exec_await_outcome;
 #[path = "../../../agent-exec/background-work-metadata.rs"]
@@ -124,6 +126,8 @@ mod package_redaction_should_redact;
 mod package_agent_analytics_git_repo_utils;
 #[path = "../../../mcp-agent-exec/mcp.rs"]
 mod package_mcp_agent_exec_mcp;
+#[path = "../../../git-core/process-env.rs"]
+mod package_git_core_process_env;
 #[path = "../../../git-core/redaction.rs"]
 mod package_git_core_redaction;
 #[path = "../../../git-core/diagnostics.rs"]
