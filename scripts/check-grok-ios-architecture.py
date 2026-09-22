@@ -132,6 +132,9 @@ required = [
     "source/mahayana-agent-coordinator/renderer-port-server.swift",
     "source/mahayana-agent-coordinator/control-port-client.swift",
     "source/host/MahayanaHostRuntime.swift",
+    "source/host/process-crash-guard.rs",
+    "source/host/notify-drain-gate.rs",
+    "source/host/mcp-auth/mcp-auth-wait-registry.rs",
     "source/local-exec-daemon/LocalCapabilityRunner.swift",
     "source/box-exec-daemon/RemoteRunner.swift",
     "source/shared/rpc/coordinator-port.swift",
@@ -273,7 +276,13 @@ internal_host_extensions = ROOT / "source/internal/host-extensions.rs"
 internal_scheduling = ROOT / "source/internal/scheduling.rs"
 if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobile_ffi.is_file():
     mobile_ffi_text = mobile_ffi.read_text()
-    for required_module in ["internal/host-extensions.rs", "internal/scheduling.rs"]:
+    for required_module in [
+        "internal/host-extensions.rs",
+        "internal/scheduling.rs",
+        "host/process-crash-guard.rs",
+        "host/notify-drain-gate.rs",
+        "host/mcp-auth/mcp-auth-wait-registry.rs",
+    ]:
         if required_module not in mobile_ffi_text:
             errors.append(f"iOS-owned Rust internal module is not compiled by mobile host: {required_module}")
 
