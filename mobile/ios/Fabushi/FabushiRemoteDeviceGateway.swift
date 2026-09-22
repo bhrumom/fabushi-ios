@@ -79,6 +79,11 @@ final class FabushiRemoteDeviceGateway {
         }
     }
 
+    func resumeAfterBackground() async {
+        guard desiredLoggedIn else { return }
+        await refreshConnection()
+    }
+
     func stop() {
         desiredLoggedIn = false
         monitorTask?.cancel()
