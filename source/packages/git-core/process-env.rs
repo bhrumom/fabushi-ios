@@ -17,32 +17,21 @@ pub struct GitProcessEnvOptions {
 
 fn parse_js_decimal_prefix(raw: &str) -> Option<i64> {
     let trimmed = raw.trim_start();
-    let mut chars = trimmed.char_indices();
-    let mut end = 0usize;
-    let mut saw_digit = false;
-
-    if let Some((_, first)) = chars.next() {
-        if first == '+' || first == '-' {
-            end = first.len_utf8();
-        } else if first.is_ascii_digit() {
-            saw_digit = true;
-            end = first.len_utf8();
-        } else {
-            return None;
-        }
-    } else {
+    let bytes = trimmed.as_bytes();
+    if bytes.is_empty() {
         return None;
     }
 
-    for (index, ch) in trimmed[end..].char_indices() {
-        if !ch.is_ascii_digit() {
-            break;
-        }
-        saw_digit = true;
-        end += index + ch.len_utf8();
+    let mut end = 0usize;
+    if matches!(bytes.first(), Some(b'+') | Some(b'-')) {
+        end = 1;
     }
 
-    if !saw_digit {
+    let digits_start = end;
+    while end < bytes.len() && bytes[end].is_ascii_digit() {
+        end += 1;
+    }
+    if end == digits_start {
         return None;
     }
 
@@ -180,6 +169,14 @@ mod tests {
             env.get("GIT_CONFIG_VALUE_2").map(String::as_str),
             Some(NULL_DEVICE)
         );
+    }
+
+    #[test]
+    fn parses_multi_digit_js_style_decimal_prefixes_without_overrun() {
+        assert_eq!(parse_js_decimal_prefix("123junk"), Some(123));
+        assert_eq!(parse_js_decimal_prefix(" +42.9"), Some(42));
+        assert_eq!(parse_js_decimal_prefix("-1"), Some(-1));
+        assert_eq!(parse_js_decimal_prefix("junk"), None);
     }
 
     #[test]
