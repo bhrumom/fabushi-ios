@@ -545,10 +545,11 @@ actor SandMcpToolsDiscovery {
 
     private func fetchToolsViaPorts() async throws -> CacheResolution {
         let userServers = await deps.definitionSource.getUserServerConfigs()
+        let currentRunnerMcpExec = runnerMcpExec
         let httpNames = userServers.compactMap { name, config in
             config.transport == .http || config.transport == .sse ? name : nil
         }.sorted()
-        let stdioNames = runnerMcpExec == nil ? [] : userServers.compactMap { name, config in
+        let stdioNames = currentRunnerMcpExec == nil ? [] : userServers.compactMap { name, config in
             config.transport == .stdio ? name : nil
         }.sorted()
         let resolvedKey = toolServerSetKey(httpNames + stdioNames)
@@ -574,7 +575,7 @@ actor SandMcpToolsDiscovery {
         }()
 
         async let runnerResult: Result<[McpDiscoveredTool], Error> = {
-            guard !stdioNames.isEmpty, let runnerMcpExec else {
+            guard !stdioNames.isEmpty, let runnerMcpExec = currentRunnerMcpExec else {
                 return .success([])
             }
             do {
