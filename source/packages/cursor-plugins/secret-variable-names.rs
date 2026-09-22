@@ -34,7 +34,7 @@ fn to_segments(name: &str) -> Vec<String> {
                     .map(|value| {
                         value.is_ascii_uppercase()
                             && character.is_ascii_uppercase()
-                            && next.map(char::is_ascii_lowercase).unwrap_or(false)
+                            && next.map(|value| value.is_ascii_lowercase()).unwrap_or(false)
                     })
                     .unwrap_or(false));
 
