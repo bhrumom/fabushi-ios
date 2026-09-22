@@ -12,8 +12,8 @@ struct McpListedState: Equatable, Sendable {
 
 final class SandMcpAccountSlotLifecycle {
     typealias ReloadServers = () async throws -> McpListedState
-    typealias ClearPendingWatch = (String, String) -> McpAuthWatchReference?
-    typealias NotifyWatchCancelled = (McpAuthWatchReference) -> Void
+    typealias ClearPendingWatch = (String, String) async -> McpAuthWatchReference?
+    typealias NotifyWatchCancelled = (McpAuthWatchReference) async -> Void
 
     private let backend: any McpAccountBackend
     private let resolveDisplayServer: (String) async -> DisplayServer?
@@ -71,7 +71,7 @@ final class SandMcpAccountSlotLifecycle {
         let accountKey = try normalizeAccountKey(key)
         let server = try await resolve(id)
         try await backend.logoutAccount(serverUrl: server.serverUrl, accountKey: accountKey)
-        _ = clearPendingAuthWatch(server.serverId, accountKey)
+        _ = await clearPendingAuthWatch(server.serverId, accountKey)
         return try await reloadServers()
     }
 
@@ -84,8 +84,8 @@ final class SandMcpAccountSlotLifecycle {
             accountKey: accountKey,
             newAccountKey: newAccountKey
         )
-        if let watch = clearPendingAuthWatch(resolved.serverId, accountKey) {
-            notifyWatchCancelled(watch)
+        if let watch = await clearPendingAuthWatch(resolved.serverId, accountKey) {
+            await notifyWatchCancelled(watch)
         }
         if let committed = await commit(
             serverId: resolved.serverId,
