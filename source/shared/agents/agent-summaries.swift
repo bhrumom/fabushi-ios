@@ -23,11 +23,12 @@ func upsertAgentSummary<T: AgentSummaryIdentity>(
     if !found {
         next.append(updated)
     }
-    next.sort { left, right in
-        if left.updatedAt == right.updatedAt {
-            return left.id < right.id
+    return next.enumerated()
+        .sorted { left, right in
+            if left.element.updatedAt == right.element.updatedAt {
+                return left.offset < right.offset
+            }
+            return compareAgentSummaries(left.element, right.element) < 0
         }
-        return compareAgentSummaries(left, right) < 0
-    }
-    return next
+        .map(\.element)
 }
