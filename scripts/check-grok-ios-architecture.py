@@ -59,6 +59,11 @@ for row in rows:
 
 required = [
     "frontend/src/production/ProductionRenderer.view.swift",
+    "frontend/src/production/FabushiSceneRoot.swift",
+    "frontend/src/production/GrokMobileShell.swift",
+    "frontend/src/production/GrokMobileShell+Semantic.swift",
+    "frontend/src/production/GrokMobileShell+Home.swift",
+    "frontend/src/production/GrokMobileShell+Bots.swift",
     "frontend/src/recovered/features/app-shell/ContentView.swift",
     "source/ios-main/IOSMainRuntime.swift",
     "source/ios-main/background-transfer/ios-background-transfer-service.swift",
@@ -180,6 +185,22 @@ app = (ROOT / "mobile/ios/Fabushi/FabushiApp.swift").read_text()
 for forbidden in ["MahayanaHost", "MahayanaCoordinator", "MarketplaceModel(", "MessagingModel("]:
     if forbidden in app:
         errors.append(f"FabushiApp owns runtime responsibility: {forbidden}")
+
+if "FabushiSceneRoot()" not in app:
+    errors.append("FabushiApp does not delegate scene composition to FabushiSceneRoot")
+for forbidden in [".task", ".onChange", ".onOpenURL", "NotificationCenter", "FabushiRuntime("]:
+    if forbidden in app:
+        errors.append(f"FabushiApp still owns scene/runtime orchestration: {forbidden}")
+if len(app.splitlines()) > 24:
+    errors.append("FabushiApp has regrown beyond thin App/Scene composition")
+
+shell_path = ROOT / "frontend/src/production/GrokMobileShell.swift"
+shell = shell_path.read_text()
+if len(shell.splitlines()) > 120:
+    errors.append("GrokMobileShell has regrown into a monolithic renderer/runtime file")
+for forbidden in ["bridge.request(", "feature.execute", "feature.receive", "appAgentSurface.publish("]:
+    if forbidden in shell:
+        errors.append(f"GrokMobileShell bypasses split renderer responsibilities: {forbidden}")
 
 for path in (ROOT / "mobile/ios/Fabushi").glob("*.swift"):
     if path.name == "MahayanaHost.swift":
