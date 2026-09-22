@@ -120,8 +120,8 @@ final class SandMcpAccountSlotLifecycle {
             serverId: try parseInt32McpServerId(resolved.serverId),
             accountKey: accountKey
         )
-        if let watch = clearPendingAuthWatch(resolved.serverId, accountKey) {
-            notifyWatchCancelled(watch)
+        if let watch = await clearPendingAuthWatch(resolved.serverId, accountKey) {
+            await notifyWatchCancelled(watch)
         }
         if let committed = await commit(
             serverId: resolved.serverId,
