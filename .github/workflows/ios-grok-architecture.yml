@@ -1,0 +1,45 @@
+name: iOS Grok architecture parity
+
+on:
+  pull_request:
+  push:
+    branches:
+      - spec/grok-bot-018-ios-parity-20260922
+
+permissions:
+  contents: read
+
+jobs:
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/check-grok-ios-architecture.py
+
+  build-and-test:
+    if: ${{ hashFiles('source/packages/mahayana-rs/Cargo.toml') != '' }}
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tools
+        run: |
+          brew install xcodegen
+          rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+      - name: Verify strict architecture
+        run: python3 scripts/check-grok-ios-architecture.py --strict
+      - name: Build native runtime for simulator
+        run: scripts/build-mahayana-ios.sh iphonesimulator arm64
+      - name: Generate Xcode project
+        working-directory: mobile/ios
+        run: xcodegen generate
+      - name: Select simulator
+        id: sim
+        shell: bash
+        run: |
+          set -euo pipefail
+          UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for xs in d.values() for x in xs if x["name"].startswith("iPhone")))')"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+      - name: Unit and UI tests
+        working-directory: mobile/ios
+        run: |
+          xcodebuild test             -project Fabushi.xcodeproj             -scheme Fabushi             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}"             CODE_SIGNING_ALLOWED=NO
