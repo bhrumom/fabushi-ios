@@ -50,7 +50,6 @@ struct MahayanaHostJSONResult: @unchecked Sendable {
     let value: Any
 }
 
-@MainActor
 protocol MahayanaHostRequesting: AnyObject {
     func request(method: String, params: [String: Any]) async throws -> MahayanaHostJSONResult
 }
@@ -103,7 +102,6 @@ final class MahayanaHostRuntime: MahayanaHostRequesting, @unchecked Sendable {
         if let handle { mahayana_app_host_destroy(handle) }
     }
 
-    @MainActor
     func request(method: String, params: [String: Any] = [:]) async throws -> MahayanaHostJSONResult {
         let data = try JSONSerialization.data(withJSONObject: ["method": method, "params": params])
         guard let request = String(data: data, encoding: .utf8) else { throw HostError.invalidResponse }
