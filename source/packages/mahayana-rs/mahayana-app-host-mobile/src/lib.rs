@@ -82,6 +82,14 @@ mod package_agent_kv_serde;
 mod package_agent_kv_blob_not_found_error;
 #[path = "../../../agent-kv/blob-store.rs"]
 mod package_agent_kv_blob_store;
+#[path = "../../../redaction/privacy-mode.rs"]
+mod package_redaction_privacy_mode;
+#[path = "../../../redaction/classification.rs"]
+mod package_redaction_classification;
+#[path = "../../../redaction/privacy-context.rs"]
+mod package_redaction_privacy_context;
+#[path = "../../../redaction/should-redact.rs"]
+mod package_redaction_should_redact;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
