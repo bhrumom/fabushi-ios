@@ -146,6 +146,11 @@ required = [
     "source/shared/rpc/coordinator-port.swift",
     "source/shared/rpc/coordinator.swift",
     "source/shared/rpc/SharedRPCContracts.swift",
+    "source/packages/agent/state-utils.rs",
+    "source/packages/context/browser-bridge.rs",
+    "source/packages/hooks/sanitize-system-reminder.rs",
+    "source/packages/local-exec/int32.rs",
+    "source/packages/local-exec/mcp.rs",
     "mobile/ios/FabushiTests/DevControlsParityTests.swift",
 ]
 for relative in required:

@@ -198,6 +198,16 @@ mod package_local_exec_team_repo_filters;
 mod package_agent_tools_subagent_model_force_policy;
 #[path = "../../../agent/tools/subagent-composer-model-ids.rs"]
 mod package_agent_tools_subagent_composer_model_ids;
+#[path = "../../../agent/state-utils.rs"]
+mod package_agent_state_utils;
+#[path = "../../../context/browser-bridge.rs"]
+mod package_context_browser_bridge;
+#[path = "../../../hooks/sanitize-system-reminder.rs"]
+mod package_hooks_sanitize_system_reminder;
+#[path = "../../../local-exec/int32.rs"]
+mod package_local_exec_int32;
+#[path = "../../../local-exec/mcp.rs"]
+mod package_local_exec_mcp;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
