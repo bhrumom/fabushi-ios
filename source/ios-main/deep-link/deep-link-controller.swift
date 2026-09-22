@@ -27,14 +27,14 @@ final class IOSDeepLinkController {
 
     @discardableResult
     func handleCandidate(_ raw: String, origin: String) -> Bool {
-        guard let parsed = FabushiDeepLinkParser.parse(raw) else {
+        guard let parsed = FabushiDeepLinkPolicy.parse(raw) else {
             log("deep-link: ignored invalid candidate from \(origin)")
             return false
         }
 
-        let canonical = parsed.canonicalURL.absoluteString
+        let canonical = parsed.canonicalURL
         pruneRecent()
-        guard !pending.contains(where: { $0.canonicalURL.absoluteString == canonical }),
+        guard !pending.contains(where: { $0.canonicalURL == canonical }),
               recentlyAccepted[canonical] == nil
         else {
             log("deep-link: deduped \(canonical) from \(origin)")
@@ -65,7 +65,7 @@ final class IOSDeepLinkController {
 
     func markNotReady() {
         rendererReady = false
-        let pendingKeys = Set(pending.map { $0.canonicalURL.absoluteString })
+        let pendingKeys = Set(pending.map(\.canonicalURL))
         recentlyAccepted = recentlyAccepted.filter { pendingKeys.contains($0.key) }
     }
 

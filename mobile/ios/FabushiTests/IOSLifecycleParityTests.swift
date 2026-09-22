@@ -2,33 +2,32 @@ import XCTest
 @testable import Fabushi
 
 final class IOSLifecycleParityTests: XCTestCase {
-    func testDeepLinkParserCanonicalizesAuthAndRejectsUnsafeInputs() throws {
-        let parsed = try XCTUnwrap(FabushiDeepLinkParser.parse(
-            "fabushi://auth/complete?attemptId=abcdefgh&status=completed"
+    func testDeepLinkControllerUsesSharedStrictPolicyAndRejectsUnsafeInputs() throws {
+        let parsed = try XCTUnwrap(FabushiDeepLinkPolicy.parse(
+            "fabushi://app/v1/info?topic=deep-links"
         ))
-        XCTAssertEqual(parsed.route, .authComplete(attemptId: "abcdefgh", status: "completed"))
+        XCTAssertEqual(parsed.link, .info(source: .customProtocol))
         XCTAssertEqual(
-            parsed.canonicalURL.absoluteString,
-            "fabushi://auth/complete?attemptId=abcdefgh&status=completed"
+            parsed.canonicalURL,
+            "fabushi://app/v1/info?topic=deep-links"
         )
-        XCTAssertNil(FabushiDeepLinkParser.parse(
-            "fabushi://user:password@auth/complete?attemptId=abcdefgh"
+        XCTAssertNil(FabushiDeepLinkPolicy.parse(
+            "fabushi://user:password@app/v1/info?topic=deep-links"
         ))
-        XCTAssertNil(FabushiDeepLinkParser.parse(
-            "fabushi://auth/../complete?attemptId=abcdefgh"
+        XCTAssertNil(FabushiDeepLinkPolicy.parse(
+            "fabushi://app/../v1/info?topic=deep-links"
         ))
-        XCTAssertNil(FabushiDeepLinkParser.parse(
-            "fabushi://auth/complete?attemptId=%ZZ"
+        XCTAssertNil(FabushiDeepLinkPolicy.parse(
+            "fabushi://app/v1/info?topic=%ZZ"
         ))
     }
 
     func testUniversalLinkMapsToCanonicalCustomScheme() throws {
-        let parsed = try XCTUnwrap(FabushiDeepLinkParser.parse(
-            "https://fabushi.app/link/agent/agent-123"
+        let parsed = try XCTUnwrap(FabushiDeepLinkPolicy.parse(
+            "https://fabushi.app/fabushi/link/v1/open"
         ))
-        XCTAssertEqual(parsed.route, .agent(id: "agent-123"))
-        XCTAssertEqual(parsed.source, .universalLink)
-        XCTAssertEqual(parsed.canonicalURL.absoluteString, "fabushi://agent/agent-123")
+        XCTAssertEqual(parsed.link, .open(source: .https))
+        XCTAssertEqual(parsed.canonicalURL, "fabushi://app/v1/open")
     }
 
     @MainActor
@@ -40,15 +39,25 @@ final class IOSLifecycleParityTests: XCTestCase {
             now: { now }
         )
 
-        XCTAssertTrue(controller.handleCandidate("fabushi://settings", origin: "test"))
+        XCTAssertTrue(controller.handleCandidate(
+            "fabushi://app/v1/open",
+            origin: "test"
+        ))
         XCTAssertTrue(controller.hasPendingActivation)
-        XCTAssertFalse(controller.handleCandidate("fabushi://settings", origin: "duplicate"))
+        XCTAssertFalse(controller.handleCandidate(
+            "fabushi://app/v1/open",
+            origin: "duplicate"
+        ))
         XCTAssertTrue(dispatched.isEmpty)
+
         controller.markReady()
-        XCTAssertEqual(dispatched.map(\.route), [.section("settings")])
+        XCTAssertEqual(dispatched.map(\.link), [.open(source: .customProtocol)])
 
         now = now.addingTimeInterval(IOSDeepLinkController.dedupeWindow + 0.1)
-        XCTAssertTrue(controller.handleCandidate("fabushi://settings", origin: "after-window"))
+        XCTAssertTrue(controller.handleCandidate(
+            "fabushi://app/v1/open",
+            origin: "after-window"
+        ))
         XCTAssertEqual(dispatched.count, 2)
     }
 
@@ -61,6 +70,7 @@ final class IOSLifecycleParityTests: XCTestCase {
         let first = try IOSLifecycleRecoveryStore(appDataDirectory: directory)
         XCTAssertFalse(first.requiresColdStartResync)
         first.transition(to: .background)
+
         let second = try IOSLifecycleRecoveryStore(appDataDirectory: directory)
         XCTAssertTrue(second.requiresColdStartResync)
         second.markResyncCompleted()
@@ -85,6 +95,7 @@ final class IOSLifecycleParityTests: XCTestCase {
         reporter.report(.startup, metadata: ["phase": "one"])
         reporter.report(.rendererLifecycle, level: .warn, metadata: ["phase": "two"])
         XCTAssertEqual(reporter.bufferedCount, 2)
+
         var records: [IOSLifecycleTelemetryRecord] = []
         reporter.attach { records.append($0) }
         XCTAssertEqual(records.map(\.family), [.startup, .rendererLifecycle])
