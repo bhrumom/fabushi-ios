@@ -401,7 +401,8 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
             recordedRegistrations.first.flatMap { parseMcpOAuthLoopbackAuthorization($0.0)?.state },
             "mcp-state-1"
         )
-        XCTAssertEqual(await lifecycle.pendingWatchCount(), 1)
+        let pendingWatchCount = await lifecycle.pendingWatchCount()
+        XCTAssertEqual(pendingWatchCount, 1)
     }
 
     func testAuthenticationFailsClosedWhenOAuthCallbackStateCannotRegister() async throws {
@@ -429,7 +430,8 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
 
         XCTAssertEqual(result.status, .notSupported)
         XCTAssertTrue(result.message?.contains("registered iOS OAuth callback") == true)
-        XCTAssertEqual(await lifecycle.pendingWatchCount(), 0)
+        let pendingWatchCount = await lifecycle.pendingWatchCount()
+        XCTAssertEqual(pendingWatchCount, 0)
         XCTAssertEqual(recorder.events.last?.reason, "invalid_auth_url")
     }
 
