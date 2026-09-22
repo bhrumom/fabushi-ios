@@ -1,10 +1,11 @@
-use mahayana_app_host::{AppHostFeatureMode, HostRequest, HostResponse, default_app_data_dir};
+use mahayana_app_host::{AppHostFeatureMode, HostResponse, default_app_data_dir};
 use mahayana_unified_app_host::{UnifiedAppHost, dispatch_json as dispatch_unified_json};
 use std::ffi::{CStr, CString, c_char};
 use std::future::Future;
 use std::path::PathBuf;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, mpsc};
+use std::thread::{self, JoinHandle};
 
 #[path = "../../../../internal/host-extensions.rs"]
 mod host_extensions;
@@ -342,8 +343,107 @@ mod experiments_diagnostic_telemetry;
 #[path = "../../../../host/runner/tool-call-identity.rs"]
 mod tool_call_identity;
 
+enum MobileHostCommand {
+    Dispatch {
+        input: String,
+        reply: mpsc::SyncSender<String>,
+    },
+    Shutdown,
+}
+
+#[derive(Clone)]
+struct MobileHostBridge {
+    commands: mpsc::SyncSender<MobileHostCommand>,
+}
+
+impl MobileHostBridge {
+    fn spawn<Factory>(factory: Factory) -> Result<(Self, JoinHandle<()>), String>
+    where
+        Factory: FnOnce() -> Result<UnifiedAppHost, String> + Send + 'static,
+    {
+        let (commands, receiver) = mpsc::sync_channel::<MobileHostCommand>(64);
+        let (ready, ready_receiver) = mpsc::sync_channel::<Result<(), String>>(1);
+        let host_thread = thread::Builder::new()
+            .name("fabushi-mobile-host".to_owned())
+            .spawn(move || {
+                let host = match factory() {
+                    Ok(host) => {
+                        let _ = ready.send(Ok(()));
+                        host
+                    }
+                    Err(error) => {
+                        let _ = ready.send(Err(error));
+                        return;
+                    }
+                };
+
+                while let Ok(command) = receiver.recv() {
+                    match command {
+                        MobileHostCommand::Dispatch { input, reply } => {
+                            let output = match process_crash_guard::catch_host_fault(
+                                "mahayana-app-host-thread",
+                                || dispatch_unified_json(&host, &input),
+                            ) {
+                                Ok(output) => output,
+                                Err(fault) => host_fault_response(fault),
+                            };
+                            let _ = reply.send(output);
+                        }
+                        MobileHostCommand::Shutdown => break,
+                    }
+                }
+            })
+            .map_err(|error| format!("spawn mobile Host thread: {error}"))?;
+
+        match ready_receiver.recv() {
+            Ok(Ok(())) => Ok((Self { commands }, host_thread)),
+            Ok(Err(error)) => {
+                let _ = host_thread.join();
+                Err(error)
+            }
+            Err(error) => {
+                let _ = host_thread.join();
+                Err(format!("mobile Host thread exited before ready: {error}"))
+            }
+        }
+    }
+
+    fn dispatch_json(&self, input: &str) -> String {
+        let (reply, receiver) = mpsc::sync_channel(1);
+        if self
+            .commands
+            .send(MobileHostCommand::Dispatch {
+                input: input.to_owned(),
+                reply,
+            })
+            .is_err()
+        {
+            return "{\"ok\":false,\"error\":\"mobile Host thread unavailable\"}".to_owned();
+        }
+        receiver.recv().unwrap_or_else(|_| {
+            "{\"ok\":false,\"error\":\"mobile Host reply unavailable\"}".to_owned()
+        })
+    }
+
+    fn request_ok(&self, method: &str) -> bool {
+        let input = serde_json::json!({
+            "method": method,
+            "params": {}
+        })
+        .to_string();
+        serde_json::from_str::<serde_json::Value>(&self.dispatch_json(&input))
+            .ok()
+            .and_then(|value| value.get("ok").and_then(serde_json::Value::as_bool))
+            .unwrap_or(false)
+    }
+
+    fn shutdown(&self) {
+        let _ = self.commands.send(MobileHostCommand::Shutdown);
+    }
+}
+
 struct MobileTurnRunner {
-    host: Arc<UnifiedAppHost>,
+    host: MobileHostBridge,
     _session: turn_execution_service::TurnExecutionValue,
     _hooks: turn_execution_service::TurnExecutionValue,
     overrides: Option<turn_execution_service::TurnExecutionValue>,
@@ -351,13 +451,7 @@ struct MobileTurnRunner {
 
 impl MobileTurnRunner {
     fn host_is_live(&self) -> bool {
-        self.host
-            .dispatch(HostRequest {
-                id: None,
-                method: "host.platform".to_owned(),
-                params: serde_json::Value::Null,
-            })
-            .ok
+        self.host.request_ok("host.platform")
     }
 
     fn is_group_member(&self) -> bool {
@@ -367,22 +461,15 @@ impl MobileTurnRunner {
 
 #[derive(Clone)]
 struct MobileTurnExecutor {
-    host: Arc<UnifiedAppHost>,
+    host: MobileHostBridge,
 }
 
 impl turn_execution_service::TurnExecutor for MobileTurnExecutor {
     fn is_inference_ready(
         &self,
     ) -> Pin<Box<dyn Future<Output = bool> + Send + '_>> {
-        Box::pin(async move {
-            self.host
-                .dispatch(HostRequest {
-                    id: None,
-                    method: "feature.info".to_owned(),
-                    params: serde_json::Value::Null,
-                })
-                .ok
-        })
+        let ready = self.host.request_ok("feature.info");
+        Box::pin(async move { ready })
     }
 
     fn create_runner(
@@ -414,25 +501,27 @@ impl turn_execution_service::TurnExecutor for MobileTurnExecutor {
 }
 
 struct MobileAppHost {
-    host: Arc<UnifiedAppHost>,
+    host: MobileHostBridge,
+    host_thread: Option<JoinHandle<()>>,
     extension_runtime: tokio::runtime::Runtime,
     extensions: Option<host_extensions::StartedHostExtensions>,
 }
 
 impl MobileAppHost {
     fn new(app_data_dir: impl Into<PathBuf>) -> Result<Self, String> {
-        UnifiedAppHost::new(app_data_dir)
-            .map_err(|error| error.to_string())
-            .and_then(Self::from_unified)
+        let path = app_data_dir.into();
+        Self::from_factory(move || UnifiedAppHost::new(path).map_err(|error| error.to_string()))
     }
 
     fn new_with_feature_mode(
         app_data_dir: impl Into<PathBuf>,
         feature_mode: AppHostFeatureMode,
     ) -> Result<Self, String> {
-        UnifiedAppHost::new_with_feature_mode(app_data_dir, feature_mode)
-            .map_err(|error| error.to_string())
-            .and_then(Self::from_unified)
+        let path = app_data_dir.into();
+        Self::from_factory(move || {
+            UnifiedAppHost::new_with_feature_mode(path, feature_mode)
+                .map_err(|error| error.to_string())
+        })
     }
 
     fn new_with_feature_mode_and_storage_passphrase(
@@ -440,40 +529,56 @@ impl MobileAppHost {
         feature_mode: AppHostFeatureMode,
         storage_passphrase: String,
     ) -> Result<Self, String> {
-        UnifiedAppHost::new_with_feature_mode_and_storage_passphrase(
-            app_data_dir,
-            feature_mode,
-            storage_passphrase,
-        )
-        .map_err(|error| error.to_string())
-        .and_then(Self::from_unified)
+        let path = app_data_dir.into();
+        Self::from_factory(move || {
+            UnifiedAppHost::new_with_feature_mode_and_storage_passphrase(
+                path,
+                feature_mode,
+                storage_passphrase,
+            )
+            .map_err(|error| error.to_string())
+        })
     }
 
-    fn from_unified(host: UnifiedAppHost) -> Result<Self, String> {
-        let host = Arc::new(host);
-        let extension_runtime = tokio::runtime::Builder::new_current_thread()
-            .build()
-            .map_err(|error| format!("create mobile Host extension runtime: {error}"))?;
+    fn from_factory<Factory>(factory: Factory) -> Result<Self, String>
+    where
+        Factory: FnOnce() -> Result<UnifiedAppHost, String> + Send + 'static,
+    {
+        let (host, host_thread) = MobileHostBridge::spawn(factory)?;
+        let extension_runtime = match tokio::runtime::Builder::new_current_thread().build() {
+            Ok(runtime) => runtime,
+            Err(error) => {
+                host.shutdown();
+                let _ = host_thread.join();
+                return Err(format!("create mobile Host extension runtime: {error}"));
+            }
+        };
         let executor: Arc<dyn turn_execution_service::TurnExecutor> =
             Arc::new(MobileTurnExecutor { host: host.clone() });
         let extension =
-            turn_execution_extension::bound_turn_execution_extension::<UnifiedAppHost>(executor);
-        let extensions = extension_runtime
-            .block_on(host_extensions::start_host_extensions(
-                &[extension],
-                host.clone(),
-                |_extension_id, _error| {},
-            ))
-            .map_err(|error| format!("start mobile Host extensions: {error}"))?;
+            turn_execution_extension::bound_turn_execution_extension::<MobileHostBridge>(executor);
+        let extensions = match extension_runtime.block_on(host_extensions::start_host_extensions(
+            &[extension],
+            Arc::new(host.clone()),
+            |_extension_id, _error| {},
+        )) {
+            Ok(extensions) => extensions,
+            Err(error) => {
+                host.shutdown();
+                let _ = host_thread.join();
+                return Err(format!("start mobile Host extensions: {error}"));
+            }
+        };
         Ok(Self {
             host,
+            host_thread: Some(host_thread),
             extension_runtime,
             extensions: Some(extensions),
         })
     }
 
     fn dispatch_json(&self, input: &str) -> String {
-        dispatch_unified_json(self.host.as_ref(), input)
+        self.host.dispatch_json(input)
     }
 
     #[cfg(test)]
@@ -493,6 +598,10 @@ impl Drop for MobileAppHost {
     fn drop(&mut self) {
         if let Some(mut extensions) = self.extensions.take() {
             self.extension_runtime.block_on(extensions.stop());
+        }
+        self.host.shutdown();
+        if let Some(host_thread) = self.host_thread.take() {
+            let _ = host_thread.join();
         }
     }
 }

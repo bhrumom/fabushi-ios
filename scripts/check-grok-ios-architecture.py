@@ -416,8 +416,9 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
             errors.append(f"iOS-owned Rust internal module is not compiled by mobile host: {required_module}")
 
     for required_token in [
+        "MobileHostBridge",
         "MobileTurnExecutor",
-        "bound_turn_execution_extension::<UnifiedAppHost>",
+        "bound_turn_execution_extension::<MobileHostBridge>",
         "start_host_extensions(",
         "turn_execution_registry",
     ]:
