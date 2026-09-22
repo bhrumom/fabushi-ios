@@ -90,6 +90,10 @@ mod package_redaction_classification;
 mod package_redaction_privacy_context;
 #[path = "../../../redaction/should-redact.rs"]
 mod package_redaction_should_redact;
+#[path = "../../../git-core/redaction.rs"]
+mod package_git_core_redaction;
+#[path = "../../../git-core/diagnostics.rs"]
+mod package_git_core_diagnostics;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
