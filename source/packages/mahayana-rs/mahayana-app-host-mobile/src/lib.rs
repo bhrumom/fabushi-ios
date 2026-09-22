@@ -42,6 +42,16 @@ mod box_file_transfer;
 mod box_transfer;
 #[path = "../../../../host/box/exec-daemon-process.rs"]
 mod exec_daemon_process;
+#[path = "../../../../host/box/box-remote-accessor.rs"]
+mod box_remote_accessor;
+#[path = "../../../../host/box/generated-production.rs"]
+mod generated_production;
+#[path = "../../../../host/box/loopback-sand-box.rs"]
+mod loopback_sand_box;
+#[path = "../../../../host/box/shared-desktop-sand-box.rs"]
+mod shared_desktop_sand_box;
+#[path = "../../../../host/box/production.rs"]
+mod production;
 
 fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
     serde_json::to_string(&HostResponse {
