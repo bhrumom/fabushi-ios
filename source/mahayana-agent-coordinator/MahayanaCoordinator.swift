@@ -37,21 +37,42 @@ final class MahayanaCoordinator {
     }
 
     private let host: MahayanaHostRuntime
+    private let webAuthnSigner: CoordinatorWebAuthnSigner?
     private(set) var lifecycleState: LifecycleState = .starting
     private var inFlight = Set<String>()
 
-    init(host: MahayanaHostRuntime) {
+    init(
+        host: MahayanaHostRuntime,
+        passkeyProvider: (any PasskeyProviding)? = nil
+    ) {
         self.host = host
+        webAuthnSigner = passkeyProvider.map {
+            CoordinatorWebAuthnSigner(
+                passkeys: CoordinatorPasskeyProvider(provider: $0)
+            )
+        }
         lifecycleState = .ready
     }
 
-    static func make(appDataDirectory: URL, featureHostTest: Bool = false) throws -> MahayanaCoordinator {
+    static func make(
+        appDataDirectory: URL,
+        featureHostTest: Bool = false,
+        passkeyProvider: (any PasskeyProviding)? = nil
+    ) throws -> MahayanaCoordinator {
         MahayanaCoordinator(
             host: try MahayanaHostRuntime(
                 appDataDirectory: appDataDirectory,
                 featureHostTest: featureHostTest
-            )
+            ),
+            passkeyProvider: passkeyProvider
         )
+    }
+
+    func signPasskey(_ challenge: PasskeyChallenge) async throws -> CoordinatorPayload {
+        guard let webAuthnSigner else {
+            throw CoordinatorError.requestFailed("passkey_provider_unavailable")
+        }
+        return try await webAuthnSigner.sign(challenge)
     }
 
     /// Compatibility entry used while feature-specific typed facades are

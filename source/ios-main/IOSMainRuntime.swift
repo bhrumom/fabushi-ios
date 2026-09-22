@@ -9,12 +9,16 @@ final class IOSMainRuntime {
     let coordinator: MahayanaCoordinator
     let lifecycleReporter = IOSLifecycleReporter()
     private let lifecycleRecovery: IOSLifecycleRecoveryStore
+    private let passkeyProvider: IOSAuthenticationServicesPasskeyProvider
 
     init(appDataDirectory: URL, featureHostTest: Bool = false) throws {
         lifecycleRecovery = try IOSLifecycleRecoveryStore(appDataDirectory: appDataDirectory)
+        let passkeyProvider = IOSAuthenticationServicesPasskeyProvider()
+        self.passkeyProvider = passkeyProvider
         coordinator = try MahayanaCoordinator.make(
             appDataDirectory: appDataDirectory,
-            featureHostTest: featureHostTest
+            featureHostTest: featureHostTest,
+            passkeyProvider: passkeyProvider
         )
         lifecycleReporter.report(
             .startup,
