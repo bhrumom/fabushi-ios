@@ -42,6 +42,8 @@ mod transcript_mirror_offload;
 mod transcript_mirror_worker;
 #[path = "../../../../host/transcript-mirror/conversation-state-binary.rs"]
 mod conversation_state_binary;
+#[path = "../../../../host/transcript-mirror/generated-occurrence-codec.rs"]
+mod generated_occurrence_codec;
 #[path = "../../../../host/transcript-mirror/transcript-journal-codec.rs"]
 mod transcript_journal_codec;
 #[path = "../../../../host/transcript-mirror/transcript-mirror-router.rs"]
