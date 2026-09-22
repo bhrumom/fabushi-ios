@@ -130,6 +130,7 @@ required = [
     "source/shared/write-epoch.swift",
     "source/ios-dev-controls/IOSDevControls.swift",
     "source/mahayana-agent-coordinator/MahayanaCoordinator.swift",
+    "source/mahayana-agent-coordinator/local-host-supervisor.swift",
     "source/mahayana-agent-coordinator/renderer-port-server.swift",
     "source/mahayana-agent-coordinator/control-port-client.swift",
     "source/host/MahayanaHostRuntime.swift",
@@ -174,6 +175,24 @@ for required_token in [
 ]:
     if required_token not in passkey_provider:
         errors.append(f"native iOS passkey provider is incomplete: {required_token}")
+
+coordinator_runtime = (ROOT / "source/mahayana-agent-coordinator/MahayanaCoordinator.swift").read_text()
+for required_token in [
+    "MahayanaLocalHostSupervisor",
+    "observedHostGeneration",
+    "recoverAfterFailure",
+]:
+    if required_token not in coordinator_runtime:
+        errors.append(f"MahayanaCoordinator is missing fail-closed Host recovery: {required_token}")
+
+local_host_supervisor = (ROOT / "source/mahayana-agent-coordinator/local-host-supervisor.swift").read_text()
+for required_token in [
+    "observedGeneration == generation",
+    "recoveryCount",
+    "factory()",
+]:
+    if required_token not in local_host_supervisor:
+        errors.append(f"local Host supervisor is missing generation recovery: {required_token}")
 
 runtime = (ROOT / "source/ios-main/FabushiRuntime.swift").read_text()
 for required_token in ["IOSDeepLinkController", "resyncAfterLifecycleRecovery", "resumeAfterBackground"]:
