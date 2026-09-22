@@ -36,7 +36,8 @@ final class RunnerParityTests: XCTestCase {
 
         let reply = try await server.execute(.shell(command: "pwd", workingDirectory: "/workspace"))
 
-        XCTAssertEqual(await transport.recordedMethods(), ["box.exec"])
+        let boxMethods = await transport.recordedMethods()
+        XCTAssertEqual(boxMethods, ["box.exec"])
         guard case .object(let object) = reply else {
             return XCTFail("expected remote reply object")
         }
@@ -53,13 +54,15 @@ final class RunnerParityTests: XCTestCase {
 
         let localReply = try await executor.execute(method: "clipboardRead")
         XCTAssertEqual(localReply, .object(["local": .string("clipboardRead")]))
-        XCTAssertEqual(await local.recordedCapabilities(), [.clipboardRead])
+        let localCapabilities = await local.recordedCapabilities()
+        XCTAssertEqual(localCapabilities, [.clipboardRead])
 
         _ = try await executor.execute(
             method: "shell",
             params: .object(["command": .string("pwd")])
         )
-        XCTAssertEqual(await transport.recordedMethods(), ["local-exec.shell"])
+        let remoteMethods = await transport.recordedMethods()
+        XCTAssertEqual(remoteMethods, ["local-exec.shell"])
     }
 
     func testInvariantViolationLogUsesStableEventEnvelope() throws {

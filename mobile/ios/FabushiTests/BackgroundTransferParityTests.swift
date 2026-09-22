@@ -59,7 +59,8 @@ final class BackgroundTransferParityTests: XCTestCase {
             ])
         )
 
-        XCTAssertEqual(await scheduler.recordedCount(), 1)
+        let scheduledCount = await scheduler.recordedCount()
+        XCTAssertEqual(scheduledCount, 1)
         guard case .object(let object) = reply else {
             return XCTFail("expected background-transfer result")
         }
