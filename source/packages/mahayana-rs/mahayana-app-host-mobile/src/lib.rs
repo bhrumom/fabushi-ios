@@ -64,6 +64,10 @@ mod local_exec_failure_classifier;
 mod sand_automation_failure;
 #[path = "../../../../host/runner/tools/mcp-server-resolution.rs"]
 mod mcp_server_resolution;
+#[path = "../../../../host/extensions/box-store-sync/object-store-port.rs"]
+mod box_store_object_store_port;
+#[path = "../../../../host/extensions/box-lifecycle/box-lifecycle-service.rs"]
+mod box_lifecycle_service;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
 mod box_monitor_layout;
 #[path = "../../../../host/box/box-store-backend-policy.rs"]
