@@ -179,6 +179,24 @@ mod package_agent_tools_lenient_boolean;
 mod package_cursor_plugins_identifiers;
 #[path = "../../../cursor-plugins/secret-variable-names.rs"]
 mod package_cursor_plugins_secret_variable_names;
+#[path = "../../../agent/tools/lenient-enum.rs"]
+mod package_agent_tools_lenient_enum;
+#[path = "../../../agent/context-processing-skill-id.rs"]
+mod package_agent_context_processing_skill_id;
+#[path = "../../../agent/utils/meta-parent-completion-protocol.rs"]
+mod package_agent_utils_meta_parent_completion_protocol;
+#[path = "../../../agent/utils/mcp-auth-instruction.rs"]
+mod package_agent_utils_mcp_auth_instruction;
+#[path = "../../../agent/prompts/anti-ask-question-copy.rs"]
+mod package_agent_prompts_anti_ask_question_copy;
+#[path = "../../../agent/prompts/claude-helpers.rs"]
+mod package_agent_prompts_claude_helpers;
+#[path = "../../../agent/prompts/cloud/no-repository-access.rs"]
+mod package_agent_prompts_cloud_no_repository_access;
+#[path = "../../../agent/utils/slack-sender-line.rs"]
+mod package_agent_utils_slack_sender_line;
+#[path = "../../../local-exec/shell-timeout.rs"]
+mod package_local_exec_shell_timeout;
 
 #[path = "../../../local-exec/pending-decision-provider.rs"]
 mod package_local_exec_pending_decision_provider;
