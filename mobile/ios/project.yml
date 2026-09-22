@@ -40,6 +40,7 @@ targets:
       - path: ../../source/packages/shell-exec/types.swift
       - path: ../../source/packages/shell-exec/output-suppression.swift
       - path: ../../source/packages/shell-exec/env-filter.swift
+      - path: ../../source/packages/shell-exec/sandbox/network-policy-utils.swift
     preBuildScripts:
       - name: Build iOS-owned Mahayana runtime
         script: |

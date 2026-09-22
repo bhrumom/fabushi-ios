@@ -163,6 +163,7 @@ required = [
     "source/packages/shell-exec/types.swift",
     "source/packages/shell-exec/output-suppression.swift",
     "source/packages/shell-exec/env-filter.swift",
+    "source/packages/shell-exec/sandbox/network-policy-utils.swift",
     "mobile/ios/FabushiTests/PackageShellPolicyParityTests.swift",
     "source/packages/agent/utils/request-path.rs",
     "source/packages/agent/tools/lenient-boolean.rs",
@@ -387,6 +388,27 @@ production_local_exec = (ROOT / "source/local-exec-daemon/production-executor.sw
 if "ShellExecEnvironmentFilter.sanitizeRemoteRunnerParams(params)" not in production_local_exec:
     errors.append("production Remote Runner path bypasses shell environment sanitization")
 
+network_policy = (ROOT / "source/packages/shell-exec/sandbox/network-policy-utils.swift").read_text()
+for required_token in [
+    "networkDisabledPolicy",
+    "networkAllowAllPolicy",
+    "isNetworkEnabled",
+    "defaultAction == .allow",
+]:
+    if required_token not in network_policy:
+        errors.append(f"shell network-policy contract is incomplete: {required_token}")
+
+unsafe_spawn_row = next(
+    (row for row in rows if row["grok_path"] == "source/packages/shell-exec/sandbox/unsafe-spawn.ts"),
+    None,
+)
+if unsafe_spawn_row is None:
+    errors.append("unsafe-spawn parity row is missing")
+elif unsafe_spawn_row["implementation_status"] != "not-applicable":
+    errors.append("unsafe-spawn must remain reviewed not-applicable on iOS")
+elif "process spawn" not in unsafe_spawn_row["adaptation_reason"].lower():
+    errors.append("unsafe-spawn not-applicable review is missing the iOS process-spawn rationale")
+
 # Swift requires source basenames to be unique inside one compilation target.
 # Grok's repeated main.ts/view.tsx names are mapped to semantic iOS filenames
 # unless/until those folders become separate Swift modules.
@@ -430,6 +452,7 @@ for required_source in [
     "../../source/packages/shell-exec/types.swift",
     "../../source/packages/shell-exec/output-suppression.swift",
     "../../source/packages/shell-exec/env-filter.swift",
+    "../../source/packages/shell-exec/sandbox/network-policy-utils.swift",
 ]:
     if required_source not in project:
         errors.append(f"XcodeGen target does not compile {required_source}")

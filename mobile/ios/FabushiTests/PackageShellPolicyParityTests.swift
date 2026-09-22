@@ -24,4 +24,31 @@ final class PackageShellPolicyParityTests: XCTestCase {
         XCTAssertEqual(SHELL_OUTPUT_SUPPRESSION_DEFAULTS.minChars, 256 * 1024)
         XCTAssertTrue(SHELL_OUTPUT_SUPPRESSED_NOTICE.contains("too much output to stream"))
     }
+
+    func testNetworkPolicyDefaultsAndEnablementMatchReference() {
+        XCTAssertEqual(
+            ShellExecNetworkPolicyUtils.effective(nil),
+            ShellExecNetworkPolicy(defaultAction: .deny)
+        )
+        XCTAssertFalse(ShellExecNetworkPolicyUtils.isNetworkEnabled(nil))
+        XCTAssertFalse(
+            ShellExecNetworkPolicyUtils.isNetworkEnabled(
+                ShellExecNetworkPolicy(defaultAction: .deny)
+            )
+        )
+        XCTAssertTrue(
+            ShellExecNetworkPolicyUtils.isNetworkEnabled(
+                ShellExecNetworkPolicy(defaultAction: .allow)
+            )
+        )
+        XCTAssertTrue(
+            ShellExecNetworkPolicyUtils.isNetworkEnabled(
+                ShellExecNetworkPolicy(defaultAction: .deny, allow: ["api.example.com"])
+            )
+        )
+        XCTAssertEqual(
+            ShellExecNetworkPolicyUtils.networkAllowAllPolicy().defaultAction,
+            .allow
+        )
+    }
 }
