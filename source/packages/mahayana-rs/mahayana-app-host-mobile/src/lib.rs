@@ -171,6 +171,14 @@ mod package_local_exec_constants;
 mod package_agent_utils_token_estimate;
 #[path = "../../../agent/utils/prompt-xml-escape.rs"]
 mod package_agent_utils_prompt_xml_escape;
+#[path = "../../../agent/utils/request-path.rs"]
+mod package_agent_utils_request_path;
+#[path = "../../../agent/tools/lenient-boolean.rs"]
+mod package_agent_tools_lenient_boolean;
+#[path = "../../../cursor-plugins/identifiers.rs"]
+mod package_cursor_plugins_identifiers;
+#[path = "../../../cursor-plugins/secret-variable-names.rs"]
+mod package_cursor_plugins_secret_variable_names;
 
 #[path = "../../../local-exec/pending-decision-provider.rs"]
 mod package_local_exec_pending_decision_provider;
