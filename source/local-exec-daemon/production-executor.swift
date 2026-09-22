@@ -43,9 +43,10 @@ actor IOSProductionLocalExecutor {
             return try await localBackend.execute(capability: capability, params: params)
         }
 
+        let remoteParams = ShellExecEnvironmentFilter.sanitizeRemoteRunnerParams(params)
         return try await remoteRunner.dispatch(
             method: "local-exec.\(normalized)",
-            params: params
+            params: remoteParams
         )
     }
 

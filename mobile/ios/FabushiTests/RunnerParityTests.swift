@@ -3,9 +3,11 @@ import XCTest
 
 private actor TestRemoteRunnerTransport: RemoteRunnerTransport {
     private(set) var methods: [String] = []
+    private(set) var params: [CoordinatorPayload] = []
 
     func dispatch(method: String, params: CoordinatorPayload) async throws -> CoordinatorPayload {
         methods.append(method)
+        self.params.append(params)
         return .object([
             "method": .string(method),
             "params": params,
@@ -13,6 +15,7 @@ private actor TestRemoteRunnerTransport: RemoteRunnerTransport {
     }
 
     func recordedMethods() -> [String] { methods }
+    func recordedParams() -> [CoordinatorPayload] { params }
 }
 
 private actor TestLocalCapabilityBackend: IOSLocalCapabilityBackend {
@@ -63,6 +66,37 @@ final class RunnerParityTests: XCTestCase {
         )
         let remoteMethods = await transport.recordedMethods()
         XCTAssertEqual(remoteMethods, ["local-exec.shell"])
+    }
+
+    func testProductionRemoteRunnerScrubsDesktopOnlyEnvironmentVariables() async throws {
+        let transport = TestRemoteRunnerTransport()
+        let executor = IOSProductionLocalExecutor(remoteTransport: transport)
+
+        _ = try await executor.execute(
+            method: "shell",
+            params: .object([
+                "command": .string("pwd"),
+                "env": .object([
+                    "SAFE_VALUE": .string("kept"),
+                    "ELECTRON_RUN_AS_NODE": .string("1"),
+                    "SSH_AUTH_SOCK": .string("/tmp/agent.sock"),
+                    "DBUS_SESSION_BUS_ADDRESS": .string("unix:path=/tmp/dbus"),
+                    "XDG_RUNTIME_DIR": .string("/run/user/1000"),
+                    "WAYLAND_DISPLAY": .string("wayland-0"),
+                ]),
+            ])
+        )
+
+        let recorded = await transport.recordedParams()
+        guard case .object(let root) = try XCTUnwrap(recorded.first),
+              case .object(let environment)? = root["env"] else {
+            return XCTFail("expected sanitized env payload")
+        }
+        XCTAssertEqual(environment["SAFE_VALUE"], .string("kept"))
+        XCTAssertNil(environment["ELECTRON_RUN_AS_NODE"])
+        for key in ShellExecEnvironmentFilter.socketEnvironmentVariablesToScrub {
+            XCTAssertNil(environment[key], "desktop socket variable should not cross Remote Runner boundary: \(key)")
+        }
     }
 
     func testInvariantViolationLogUsesStableEventEnvelope() throws {

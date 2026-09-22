@@ -162,6 +162,7 @@ required = [
     "source/packages/shell-exec/event-loop-pressure.swift",
     "source/packages/shell-exec/types.swift",
     "source/packages/shell-exec/output-suppression.swift",
+    "source/packages/shell-exec/env-filter.swift",
     "mobile/ios/FabushiTests/PackageShellPolicyParityTests.swift",
     "source/packages/agent/utils/request-path.rs",
     "source/packages/agent/tools/lenient-boolean.rs",
@@ -370,6 +371,22 @@ for root in ["source/box-exec-daemon", "source/local-exec-daemon", "source/host"
         if "IOSPreloadBridge" in text:
             errors.append(f"lower runtime layer depends on renderer preload bridge: {path.relative_to(ROOT)}")
 
+shell_env_filter = (ROOT / "source/packages/shell-exec/env-filter.swift").read_text()
+for required_token in [
+    "ELECTRON_RUN_AS_NODE",
+    "SSH_AUTH_SOCK",
+    "DBUS_SESSION_BUS_ADDRESS",
+    "XDG_RUNTIME_DIR",
+    "WAYLAND_DISPLAY",
+    "sanitizeRemoteRunnerParams",
+]:
+    if required_token not in shell_env_filter:
+        errors.append(f"shell environment filter is incomplete: {required_token}")
+
+production_local_exec = (ROOT / "source/local-exec-daemon/production-executor.swift").read_text()
+if "ShellExecEnvironmentFilter.sanitizeRemoteRunnerParams(params)" not in production_local_exec:
+    errors.append("production Remote Runner path bypasses shell environment sanitization")
+
 # Swift requires source basenames to be unique inside one compilation target.
 # Grok's repeated main.ts/view.tsx names are mapped to semantic iOS filenames
 # unless/until those folders become separate Swift modules.
@@ -412,6 +429,7 @@ for required_source in [
     "../../source/packages/shell-exec/event-loop-pressure.swift",
     "../../source/packages/shell-exec/types.swift",
     "../../source/packages/shell-exec/output-suppression.swift",
+    "../../source/packages/shell-exec/env-filter.swift",
 ]:
     if required_source not in project:
         errors.append(f"XcodeGen target does not compile {required_source}")
