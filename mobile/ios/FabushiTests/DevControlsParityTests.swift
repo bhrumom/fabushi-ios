@@ -1,6 +1,16 @@
 import XCTest
 @testable import Fabushi
 
+@MainActor
+private final class DevControlsProductionTestHost: MahayanaHostRequesting {
+    private(set) var methods: [String] = []
+
+    func request(method: String, params: [String: Any]) async throws -> MahayanaHostJSONResult {
+        methods.append(method)
+        return MahayanaHostJSONResult(value: ["method": method])
+    }
+}
+
 final class DevControlsParityTests: XCTestCase {
     func testDevCapabilityRequiresDebugBuildAndExplicitOptIn() {
         XCTAssertEqual(
@@ -92,6 +102,59 @@ final class DevControlsParityTests: XCTestCase {
 
         try await adapter.beforeProductionRequest()
         XCTAssertEqual(sleptNanoseconds, 10_000_000_000)
+    }
+
+    @MainActor
+    func testCoordinatorProductionRequestAppliesOfflineAndLatencyBeforeHost() async throws {
+        var sleptNanoseconds: UInt64?
+        let host = DevControlsProductionTestHost()
+        let supervisor = MahayanaLocalHostSupervisor(
+            host: host,
+            factory: { host }
+        )
+        let offline = IOSDevGatewayOfflineControl()
+        let latency = IOSDevNetworkLatency { nanoseconds in
+            sleptNanoseconds = nanoseconds
+        }
+        let adapter = IOSNativeDevControlAdapter(
+            gate: IOSDevControlsGate(enabled: true),
+            gatewayOffline: offline,
+            networkLatency: latency
+        )
+        let coordinator = MahayanaCoordinator(
+            hostSupervisor: supervisor,
+            devControlAdapter: adapter
+        )
+
+        _ = try await coordinator.request(
+            method: "dev.setGatewayOffline",
+            params: ["induced": true]
+        )
+        XCTAssertTrue(host.methods.isEmpty)
+
+        do {
+            _ = try await coordinator.request(method: "listAgents")
+            XCTFail("offline production request must not reach Host")
+        } catch let error as MahayanaCoordinator.CoordinatorError {
+            XCTAssertTrue(error.localizedDescription.contains("intentionally offline"))
+        }
+        XCTAssertTrue(host.methods.isEmpty)
+        XCTAssertNil(sleptNanoseconds)
+
+        _ = try await coordinator.request(
+            method: "dev.setGatewayOffline",
+            params: ["induced": false]
+        )
+        _ = try await coordinator.request(
+            method: "dev.setNetworkLatency",
+            params: ["ms": 37]
+        )
+        let result = try await coordinator.request(method: "listAgents")
+
+        XCTAssertEqual(sleptNanoseconds, 37_000_000)
+        XCTAssertEqual(host.methods, ["listAgents"])
+        let object = try XCTUnwrap(result.value as? [String: String])
+        XCTAssertEqual(object["method"], "listAgents")
     }
 
     @MainActor

@@ -245,6 +245,17 @@ runtime_dev_preload = (ROOT / "source/ios-preload/runtime/DevControlsPreloadEntr
 if "installIfEnabled" not in runtime_dev_preload or "capability.preloadKind == .devControls" not in runtime_dev_preload:
     errors.append("dev-capability does not gate the iOS developer-controls preload")
 
+dev_control_tests = (ROOT / "mobile/ios/FabushiTests/DevControlsParityTests.swift").read_text()
+for required_token in [
+    "DevControlsProductionTestHost",
+    "testCoordinatorProductionRequestAppliesOfflineAndLatencyBeforeHost",
+    "MahayanaCoordinator(",
+    "XCTAssertTrue(host.methods.isEmpty)",
+    'XCTAssertEqual(host.methods, ["listAgents"])',
+]:
+    if required_token not in dev_control_tests:
+        errors.append(f"dev-control production-path XCTest evidence is incomplete: {required_token}")
+
 app = (ROOT / "mobile/ios/Fabushi/FabushiApp.swift").read_text()
 for forbidden in ["MahayanaHost", "MahayanaCoordinator", "MarketplaceModel(", "MessagingModel("]:
     if forbidden in app:
