@@ -4,6 +4,8 @@ import UIKit
 
 @main
 struct FabushiApp: App {
+    @UIApplicationDelegateAdaptor(FabushiAppDelegate.self)
+    private var appDelegate
     @State private var runtime = FabushiRuntime()
     @Environment(\.scenePhase) private var scenePhase
 
