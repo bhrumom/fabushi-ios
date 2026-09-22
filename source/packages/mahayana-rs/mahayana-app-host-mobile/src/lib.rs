@@ -22,6 +22,14 @@ mod box_capabilities;
 mod box_shell_command;
 #[path = "../../../../host/host-request-context.rs"]
 mod host_request_context;
+#[path = "../../../../host/agent-isolation/conversation-blob-db.rs"]
+mod conversation_blob_db;
+#[path = "../../../../host/agent-isolation/conversation-blob-gc.rs"]
+mod conversation_blob_gc;
+#[path = "../../../../host/agent-isolation/legacy-blob-retirement.rs"]
+mod legacy_blob_retirement;
+#[path = "../../../../host/agent-isolation/conversation-blob-store.rs"]
+mod conversation_blob_store;
 #[path = "../../../../host/agent-isolation/worker-blob-store.rs"]
 mod worker_blob_store;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
