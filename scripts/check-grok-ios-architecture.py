@@ -63,6 +63,7 @@ required = [
     "source/ios-main/IOSMainRuntime.swift",
     "source/ios-main/FabushiRuntime.swift",
     "source/ios-preload/preload.swift",
+    "source/ios-preload/coordinator-port-bridge.swift",
     "source/ios-dev-controls/IOSDevControls.swift",
     "source/mahayana-agent-coordinator/MahayanaCoordinator.swift",
     "source/mahayana-agent-coordinator/renderer-port-server.swift",
@@ -77,6 +78,13 @@ required = [
 for relative in required:
     if not (ROOT / relative).is_file():
         errors.append(f"missing architecture root file: {relative}")
+
+preload = (ROOT / "source/ios-preload/preload.swift").read_text()
+for forbidden in ["CoordinatorControlPortClient", "main.dispatch("]:
+    if forbidden in preload:
+        errors.append(f"iOS preload bypasses renderer coordinator-port boundary: {forbidden}")
+if "IOSCoordinatorPortClient" not in preload:
+    errors.append("iOS preload does not use its renderer-facing coordinator-port client")
 
 app = (ROOT / "mobile/ios/Fabushi/FabushiApp.swift").read_text()
 for forbidden in ["MahayanaHost", "MahayanaCoordinator", "MarketplaceModel(", "MessagingModel("]:
