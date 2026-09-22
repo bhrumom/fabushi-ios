@@ -339,6 +339,10 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         "host/sand-user-identity.rs",
         "host/selected-image-inputs.rs",
         "host/transcript-mutation-events.rs",
+        "host/extensions/box-store-sync/files.rs",
+        "host/extensions/local-exec/local-exec-failure-classifier.rs",
+        "host/extensions/transcript/sand-automation-failure.rs",
+        "host/runner/tools/mcp-server-resolution.rs",
         "host/workflows/stat-keyed-parse-cache.rs",
     ]:
         if required_module not in mobile_ffi_text:
