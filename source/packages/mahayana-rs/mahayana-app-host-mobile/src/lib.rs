@@ -36,6 +36,10 @@ mod agent_store_worker;
 mod agent_worker_pool;
 #[path = "../../../../host/agent-isolation/worker-blob-store.rs"]
 mod worker_blob_store;
+#[path = "../../../../host/agent-isolation/transcript-mirror-offload.rs"]
+mod transcript_mirror_offload;
+#[path = "../../../../host/agent-isolation/transcript-mirror-worker.rs"]
+mod transcript_mirror_worker;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
 mod box_monitor_layout;
 #[path = "../../../../host/box/box-store-backend-policy.rs"]
