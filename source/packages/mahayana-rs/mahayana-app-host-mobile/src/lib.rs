@@ -252,6 +252,10 @@ mod package_cursor_plugins_validate_subpath;
 mod package_cursor_plugins_environment_filter;
 #[path = "../../../agent/tools/tool-execution-timeout.rs"]
 mod package_agent_tools_tool_execution_timeout;
+#[path = "../../../agent/tools/core/read/common.rs"]
+mod package_agent_tools_core_read_common;
+#[path = "../../../local-exec/services/team-settings-service.rs"]
+mod package_local_exec_services_team_settings_service;
 #[path = "../../../agent/state-utils.rs"]
 mod package_agent_state_utils;
 #[path = "../../../agent/constants.rs"]

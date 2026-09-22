@@ -36,6 +36,9 @@ targets:
       - path: ../../source/ios-preload
       - path: ../../source/local-exec-daemon
       - path: ../../source/box-exec-daemon
+      - path: ../../source/packages/shell-exec/event-loop-pressure.swift
+      - path: ../../source/packages/shell-exec/types.swift
+      - path: ../../source/packages/shell-exec/output-suppression.swift
     preBuildScripts:
       - name: Build iOS-owned Mahayana runtime
         script: |

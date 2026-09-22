@@ -154,6 +154,12 @@ required = [
     "source/packages/cursor-plugins/validate-subpath.rs",
     "source/packages/cursor-plugins/environment-filter.rs",
     "source/packages/agent/tools/tool-execution-timeout.rs",
+    "source/packages/agent/tools/core/read/common.rs",
+    "source/packages/local-exec/services/team-settings-service.rs",
+    "source/packages/shell-exec/event-loop-pressure.swift",
+    "source/packages/shell-exec/types.swift",
+    "source/packages/shell-exec/output-suppression.swift",
+    "mobile/ios/FabushiTests/PackageShellPolicyParityTests.swift",
     "source/packages/agent/utils/request-path.rs",
     "source/packages/agent/tools/lenient-boolean.rs",
     "source/packages/cursor-plugins/identifiers.rs",
@@ -348,14 +354,14 @@ for path in (ROOT / "mobile/ios/Fabushi").glob("*.swift"):
     if "MahayanaHost" in text:
         errors.append(f"presentation/platform source bypasses coordinator through Host: {path.relative_to(ROOT)}")
 
-for root in ["source/box-exec-daemon", "source/local-exec-daemon"]:
+for root in ["source/box-exec-daemon", "source/local-exec-daemon", "source/packages/shell-exec"]:
     for path in (ROOT / root).rglob("*.swift"):
         text = path.read_text()
         for forbidden in ["Process(", "NSTask", "posix_spawn", "/bin/sh", "/bin/bash"]:
             if forbidden in text:
                 errors.append(f"iOS runner emulates forbidden desktop process semantics ({forbidden}): {path.relative_to(ROOT)}")
 
-for root in ["source/box-exec-daemon", "source/local-exec-daemon", "source/host"]:
+for root in ["source/box-exec-daemon", "source/local-exec-daemon", "source/host", "source/packages/shell-exec"]:
     for path in (ROOT / root).rglob("*.swift"):
         text = path.read_text()
         if "IOSPreloadBridge" in text:
@@ -400,6 +406,9 @@ for required_source in [
     "../../source/ios-preload",
     "../../source/mahayana-agent-coordinator",
     "../../source/host/MahayanaHostRuntime.swift",
+    "../../source/packages/shell-exec/event-loop-pressure.swift",
+    "../../source/packages/shell-exec/types.swift",
+    "../../source/packages/shell-exec/output-suppression.swift",
 ]:
     if required_source not in project:
         errors.append(f"XcodeGen target does not compile {required_source}")
@@ -468,6 +477,8 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         "cursor-plugins/validate-subpath.rs",
         "cursor-plugins/environment-filter.rs",
         "agent/tools/tool-execution-timeout.rs",
+        "agent/tools/core/read/common.rs",
+        "local-exec/services/team-settings-service.rs",
         "host/process-crash-guard.rs",
         "host/notify-drain-gate.rs",
         "host/mcp-auth/mcp-auth-wait-registry.rs",
