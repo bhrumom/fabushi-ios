@@ -289,4 +289,54 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
         XCTAssertEqual(pendingCount6, 0)
         XCTAssertEqual(recorder.events.last?.outcome, "timeout")
     }
+
+    func testBackgroundSuspendsAutoPollingAndActiveResumeChecksImmediately() async throws {
+        let recorder = AuthWatchRecorder()
+        let server = authWatchHTTPServer()
+        let lifecycle = SandMcpAuthWatchLifecycle(deps: .init(
+            checkAuthStatus: { _, _, _, _ in
+                .init(
+                    isAvailable: true,
+                    requiresAuth: true,
+                    hasValidToken: false,
+                    authUrl: "https://login.example.test/oauth",
+                    error: ""
+                )
+            },
+            validateTokens: { targets in
+                [.init(
+                    serverUrl: targets[0].serverUrl,
+                    accountKey: targets[0].accountKey,
+                    hasValidToken: true
+                )]
+            },
+            resolveDisplayServer: { _, _ in server },
+            reload: { recorder.reload() },
+            onConnectorAuth: recorder.event,
+            authWatchPollIntervalMs: 60_000,
+            autoPollEnabled: true
+        ))
+        await lifecycle.setAuthCompletionObserver(recorder.completion)
+
+        _ = try await lifecycle.authenticateServer("12")
+        let foregroundTasks = await lifecycle.activeAutoPollTaskCount()
+        XCTAssertEqual(foregroundTasks, 1)
+
+        await lifecycle.sceneEnteredBackground()
+        let backgroundTasks = await lifecycle.activeAutoPollTaskCount()
+        let backgroundPending = await lifecycle.pendingWatchCount()
+        XCTAssertEqual(backgroundTasks, 0)
+        XCTAssertEqual(backgroundPending, 1)
+        XCTAssertTrue(recorder.completions.isEmpty)
+
+        await lifecycle.sceneBecameActive()
+
+        let resumedPending = await lifecycle.pendingWatchCount()
+        let resumedTasks = await lifecycle.activeAutoPollTaskCount()
+        XCTAssertEqual(resumedPending, 0)
+        XCTAssertEqual(resumedTasks, 0)
+        XCTAssertEqual(recorder.completions.last?.outcome, .completed)
+        XCTAssertEqual(recorder.reloads, 1)
+    }
+
 }
