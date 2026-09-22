@@ -34,15 +34,15 @@ if set(paths) != {row["path"] for row in manifest["files"]}:
     errors.append("ledger and pinned reference manifest differ")
 
 required = [
-    "frontend/production/ProductionRenderer.swift",
-    "source/ios-main/IOSMainRuntime.swift",
+    "frontend/src/production/ProductionRenderer.view.swift",
+    "source/ios-main/main.swift",
     "source/ios-main/FabushiRuntime.swift",
-    "source/ios-preload/IOSPreloadBridge.swift",
-    "source/mahayana-agent-coordinator/MahayanaCoordinator.swift",
+    "source/ios-preload/preload.swift",
+    "source/mahayana-agent-coordinator/main.swift",
     "source/host/MahayanaHostRuntime.swift",
-    "source/local-exec-daemon/LocalCapabilityRunner.swift",
-    "source/box-exec-daemon/RemoteRunner.swift",
-    "source/shared/rpc/CoordinatorPort.swift",
+    "source/local-exec-daemon/main.swift",
+    "source/box-exec-daemon/main.swift",
+    "source/shared/rpc/coordinator-port.swift",
 ]
 for relative in required:
     if not (ROOT / relative).is_file():
@@ -83,6 +83,8 @@ if args.strict and (ROOT / "mobile/ios/Fabushi/MahayanaHost.swift").exists():
     errors.append("legacy mobile/ios MahayanaHost.swift still exists")
 if args.strict and (ROOT / "mobile/native/include/mahayana_app_host.h").exists():
     errors.append("legacy mobile/native header still exists")
+if args.strict and (ROOT / "mobile/ios/Fabushi/GrokMobileShell.swift").exists():
+    errors.append("legacy giant GrokMobileShell.swift still exists")
 
 if warnings:
     for warning in warnings:
