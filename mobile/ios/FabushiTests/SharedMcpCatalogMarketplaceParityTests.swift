@@ -48,7 +48,7 @@ private actor MarketplaceListingClientStub: SandMarketplaceListingClient {
 }
 
 final class SharedMcpCatalogMarketplaceParityTests: XCTestCase {
-    private func plugin(
+    private static func plugin(
         id: String = "101",
         displayName: String = "GitHub",
         required: Bool = false
@@ -84,7 +84,7 @@ final class SharedMcpCatalogMarketplaceParityTests: XCTestCase {
                 let authenticated = await state.isAuthenticated()
                 return .init(
                     plugins: [
-                        self.plugin(
+                        Self.plugin(
                             id: authenticated ? "202" : "101",
                             displayName: authenticated ? "Private" : "Public"
                         ),
@@ -103,12 +103,14 @@ final class SharedMcpCatalogMarketplaceParityTests: XCTestCase {
         let publicCached = try await catalog.getCatalog()
         XCTAssertEqual(publicFirst.map(\.displayName), ["Public"])
         XCTAssertEqual(publicCached, publicFirst)
-        XCTAssertEqual(await state.fetchCount(), 1)
+        let publicFetchCount = await state.fetchCount()
+        XCTAssertEqual(publicFetchCount, 1)
 
         await state.setAuthenticated(true)
         let privateView = try await catalog.getCatalog()
         XCTAssertEqual(privateView.map(\.displayName), ["Private"])
-        XCTAssertEqual(await state.fetchCount(), 2)
+        let privateFetchCount = await state.fetchCount()
+        XCTAssertEqual(privateFetchCount, 2)
     }
 
     func testCatalogRequiredVariablesFailBeforeAccountMutation() async throws {
@@ -116,7 +118,7 @@ final class SharedMcpCatalogMarketplaceParityTests: XCTestCase {
             isAuthenticated: { false },
             fetchMarketplace: {
                 .init(
-                    plugins: [self.plugin(required: true)],
+                    plugins: [Self.plugin(required: true)],
                     includesPrivateMarketplaces: false
                 )
             },
