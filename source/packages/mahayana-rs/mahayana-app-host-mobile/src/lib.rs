@@ -197,6 +197,22 @@ mod package_agent_prompts_cloud_no_repository_access;
 mod package_agent_utils_slack_sender_line;
 #[path = "../../../local-exec/shell-timeout.rs"]
 mod package_local_exec_shell_timeout;
+#[path = "../../../agent/prompts/user-info-sanitization.rs"]
+mod package_agent_prompts_user_info_sanitization;
+#[path = "../../../agent/context-processing-uploaded-documents.rs"]
+mod package_agent_context_processing_uploaded_documents;
+#[path = "../../../agent/utils/agent-mode-guidance.rs"]
+mod package_agent_utils_agent_mode_guidance;
+#[path = "../../../agent/tools/core/read/pdf-utils.rs"]
+mod package_agent_tools_core_read_pdf_utils;
+#[path = "../../../cursor-plugins/cloud-manifest.rs"]
+mod package_cursor_plugins_cloud_manifest;
+#[path = "../../../agent/context-processing-invocation.rs"]
+mod package_agent_context_processing_invocation;
+#[path = "../../../hooks-carriers/hook-additional-context-render.rs"]
+mod package_hooks_carriers_hook_additional_context_render;
+#[path = "../../../agent/context-processing-cursor-commands.rs"]
+mod package_agent_context_processing_cursor_commands;
 
 #[path = "../../../local-exec/pending-decision-provider.rs"]
 mod package_local_exec_pending_decision_provider;
