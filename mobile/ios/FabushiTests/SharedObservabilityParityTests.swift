@@ -6,6 +6,19 @@ private struct ObservabilityRateLimitError: ConnectErrorLike {
     let connectMetadata: [String: String]
 }
 
+private actor StructuredLogRecorder {
+    private var batches: [[StructuredLogEntry]] = []
+
+    func submit(_ logs: [StructuredLogEntry]) -> StructuredLogReceipt {
+        batches.append(logs)
+        return .init(logsProcessed: logs.count, logsDropped: 0)
+    }
+
+    func firstBatch() -> [StructuredLogEntry] {
+        batches.first ?? []
+    }
+}
+
 final class SharedObservabilityParityTests: XCTestCase {
     func testHeapMetricsRejectInvalidCoreValuesAndKeepsValidCounts() {
         XCTAssertNil(parseHeapMetricsReport(["usedBytes": -1, "limitBytes": 100]))
@@ -78,5 +91,165 @@ final class SharedObservabilityParityTests: XCTestCase {
         XCTAssertTrue(isSandClientPersistenceSlice("send-journal"))
         XCTAssertFalse(isSandClientPersistenceSlice("unknown-slice"))
         XCTAssertEqual(SAND_QUEUED_FLUSH_CAUSE_CODES["ackExpired"], "SAND-E0707")
+    }
+
+    func testSentryGateScrubsUserContentAndRejectsUnknownProcess() {
+        let envelope = SandSentryEnvelope(
+            header: ["event_id": "0123456789abcdef0123456789abcdef"],
+            items: [
+                .init(
+                    header: ["type": "event"],
+                    payload: [
+                        "event_id": "0123456789abcdef0123456789abcdef",
+                        "user": ["id": "account-1", "email": "secret@example.com"],
+                        "tags": [
+                            "event.process": "host",
+                            "safe": "bounded",
+                            "token": "secret-value",
+                        ],
+                        "request": [
+                            "method": "POST",
+                            "url": "https://example.com/private?q=1",
+                        ],
+                        "exception": [
+                            "values": [[
+                                "type": "RuntimeError",
+                                "value": "user private exception text",
+                                "stacktrace": [
+                                    "frames": [[
+                                        "filename": "/Users/person/private/file.swift",
+                                        "function": "unsafe user@example.com",
+                                    ]]
+                                ],
+                            ]]
+                        ],
+                    ]
+                )
+            ]
+        )
+
+        let gate = SandSentryPrivacyGate()
+        gate.setTier(.scrubbed)
+        gate.setUserID("account-1")
+        let projected = gate.handle(envelope)
+        let event = projected?.items.first?.payload as? [String: Any]
+        let user = event?["user"] as? [String: Any]
+        let request = event?["request"] as? [String: Any]
+        let exception = ((event?["exception"] as? [String: Any])?["values"] as? [[String: Any]])?.first
+        let frame = (((exception?["stacktrace"] as? [String: Any])?["frames"] as? [[String: Any]])?.first)
+
+        XCTAssertEqual(user?["id"] as? String, "account-1")
+        XCTAssertNil(user?["email"])
+        XCTAssertEqual(request?["url"] as? String, "<REDACTED: url>")
+        XCTAssertEqual(exception?["value"] as? String, "<REDACTED: exception-message>")
+        XCTAssertEqual(frame?["filename"] as? String, "<REDACTED: user-file-path>")
+
+        let unknown = SandSentryEnvelope(
+            header: [:],
+            items: [.init(header: ["type": "event"], payload: ["tags": ["event.process": "unknown"]])]
+        )
+        XCTAssertNil(gate.handle(unknown))
+    }
+
+    func testSentryAccountMismatchFallsBackToFatalMetadataAndEventRingIsBounded() {
+        let envelope = SandSentryEnvelope(
+            header: [:],
+            items: [.init(
+                header: ["type": "event"],
+                payload: [
+                    "event_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "user": ["id": "other-account"],
+                    "tags": [
+                        "event.process": "host",
+                        "private.tag": "should-drop",
+                    ],
+                    "request": ["method": "GET", "url": "app:///safe"],
+                ]
+            )]
+        )
+
+        let gate = SandSentryPrivacyGate()
+        gate.setTier(.full)
+        gate.setUserID("account-1")
+        let projected = gate.handle(envelope)
+        let event = projected?.items.first?.payload as? [String: Any]
+        let tags = event?["tags"] as? [String: Any]
+        XCTAssertEqual(tags?["event.process"] as? String, "host")
+        XCTAssertNil(tags?["private.tag"])
+        XCTAssertNil(event?["request"])
+
+        let ring = SandSentryEventIDRing(capacity: 2)
+        ring.record(envelope)
+        ring.record(.init(
+            header: [:],
+            items: [
+                .init(header: ["type": "event"], payload: ["event_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]),
+                .init(header: ["type": "event"], payload: ["event_id": "cccccccccccccccccccccccccccccccc"]),
+            ]
+        ))
+        XCTAssertEqual(ring.ids, [
+            "cccccccccccccccccccccccccccccccc",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        ])
+    }
+
+    func testStructuredLogHelpersValidateReceiptsAndMetadata() {
+        XCTAssertTrue(isValidLogShipReceipt(.init(logsProcessed: 2, logsDropped: 1), requestSize: 3))
+        XCTAssertFalse(isValidLogShipReceipt(.init(logsProcessed: 2, logsDropped: 2), requestSize: 3))
+        XCTAssertEqual(
+            cleanStructuredLogMetadata(["keep": "value", "empty": "", "missing": nil]),
+            ["keep": "value"]
+        )
+        XCTAssertEqual(truncateStructuredLogValue("abcdef", max: 3), "abc")
+        XCTAssertEqual(toClientLogLevel(.warn), .warn)
+        XCTAssertEqual(DESKTOP_STRUCTURED_LOG_SPILL_MAX_ENTRIES, 1_000)
+    }
+
+    func testStructuredLogTransportHoldsForIdentityThenShipsTypedBatch() async {
+        let recorder = StructuredLogRecorder()
+        let transport = StructuredLogTransport(
+            key: "sand",
+            platformTags: ["platform": "ios"],
+            holdForIdentity: true,
+            submit: { logs in
+                await recorder.submit(logs)
+            }
+        )
+
+        await transport.enqueue(.error, message: "boom", metadata: ["feature": "chat"], timestampMs: 1_000)
+        XCTAssertFalse(await transport.flushNow(nowMs: 1_000))
+        await transport.setIdentityTags(["account": "account-1"])
+        XCTAssertTrue(await transport.flushNow(nowMs: 1_000))
+
+        let batch = await recorder.firstBatch()
+        XCTAssertEqual(batch.count, 1)
+        XCTAssertEqual(batch.first?.level, .error)
+        XCTAssertEqual(batch.first?.metadata["platform"], "ios")
+        XCTAssertEqual(batch.first?.metadata["feature"], "chat")
+        XCTAssertEqual(batch.first?.metadata["account"], "account-1")
+        XCTAssertEqual(batch.first?.key, "sand")
+    }
+
+    func testStructuredLogTransportExpiresReplayAndCapsOverflow() async {
+        let transport = StructuredLogTransport(
+            key: "sand",
+            platformTags: [:],
+            submit: { logs in
+                .init(logsProcessed: logs.count, logsDropped: 0)
+            }
+        )
+
+        await transport.enqueue(.info, message: "expired", timestampMs: 1)
+        XCTAssertTrue(await transport.flushNow(nowMs: Int64(STRUCTURED_LOG_REPLAY_MAX_AGE_MS) + 2))
+        var checkpoint = await transport.captureCheckpoint()
+        XCTAssertEqual(checkpoint.records.count, 0)
+        XCTAssertEqual(checkpoint.counters["replay_expired"]?.observed, 1)
+
+        for index in 0..<(MAX_BUFFER_SIZE + 2) {
+            await transport.enqueue(.debug, message: "m\(index)", timestampMs: 10_000)
+        }
+        checkpoint = await transport.captureCheckpoint()
+        XCTAssertEqual(checkpoint.records.count, MAX_BUFFER_SIZE)
+        XCTAssertEqual(checkpoint.counters["overflow_evicted"]?.observed, 2)
     }
 }
