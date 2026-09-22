@@ -2,32 +2,39 @@ import XCTest
 @testable import Fabushi
 
 final class IOSLifecycleParityTests: XCTestCase {
-    func testDeepLinkControllerUsesSharedStrictPolicyAndRejectsUnsafeInputs() throws {
-        let parsed = try XCTUnwrap(FabushiDeepLinkPolicy.parse(
-            "fabushi://app/v1/info?topic=deep-links"
+    func testDeepLinkParserCanonicalizesAuthAndRejectsUnsafeInputs() throws {
+        let parsed = try XCTUnwrap(FabushiDeepLinkParser.parse(
+            "fabushi://auth/complete?attemptId=abcdefgh&status=completed"
         ))
-        XCTAssertEqual(parsed.link, .info(source: .customProtocol))
+        XCTAssertEqual(parsed.route, .authComplete(attemptId: "abcdefgh", status: "completed"))
         XCTAssertEqual(
-            parsed.canonicalURL,
-            "fabushi://app/v1/info?topic=deep-links"
+            parsed.canonicalURL.absoluteString,
+            "fabushi://auth/complete?attemptId=abcdefgh&status=completed"
         )
-        XCTAssertNil(FabushiDeepLinkPolicy.parse(
-            "fabushi://user:password@app/v1/info?topic=deep-links"
+        XCTAssertNil(FabushiDeepLinkParser.parse(
+            "fabushi://user:password@auth/complete?attemptId=abcdefgh"
         ))
-        XCTAssertNil(FabushiDeepLinkPolicy.parse(
-            "fabushi://app/../v1/info?topic=deep-links"
+        XCTAssertNil(FabushiDeepLinkParser.parse(
+            "fabushi://auth/../complete?attemptId=abcdefgh"
         ))
-        XCTAssertNil(FabushiDeepLinkPolicy.parse(
-            "fabushi://app/v1/info?topic=%ZZ"
+        XCTAssertNil(FabushiDeepLinkParser.parse(
+            "fabushi://auth/complete?attemptId=%ZZ"
         ))
     }
 
-    func testUniversalLinkMapsToCanonicalCustomScheme() throws {
-        let parsed = try XCTUnwrap(FabushiDeepLinkPolicy.parse(
-            "https://fabushi.app/fabushi/link/v1/open"
+    func testReferenceDeepLinksShareTheSameCanonicalRouter() throws {
+        let custom = try XCTUnwrap(FabushiDeepLinkParser.parse(
+            "fabushi://app/v1/info?topic=deep-links"
         ))
-        XCTAssertEqual(parsed.link, .open(source: .https))
-        XCTAssertEqual(parsed.canonicalURL, "fabushi://app/v1/open")
+        XCTAssertEqual(custom.route, .info(topic: "deep-links"))
+        XCTAssertEqual(custom.source, .customScheme)
+
+        let universal = try XCTUnwrap(FabushiDeepLinkParser.parse(
+            "https://fabushi.app/link/v1/open"
+        ))
+        XCTAssertEqual(universal.route, .open)
+        XCTAssertEqual(universal.source, .universalLink)
+        XCTAssertEqual(universal.canonicalURL.absoluteString, "fabushi://app/v1/open")
     }
 
     @MainActor
@@ -39,25 +46,16 @@ final class IOSLifecycleParityTests: XCTestCase {
             now: { now }
         )
 
-        XCTAssertTrue(controller.handleCandidate(
-            "fabushi://app/v1/open",
-            origin: "test"
-        ))
+        XCTAssertTrue(controller.handleCandidate("fabushi://app/v1/open", origin: "test"))
         XCTAssertTrue(controller.hasPendingActivation)
-        XCTAssertFalse(controller.handleCandidate(
-            "fabushi://app/v1/open",
-            origin: "duplicate"
-        ))
+        XCTAssertFalse(controller.handleCandidate("fabushi://app/v1/open", origin: "duplicate"))
         XCTAssertTrue(dispatched.isEmpty)
 
         controller.markReady()
-        XCTAssertEqual(dispatched.map(\.link), [.open(source: .customProtocol)])
+        XCTAssertEqual(dispatched.map(\.route), [.open])
 
         now = now.addingTimeInterval(IOSDeepLinkController.dedupeWindow + 0.1)
-        XCTAssertTrue(controller.handleCandidate(
-            "fabushi://app/v1/open",
-            origin: "after-window"
-        ))
+        XCTAssertTrue(controller.handleCandidate("fabushi://app/v1/open", origin: "after-window"))
         XCTAssertEqual(dispatched.count, 2)
     }
 

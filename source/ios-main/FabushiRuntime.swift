@@ -88,48 +88,25 @@ final class FabushiRuntime {
     }
 
     func handleOpenURL(_ url: URL) {
-        if deepLinkController?.handleCandidate(
+        _ = deepLinkController?.handleCandidate(
             url.absoluteString,
             origin: "scene-open-url"
-        ) == true {
-            return
-        }
-
-        // Product auth/navigation callbacks predate Grok's app/info/plugin-add
-        // deep-link family and stay fail-closed behind their existing validators.
-        guard url.scheme?.lowercased() == "fabushi",
-              url.user == nil,
-              url.password == nil,
-              url.port == nil
-        else { return }
-
-        let host = url.host?.lowercased() ?? ""
-        let parts = url.pathComponents.filter { $0 != "/" && !$0.isEmpty }
-        switch host {
-        case "auth":
-            marketplace.handleDeepLink(url)
-        case "agent":
-            guard let agentId = parts.first,
-                  !agentId.isEmpty,
-                  agentId.count <= 200,
-                  agentId.range(of: "^[A-Za-z0-9._-]+$", options: .regularExpression) != nil
-            else { return }
-            marketplace.message = "已接收智能体链接：\(agentId)"
-        case "settings", "feedback", "about", "widgets", "onboarding":
-            guard parts.isEmpty else { return }
-            marketplace.message = "已接收应用链接：\(host)"
-        default:
-            return
-        }
+        )
     }
 
     private func dispatchGrokDeepLink(_ parsed: ParsedFabushiDeepLink) {
-        switch parsed.link {
+        switch parsed.route {
+        case .authComplete:
+            marketplace.handleDeepLink(parsed.canonicalURL)
+        case .agent(let agentID):
+            marketplace.message = "已接收智能体链接：\(agentID)"
+        case .section(let section):
+            marketplace.message = "已接收应用链接：\(section)"
         case .info:
             marketplace.message = "Deep Link 支持已就绪"
         case .open:
             marketplace.message = "已通过 Deep Link 打开 Fabushi"
-        case .pluginAdd(let pluginID, _):
+        case .pluginAdd(let pluginID):
             marketplace.query = pluginID
             Task { [weak self] in
                 await self?.marketplace.refresh()
