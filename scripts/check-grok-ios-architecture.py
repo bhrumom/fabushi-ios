@@ -345,6 +345,8 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         "host/runner/tools/mcp-server-resolution.rs",
         "host/extensions/box-store-sync/object-store-port.rs",
         "host/extensions/box-lifecycle/box-lifecycle-service.rs",
+        "host/runner/site-visit-tracking.rs",
+        "host/host-event-bus.rs",
         "host/workflows/stat-keyed-parse-cache.rs",
     ]:
         if required_module not in mobile_ffi_text:
