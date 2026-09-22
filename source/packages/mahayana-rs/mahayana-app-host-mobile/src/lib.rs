@@ -208,6 +208,8 @@ mod package_hooks_sanitize_system_reminder;
 mod package_local_exec_int32;
 #[path = "../../../local-exec/mcp.rs"]
 mod package_local_exec_mcp;
+#[path = "../../../hooks/hook-step.rs"]
+mod package_hooks_hook_step;
 #[path = "../../../hooks/validators/base.rs"]
 mod package_hooks_validators_base;
 #[path = "../../../hooks/validators/baseHookResponse.rs"]
@@ -250,6 +252,8 @@ mod package_hooks_validators_before_tab_file_read_response;
 mod package_hooks_validators_before_command_execution_hook_response;
 #[path = "../../../hooks/validators/sessionStartResponse.rs"]
 mod package_hooks_validators_session_start_response;
+#[path = "../../../hooks/validators/preToolUseResponse.rs"]
+mod package_hooks_validators_pre_tool_use_response;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
