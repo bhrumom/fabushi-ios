@@ -123,6 +123,36 @@ mod video_container;
 #[path = "../../../../host/extensions/telemetry/send-trace-sampler.rs"]
 mod send_trace_sampler;
 
+
+#[path = "../../../../host/extensions/telemetry/telemetry-record.rs"]
+mod telemetry_record;
+#[path = "../../../../host/runner/tools/sand-permission-request.rs"]
+mod sand_permission_request;
+#[path = "../../../../host/runner/tools/sand-secret-request.rs"]
+mod sand_secret_request;
+#[path = "../../../../host/extensions/box-store-sync/box-store-diagnostics.rs"]
+mod box_store_diagnostics;
+#[path = "../../../../host/extensions/telemetry/host-event-bus-telemetry.rs"]
+mod host_event_bus_telemetry;
+#[path = "../../../../host/extensions/telemetry/host-diagnostic-telemetry.rs"]
+mod host_diagnostic_telemetry;
+#[path = "../../../../host/extensions/telemetry/search-index-health-telemetry.rs"]
+mod search_index_health_telemetry;
+#[path = "../../../../host/extensions/telemetry/auto-review-approval-telemetry.rs"]
+mod auto_review_approval_telemetry;
+#[path = "../../../../host/extensions/telemetry/disk-pressure-telemetry.rs"]
+mod disk_pressure_telemetry;
+#[path = "../../../../host/extensions/telemetry/automation-shadow-prune-telemetry.rs"]
+mod automation_shadow_prune_telemetry;
+#[path = "../../../../host/extensions/telemetry/turn-empty-delivery-telemetry.rs"]
+mod turn_empty_delivery_telemetry;
+#[path = "../../../../host/extensions/telemetry/box-log-ship-telemetry.rs"]
+mod box_log_ship_telemetry;
+#[path = "../../../../host/extensions/telemetry/experiments-diagnostic-telemetry.rs"]
+mod experiments_diagnostic_telemetry;
+#[path = "../../../../host/runner/tool-call-identity.rs"]
+mod tool_call_identity;
+
 fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
     serde_json::to_string(&HostResponse {
         id: None,
