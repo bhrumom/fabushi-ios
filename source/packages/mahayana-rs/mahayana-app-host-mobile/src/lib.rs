@@ -65,6 +65,36 @@ mod shared_desktop_sand_box;
 #[path = "../../../../host/box/production.rs"]
 mod production;
 
+
+#[path = "../../../../host/extensions/local-exec/local-exec-error.rs"]
+mod local_exec_error;
+#[path = "../../../../host/extensions/cloud-agents/cloud-agent-launch-error.rs"]
+mod cloud_agent_launch_error;
+#[path = "../../../../host/runner/tools/tool-input-error.rs"]
+mod tool_input_error;
+#[path = "../../../../host/runner/sand-prompt-markers.rs"]
+mod sand_prompt_markers;
+#[path = "../../../../host/extensions/box-store-sync/box-store-sync-error.rs"]
+mod box_store_sync_error;
+#[path = "../../../../host/sha256.rs"]
+mod sha256;
+#[path = "../../../../host/storage/folder-id.rs"]
+mod folder_id;
+#[path = "../../../../host/extensions/transcript/channel-delivery-unregistered-error.rs"]
+mod channel_delivery_unregistered_error;
+#[path = "../../../../host/extensions/transcript/send-not-persisted-error.rs"]
+mod send_not_persisted_error;
+#[path = "../../../../host/runner/agent-state.rs"]
+mod agent_state;
+#[path = "../../../../host/extensions/session/conversation-blobs-path.rs"]
+mod conversation_blobs_path;
+#[path = "../../../../host/automations/automation-id.rs"]
+mod automation_id;
+#[path = "../../../../host/attachment-paths.rs"]
+mod attachment_paths;
+#[path = "../../../../host/durable-file-policy.rs"]
+mod durable_file_policy;
+
 fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
     serde_json::to_string(&HostResponse {
         id: None,
