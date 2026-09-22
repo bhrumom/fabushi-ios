@@ -24,7 +24,7 @@ actor MCPOAuthCallbackListener {
     }
 
     func accept(_ url: URL) async throws -> (providerIdentifier: String, callbackURL: URL) {
-        guard url.scheme?.lowercased() == "fabushi", url.host?.lowercased() == "auth" else {
+        guard isMcpOAuthIOSCallback(url) else {
             throw CallbackError.unsupportedURL
         }
         let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
