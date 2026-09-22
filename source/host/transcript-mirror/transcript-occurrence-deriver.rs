@@ -31,7 +31,7 @@ const CONTEXT_TAGS_TO_STRIP: &[&str] = &[
 ];
 
 pub trait TranscriptOccurrenceBlobStore {
-    fn get_blob(&mut self, id: &[u8]) -> Option<Vec<u8>>;
+    fn get_blob(&self, id: &[u8]) -> Option<Vec<u8>>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -84,12 +84,29 @@ pub struct DerivedTranscriptOccurrences {
     pub deferred_step: Option<DeferredTranscriptStep>,
 }
 
+pub trait TranscriptDeriver<Store: TranscriptOccurrenceBlobStore> {
+    fn initial(
+        &self,
+        store: &Store,
+        checkpoint: &TranscriptCheckpoint,
+    ) -> Result<Vec<TranscriptOccurrence>, TranscriptJournalCorruptionError>;
+
+    fn derive(
+        &self,
+        store: &Store,
+        previous: &TranscriptCheckpoint,
+        checkpoint: &TranscriptCheckpoint,
+        finalize_checkpoint: bool,
+        deferred: Option<DeferredTranscriptStep>,
+    ) -> Result<DerivedTranscriptOccurrences, TranscriptJournalCorruptionError>;
+}
+
 fn corruption(message: impl Into<String>) -> TranscriptJournalCorruptionError {
     TranscriptJournalCorruptionError(message.into())
 }
 
 fn required_blob<Store: TranscriptOccurrenceBlobStore>(
-    store: &mut Store,
+    store: &Store,
     id: &[u8],
     label: &str,
 ) -> Result<Vec<u8>, TranscriptJournalCorruptionError> {
@@ -209,7 +226,7 @@ impl<Codec: TranscriptOccurrenceCodec> ArtifactTranscriptOccurrenceDeriver<Codec
 
     fn derive_turn<Store: TranscriptOccurrenceBlobStore>(
         &self,
-        store: &mut Store,
+        store: &Store,
         turn_index: usize,
         current_blob_id: &[u8],
         previous_blob_id: Option<&[u8]>,
@@ -435,7 +452,7 @@ impl<Codec: TranscriptOccurrenceCodec> ArtifactTranscriptOccurrenceDeriver<Codec
 
     pub fn initial<Store: TranscriptOccurrenceBlobStore>(
         &self,
-        store: &mut Store,
+        store: &Store,
         checkpoint: &TranscriptCheckpoint,
     ) -> Result<Vec<TranscriptOccurrence>, TranscriptJournalCorruptionError> {
         let mut occurrences = Vec::new();
@@ -450,7 +467,7 @@ impl<Codec: TranscriptOccurrenceCodec> ArtifactTranscriptOccurrenceDeriver<Codec
 
     pub fn derive<Store: TranscriptOccurrenceBlobStore>(
         &self,
-        store: &mut Store,
+        store: &Store,
         previous: &TranscriptCheckpoint,
         checkpoint: &TranscriptCheckpoint,
         finalize_checkpoint: bool,
@@ -509,6 +526,38 @@ impl<Codec: TranscriptOccurrenceCodec> ArtifactTranscriptOccurrenceDeriver<Codec
     }
 }
 
+impl<Codec, Store> TranscriptDeriver<Store> for ArtifactTranscriptOccurrenceDeriver<Codec>
+where
+    Codec: TranscriptOccurrenceCodec,
+    Store: TranscriptOccurrenceBlobStore,
+{
+    fn initial(
+        &self,
+        store: &Store,
+        checkpoint: &TranscriptCheckpoint,
+    ) -> Result<Vec<TranscriptOccurrence>, TranscriptJournalCorruptionError> {
+        ArtifactTranscriptOccurrenceDeriver::initial(self, store, checkpoint)
+    }
+
+    fn derive(
+        &self,
+        store: &Store,
+        previous: &TranscriptCheckpoint,
+        checkpoint: &TranscriptCheckpoint,
+        finalize_checkpoint: bool,
+        deferred: Option<DeferredTranscriptStep>,
+    ) -> Result<DerivedTranscriptOccurrences, TranscriptJournalCorruptionError> {
+        ArtifactTranscriptOccurrenceDeriver::derive(
+            self,
+            store,
+            previous,
+            checkpoint,
+            finalize_checkpoint,
+            deferred,
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -524,7 +573,7 @@ mod tests {
     }
 
     impl TranscriptOccurrenceBlobStore for Store {
-        fn get_blob(&mut self, id: &[u8]) -> Option<Vec<u8>> {
+        fn get_blob(&self, id: &[u8]) -> Option<Vec<u8>> {
             self.0.get(id).cloned()
         }
     }

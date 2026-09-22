@@ -48,6 +48,8 @@ mod transcript_journal_codec;
 mod transcript_mirror_router;
 #[path = "../../../../host/transcript-mirror/transcript-occurrence-deriver.rs"]
 mod transcript_occurrence_deriver;
+#[path = "../../../../host/transcript-mirror/transcript-mirror.rs"]
+mod transcript_mirror;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
 mod box_monitor_layout;
 #[path = "../../../../host/box/box-store-backend-policy.rs"]
