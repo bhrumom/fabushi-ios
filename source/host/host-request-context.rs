@@ -82,12 +82,13 @@ where
     }
 }
 
-impl<TimeZone, FullName, Rules, Rule, Error>
+impl<TimeZone, FullName, Rules>
     HostRequestContextResolver<TimeZone, FullName, Rules>
-where
-    Rules: Fn() -> Result<Vec<Rule>, Error>,
 {
-    pub fn resolve_rules(&self) -> Result<Vec<Rule>, Error> {
+    pub fn resolve_rules<Rule, Error>(&self) -> Result<Vec<Rule>, Error>
+    where
+        Rules: Fn() -> Result<Vec<Rule>, Error>,
+    {
         (self.resolve_rules)()
     }
 }
