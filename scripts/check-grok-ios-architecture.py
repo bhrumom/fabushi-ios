@@ -431,6 +431,23 @@ for required_token in [
     if required_token not in network_policy:
         errors.append(f"shell network-policy contract is incomplete: {required_token}")
 
+reviewed_barrel_not_applicable = {
+    "source/packages/context/index.ts",
+    "source/packages/hooks-carriers/index.ts",
+    "source/packages/shell-exec/index.ts",
+    "source/packages/chat-inference-proto/index.ts",
+    "source/packages/local-exec/index.ts",
+}
+for grok_path in reviewed_barrel_not_applicable:
+    row = next((row for row in rows if row["grok_path"] == grok_path), None)
+    if row is None:
+        errors.append(f"reviewed re-export parity row is missing: {grok_path}")
+        continue
+    if row["implementation_status"] != "not-applicable":
+        errors.append(f"pure re-export row must remain reviewed not-applicable: {grok_path}")
+    if "re-export" not in row["adaptation_reason"].lower():
+        errors.append(f"pure re-export row is missing reviewed rationale: {grok_path}")
+
 unsafe_spawn_row = next(
     (row for row in rows if row["grok_path"] == "source/packages/shell-exec/sandbox/unsafe-spawn.ts"),
     None,
