@@ -23,7 +23,7 @@ fn parse_js_decimal_prefix(raw: &str) -> Option<i64> {
     }
 
     let mut end = 0usize;
-    if matches!(bytes.first(), Some(b'+') | Some(b'-')) {
+    if matches!(bytes.first().copied(), Some(b'+') | Some(b'-')) {
         end = 1;
     }
 
