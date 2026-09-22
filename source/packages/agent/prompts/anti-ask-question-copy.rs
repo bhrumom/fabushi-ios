@@ -17,7 +17,7 @@ mod tests {
     #[test]
     fn inserts_the_tool_name_at_every_pinned_location() {
         let rule = build_anti_ask_question_user_rule("AskQuestion");
-        assert_eq!(rule.matches("AskQuestion").count(), 2);
+        assert_eq!(rule.matches("AskQuestion").count(), 3);
         assert!(rule.ends_with("or ask for confirmations."));
 
         assert_eq!(
