@@ -144,9 +144,10 @@ func nextCronRun(
 
 func parseEveryIntervalMs(_ schedule: String) -> Int64? {
     let pattern = #"(?i)^@every\s+(\d+)\s*(s|m|h|d)$"#
+    let trimmed = schedule.trimmingCharacters(in: .whitespacesAndNewlines)
     guard let regex = try? NSRegularExpression(pattern: pattern),
-          let match = regex.firstMatch(in: schedule.trimmingCharacters(in: .whitespacesAndNewlines), range: NSRange(schedule.trimmingCharacters(in: .whitespacesAndNewlines).startIndex..<schedule.trimmingCharacters(in: .whitespacesAndNewlines).endIndex, in: schedule.trimmingCharacters(in: .whitespacesAndNewlines))) else { return nil }
-    let raw = schedule.trimmingCharacters(in: .whitespacesAndNewlines) as NSString
+          let match = regex.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..<trimmed.endIndex, in: trimmed)) else { return nil }
+    let raw = trimmed as NSString
     guard let amount = Int64(raw.substring(with: match.range(at: 1))), amount > 0 else { return nil }
     let unit = raw.substring(with: match.range(at: 2)).lowercased()
     guard let unitMs = AUTOMATION_UNIT_MS[unit] else { return nil }
@@ -315,6 +316,6 @@ func describeTrigger(_ trigger: AutomationTrigger) -> String {
         if case .cron(let cron)=member { value=describeSchedule(cron.schedule) }
         else { value=describeListener(member) }
         guard index>0,let first=value.first else{return value}
-        return first.lowercased()+value.dropFirst()
+        return first.lowercased() + String(value.dropFirst())
     }.joined(separator:" or ")
 }

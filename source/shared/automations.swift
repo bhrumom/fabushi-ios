@@ -77,7 +77,7 @@ func normalizeReactionEmoji(_ raw: String) -> String {
     var bare = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     while bare.hasPrefix(":") { bare.removeFirst() }
     while bare.hasSuffix(":") { bare.removeLast() }
-    return String(bare.split(separator: "::", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
+    return (bare.components(separatedBy: "::").first ?? bare)
         .trimmingCharacters(in: .whitespacesAndNewlines)
         .lowercased()
 }
