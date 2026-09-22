@@ -287,6 +287,7 @@ final class GlobalDharmaJourneyUITests: XCTestCase {
         persistState()
     }
 
+    @MainActor
     private func checkpoint(_ name: String) {
         let screenshot = XCUIScreen.main.screenshot()
         let attachment = XCTAttachment(screenshot: screenshot)
