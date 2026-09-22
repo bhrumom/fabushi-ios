@@ -18,6 +18,14 @@ mod package_utils_web_search_year_guidance;
 mod package_utils_command_glob;
 #[path = "../../../utils/model-utils.rs"]
 mod package_utils_model_utils;
+#[path = "../../../utils/disposable.rs"]
+mod package_utils_disposable;
+#[path = "../../../utils/attempt.rs"]
+mod package_utils_attempt;
+#[path = "../../../utils/canvas-path.rs"]
+mod package_utils_canvas_path;
+#[path = "../../../utils/ttl-cache.rs"]
+mod package_utils_ttl_cache;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
