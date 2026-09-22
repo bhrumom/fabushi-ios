@@ -83,6 +83,8 @@ required = [
     "source/box-exec-daemon/cli.swift",
     "source/box-exec-daemon/server.swift",
     "source/mime-types.types.swift",
+    "source/internal/host-extensions.rs",
+    "source/internal/scheduling.rs",
     "source/ios-dev-controls/IOSDevControls.swift",
     "source/mahayana-agent-coordinator/MahayanaCoordinator.swift",
     "source/mahayana-agent-coordinator/renderer-port-server.swift",
@@ -177,6 +179,14 @@ if "$(SRCROOT)/Frameworks" in project:
 
 runtime_manifest = ROOT / "source/packages/mahayana-rs/Cargo.toml"
 mobile_ffi = ROOT / "source/packages/mahayana-rs/mahayana-app-host-mobile/src/lib.rs"
+internal_host_extensions = ROOT / "source/internal/host-extensions.rs"
+internal_scheduling = ROOT / "source/internal/scheduling.rs"
+if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobile_ffi.is_file():
+    mobile_ffi_text = mobile_ffi.read_text()
+    for required_module in ["internal/host-extensions.rs", "internal/scheduling.rs"]:
+        if required_module not in mobile_ffi_text:
+            errors.append(f"iOS-owned Rust internal module is not compiled by mobile host: {required_module}")
+
 if not runtime_manifest.is_file() or not mobile_ffi.is_file():
     message = "iOS-owned Mahayana Rust source import is not complete"
     (errors if args.strict else warnings).append(message)

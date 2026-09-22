@@ -3,6 +3,11 @@ use mahayana_unified_app_host::{UnifiedAppHost, dispatch_json};
 use std::ffi::{CStr, CString, c_char};
 use std::path::PathBuf;
 
+#[path = "../../../../internal/host-extensions.rs"]
+mod host_extensions;
+#[path = "../../../../internal/scheduling.rs"]
+mod scheduling;
+
 /// Creates a native app-host handle.
 ///
 /// # Safety

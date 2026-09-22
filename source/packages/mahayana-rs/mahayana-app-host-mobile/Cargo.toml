@@ -15,6 +15,7 @@ crate-type = ["cdylib", "staticlib"]
 mahayana-app-host.workspace = true
 mahayana-unified-app-host.workspace = true
 serde_json.workspace = true
+tokio.workspace = true
 
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"

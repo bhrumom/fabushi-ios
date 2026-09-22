@@ -38,6 +38,10 @@ jobs:
       - name: Verify strict architecture
         if: steps.source.outputs.available == 'true'
         run: python3 scripts/check-grok-ios-architecture.py --strict
+      - name: Test iOS-owned Rust internal/runtime modules
+        if: steps.source.outputs.available == 'true'
+        run: cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-app-host-mobile --lib --profile ci
+
       - name: Build native runtime for simulator
         if: steps.source.outputs.available == 'true'
         run: scripts/build-mahayana-ios.sh iphonesimulator arm64
