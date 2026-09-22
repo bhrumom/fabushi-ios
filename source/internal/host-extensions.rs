@@ -270,6 +270,7 @@ pub enum HostExtensionGraphError {
         dependency: String,
     },
     Cycle(Vec<String>),
+    UnknownResolvedId(String),
 }
 
 impl fmt::Display for HostExtensionGraphError {
@@ -294,6 +295,10 @@ impl fmt::Display for HostExtensionGraphError {
             Self::Cycle(path) => {
                 write!(formatter, "host extension peer cycle: {}", path.join(" → "))
             }
+            Self::UnknownResolvedId(id) => write!(
+                formatter,
+                "the resolved boot order names an unknown host extension \"{id}\""
+            ),
         }
     }
 }
@@ -317,6 +322,23 @@ impl fmt::Display for HostExtensionStartError {
 }
 
 impl std::error::Error for HostExtensionStartError {}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum StartHostExtensionsError {
+    Graph(HostExtensionGraphError),
+    Start(HostExtensionStartError),
+}
+
+impl fmt::Display for StartHostExtensionsError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Graph(error) => error.fmt(formatter),
+            Self::Start(error) => error.fmt(formatter),
+        }
+    }
+}
+
+impl std::error::Error for StartHostExtensionsError {}
 
 pub fn resolve_host_extension_boot_order(
     extensions: &[HostExtensionDeclaration],
@@ -454,7 +476,7 @@ pub async fn start_host_extensions<Host, Failure>(
     extensions: &[HostExtensionRuntimeDeclaration<Host>],
     host: Arc<Host>,
     on_stop_failure: Failure,
-) -> Result<StartedHostExtensions, HostExtensionStartError>
+) -> Result<StartedHostExtensions, StartHostExtensionsError>
 where
     Host: Send + Sync + 'static,
     Failure: Fn(&str, &str) + Send + Sync + 'static,
@@ -463,12 +485,8 @@ where
         .iter()
         .map(|extension| extension.declaration.clone())
         .collect::<Vec<_>>();
-    let order = resolve_host_extension_boot_order(&declarations).map_err(|error| {
-        HostExtensionStartError {
-            extension_id: "<graph>".into(),
-            cause: error.to_string(),
-        }
-    })?;
+    let order = resolve_host_extension_boot_order(&declarations)
+        .map_err(StartHostExtensionsError::Graph)?;
 
     let by_id = extensions
         .iter()
@@ -480,11 +498,10 @@ where
     let mut apis = BTreeMap::<String, HostApi>::new();
 
     for id in &order {
-        let extension = by_id.get(id).ok_or_else(|| HostExtensionStartError {
-            extension_id: id.clone(),
-            cause: format!(
-                "the resolved boot order names an unknown host extension \"{id}\""
-            ),
+        let extension = by_id.get(id).ok_or_else(|| {
+            StartHostExtensionsError::Graph(
+                HostExtensionGraphError::UnknownResolvedId(id.clone()),
+            )
         })?;
         let deps = extension
             .declaration
@@ -508,10 +525,12 @@ where
             }
             Err(cause) => {
                 stop_teardowns(&teardowns, &on_stop_failure).await;
-                return Err(HostExtensionStartError {
-                    extension_id: id.clone(),
-                    cause,
-                });
+                return Err(StartHostExtensionsError::Start(
+                    HostExtensionStartError {
+                        extension_id: id.clone(),
+                        cause,
+                    },
+                ));
             }
         }
     }
@@ -723,6 +742,9 @@ mod tests {
         {
             Ok(_) => panic!("start unexpectedly succeeded"),
             Err(error) => error,
+        };
+        let StartHostExtensionsError::Start(error) = error else {
+            panic!("expected extension start error");
         };
         assert_eq!(error.extension_id, "failing");
         assert_eq!(error.cause, "boom");
