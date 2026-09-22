@@ -73,7 +73,8 @@ final class SharedMcpDisplayDefinitionParityTests: XCTestCase {
         let users = await source.getUserServerConfigs()
         XCTAssertNotNil(users["account"])
         XCTAssertNil(users[BOX_COMPUTER_SERVER_NAME])
-        XCTAssertEqual(await source.getStdioServerConfigs()["local"]?.command, "tool")
+        let stdioServers = await source.getStdioServerConfigs()
+        XCTAssertEqual(stdioServers["local"]?.command, "tool")
         let definitions = await source.getDefinitions()
         XCTAssertEqual(definitions.map(\.identifier), [BOX_COMPUTER_SERVER_NAME,"account"])
     }
