@@ -136,6 +136,25 @@ mod package_git_core_redaction;
 #[path = "../../../git-core/diagnostics.rs"]
 mod package_git_core_diagnostics;
 
+#[path = "../../../cursor-plugins/snapshot-state.rs"]
+mod package_cursor_plugins_snapshot_state;
+#[path = "../../../local-exec/pi/truncate.rs"]
+mod package_local_exec_pi_truncate;
+#[path = "../../../hooks-carriers/limits.rs"]
+mod package_hooks_carriers_limits;
+#[path = "../../../mcp-core/config/mcp-focus-retry-cooldown.rs"]
+mod package_mcp_core_focus_retry_cooldown;
+#[path = "../../../mcp-core/config/mcp-fsm-timing-config.rs"]
+mod package_mcp_core_fsm_timing_config;
+#[path = "../../../mcp-core/config/mcp-inline-reconnect-cooldown.rs"]
+mod package_mcp_core_inline_reconnect_cooldown;
+#[path = "../../../local-exec/constants.rs"]
+mod package_local_exec_constants;
+#[path = "../../../agent/utils/token-estimate.rs"]
+mod package_agent_utils_token_estimate;
+#[path = "../../../agent/utils/prompt-xml-escape.rs"]
+mod package_agent_utils_prompt_xml_escape;
+
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
 #[path = "../../../../host/notify-drain-gate.rs"]
