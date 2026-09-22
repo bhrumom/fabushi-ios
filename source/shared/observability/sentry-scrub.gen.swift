@@ -36,6 +36,10 @@ private func sandSentryBounded(_ value: Any?, maxLength: Int = 128) -> String? {
     return value
 }
 
+func isSandSentryBoundedTagValue(_ value: Any?) -> Bool {
+    sandSentryBounded(value) != nil
+}
+
 private func sandSentryBoundedID(_ value: Any?) -> Any? {
     if let number = value as? NSNumber {
         let double = number.doubleValue

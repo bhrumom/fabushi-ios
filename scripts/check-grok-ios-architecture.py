@@ -77,6 +77,8 @@ required = [
     "source/ios-main/deep-link/deep-link-controller.swift",
     "source/ios-main/lifecycle/ios-lifecycle-recovery.swift",
     "source/ios-main/telemetry/desktop-lifecycle-telemetry.swift",
+    "source/ios-main/telemetry/sentry-conversation.swift",
+    "source/ios-main/notifications/dock-badge.swift",
     "source/ios-main/FabushiRuntime.swift",
     "source/ios-preload/preload.swift",
     "source/ios-preload/coordinator-port-bridge.swift",
@@ -221,6 +223,7 @@ required = [
     "source/packages/hooks/validators/sessionStartResponse.rs",
     "source/packages/hooks/validators/preToolUseResponse.rs",
     "mobile/ios/FabushiTests/DevControlsParityTests.swift",
+    "mobile/ios/FabushiTests/IOSPlatformMainParityTests.swift",
 ]
 for relative in required:
     if not (ROOT / relative).is_file():
@@ -346,6 +349,28 @@ runtime_dev_preload = (ROOT / "source/ios-preload/runtime/DevControlsPreloadEntr
 if "installIfEnabled" not in runtime_dev_preload or "capability.preloadKind == .devControls" not in runtime_dev_preload:
     errors.append("dev-capability does not gate the iOS developer-controls preload")
 
+platform_main_tests = (ROOT / "mobile/ios/FabushiTests/IOSPlatformMainParityTests.swift").read_text()
+for required_token in [
+    "testSentryConversationReportRequiresNullOrBoundedAgentId",
+    "testDockBadgeMatchesRecoveredUnreadRulesAndAppliesNativeBadgeCount",
+    "IOSDockBadgeController",
+]:
+    if required_token not in platform_main_tests:
+        errors.append(f"iOS platform-main parity XCTest evidence is incomplete: {required_token}")
+
+sentry_conversation = (ROOT / "source/ios-main/telemetry/sentry-conversation.swift").read_text()
+if "isSandSentryBoundedTagValue" not in sentry_conversation:
+    errors.append("sentry-conversation does not use the shared bounded-tag privacy contract")
+
+dock_badge = (ROOT / "source/ios-main/notifications/dock-badge.swift").read_text()
+for required_token in [
+    "computeDockBadgeTotal",
+    "UNUserNotificationCenter.current().setBadgeCount",
+    "IOSDockBadgeController",
+]:
+    if required_token not in dock_badge:
+        errors.append(f"iOS dock-badge adaptation is incomplete: {required_token}")
+
 dev_control_tests = (ROOT / "mobile/ios/FabushiTests/DevControlsParityTests.swift").read_text()
 for required_token in [
     "DevControlsProductionTestHost",
@@ -430,6 +455,20 @@ for required_token in [
 ]:
     if required_token not in network_policy:
         errors.append(f"shell network-policy contract is incomplete: {required_token}")
+
+reviewed_desktop_only_not_applicable = {
+    "source/electron-main/startup/move-to-applications-folder.ts",
+    "source/electron-main/update/win32-installer.ts",
+}
+for grok_path in reviewed_desktop_only_not_applicable:
+    row = next((row for row in rows if row["grok_path"] == grok_path), None)
+    if row is None:
+        errors.append(f"reviewed desktop-only parity row is missing: {grok_path}")
+        continue
+    if row["implementation_status"] != "not-applicable":
+        errors.append(f"desktop-only row must remain reviewed not-applicable: {grok_path}")
+    if "desktop-only" not in row["adaptation_reason"].lower():
+        errors.append(f"desktop-only row is missing reviewed rationale: {grok_path}")
 
 reviewed_barrel_not_applicable = {
     "source/packages/context/index.ts",
