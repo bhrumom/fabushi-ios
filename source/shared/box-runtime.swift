@@ -1,6 +1,6 @@
 import Foundation
 
-enum SandBoxRuntime: String, Codable, CaseIterable, Sendable {
+enum SandBoxRuntime: String, Codable, CaseIterable, Equatable, Sendable {
     case remote
     case localDocker = "local-docker"
 }
