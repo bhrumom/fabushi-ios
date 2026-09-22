@@ -76,6 +76,12 @@ mod package_constants_repo_label;
 mod package_agent_transcript_context_stripping;
 #[path = "../../../agent-transcript/paths.rs"]
 mod package_agent_transcript_paths;
+#[path = "../../../agent-kv/serde.rs"]
+mod package_agent_kv_serde;
+#[path = "../../../agent-kv/blob-not-found-error.rs"]
+mod package_agent_kv_blob_not_found_error;
+#[path = "../../../agent-kv/blob-store.rs"]
+mod package_agent_kv_blob_store;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
