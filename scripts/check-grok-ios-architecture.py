@@ -64,6 +64,7 @@ required = [
     "frontend/src/production/GrokMobileShell+Semantic.swift",
     "frontend/src/production/GrokMobileShell+Home.swift",
     "frontend/src/production/GrokMobileShell+Bots.swift",
+    "frontend/src/production/GrokMobileBotService.swift",
     "frontend/src/recovered/features/app-shell/ContentView.swift",
     "source/ios-main/IOSMainRuntime.swift",
     "source/ios-main/background-transfer/ios-background-transfer-service.swift",
@@ -201,9 +202,16 @@ shell_path = ROOT / "frontend/src/production/GrokMobileShell.swift"
 shell = shell_path.read_text()
 if len(shell.splitlines()) > 120:
     errors.append("GrokMobileShell has regrown into a monolithic renderer/runtime file")
-for forbidden in ["bridge.request(", "feature.execute", "feature.receive", "appAgentSurface.publish("]:
-    if forbidden in shell:
-        errors.append(f"GrokMobileShell bypasses split renderer responsibilities: {forbidden}")
+for shell_part in (ROOT / "frontend/src/production").glob("GrokMobileShell*.swift"):
+    shell_part_text = shell_part.read_text()
+    for forbidden in ["bridge.request(", "feature.execute", "feature.receive"]:
+        if forbidden in shell_part_text:
+            errors.append(
+                f"SwiftUI shell owns protocol/runtime I/O ({forbidden}): "
+                f"{shell_part.relative_to(ROOT)}"
+            )
+if "appAgentSurface.publish(" in shell:
+    errors.append("GrokMobileShell main file owns semantic-surface publication")
 
 for path in (ROOT / "mobile/ios/Fabushi").glob("*.swift"):
     if path.name == "MahayanaHost.swift":
