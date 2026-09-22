@@ -32,7 +32,7 @@ pub fn is_signal_kill_failure(exit_code: i32, signal: &str) -> bool {
 }
 
 pub fn shell_single_quote(value: &str) -> String {
-    format!("'{}'", value.replace(''', "'\\''"))
+    format!("'{}'", value.replace('\'', "'\\''"))
 }
 
 pub fn describe_shell_failure(result: &RemoteShellResult) -> String {

@@ -309,7 +309,7 @@ impl LegacyFileTranscriptMirror {
     ) -> Result<(), LegacyTranscriptMirrorError> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)
-                .map_err(|error| error(format!("create transcript directory: {error}")))?;
+                .map_err(|io_error| error(format!("create transcript directory: {io_error}")))?;
         }
         fs::write(path, content)
             .map_err(|io_error| error(format!("write transcript file: {io_error}")))

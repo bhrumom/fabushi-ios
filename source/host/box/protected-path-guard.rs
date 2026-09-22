@@ -77,11 +77,12 @@ pub fn assert_path_outside_protected_roots(
         return Ok(());
     }
 
-    let resolved = normalize_lexically(if candidate_path.is_absolute() {
+    let absolute_candidate = if candidate_path.is_absolute() {
         candidate_path.to_path_buf()
     } else {
         base_dir.join(candidate_path)
-    });
+    };
+    let resolved = normalize_lexically(&absolute_candidate);
 
     for root in protected_roots {
         let root = normalize_lexically(root);

@@ -606,8 +606,7 @@ impl<Deriver> FileTranscriptMirror<Deriver> {
                 .prepared_deferred_steps
                 .get(conversation_id)
                 .copied()
-                .ok_or_else(|| corruption("prepared transcript checkpoint is missing in memory"))?
-                .flatten();
+                .ok_or_else(|| corruption("prepared transcript checkpoint is missing in memory"))?;
             let state = self.append_pending(conversation_id, &pending)?;
             self.write_deferred(conversation_id, deferred)?;
             self.remove_pending(conversation_id)?;
