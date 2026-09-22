@@ -2,7 +2,8 @@ use crate::extension_ids_generated::TURN_EXECUTION;
 use crate::host_extensions::{
     HostExtensionRuntimeDeclaration, define_host_extension,
 };
-use crate::turn_execution_service::TurnExecutionRegistry;
+use crate::turn_execution_service::{TurnExecutionRegistry, TurnExecutor};
+use std::sync::Arc;
 
 pub fn turn_execution_extension<Host>() -> HostExtensionRuntimeDeclaration<Host>
 where
@@ -12,6 +13,28 @@ where
         TURN_EXECUTION,
         std::iter::empty::<&str>(),
         |_context| async { Ok::<_, String>(TurnExecutionRegistry::new()) },
+    )
+}
+
+pub fn bound_turn_execution_extension<Host>(
+    executor: Arc<dyn TurnExecutor>,
+) -> HostExtensionRuntimeDeclaration<Host>
+where
+    Host: Send + Sync + 'static,
+{
+    define_host_extension(
+        TURN_EXECUTION,
+        std::iter::empty::<&str>(),
+        move |_context| {
+            let executor = executor.clone();
+            async move {
+                let mut registry = TurnExecutionRegistry::new();
+                registry
+                    .bind_executor(executor)
+                    .map_err(|error| error.to_string())?;
+                Ok::<_, String>(registry)
+            }
+        },
     )
 }
 

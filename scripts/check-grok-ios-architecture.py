@@ -406,6 +406,26 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         if required_module not in mobile_ffi_text:
             errors.append(f"iOS-owned Rust internal module is not compiled by mobile host: {required_module}")
 
+    for required_token in [
+        "MobileTurnExecutor",
+        "bound_turn_execution_extension::<UnifiedAppHost>",
+        "start_host_extensions(",
+        "turn_execution_registry",
+    ]:
+        if required_token not in mobile_ffi_text:
+            errors.append(
+                "mobile Host does not production-wire turn-execution: "
+                + required_token
+            )
+
+    turn_execution_extension_text = (
+        ROOT / "source/host/extensions/turn-execution/extension.rs"
+    ).read_text()
+    if "bound_turn_execution_extension" not in turn_execution_extension_text:
+        errors.append(
+            "turn-execution extension does not expose a production bound-executor declaration"
+        )
+
 legacy_runtime_import_workflow = ROOT / ".github/workflows/import-ios-owned-mahayana.yml"
 if legacy_runtime_import_workflow.exists():
     errors.append(

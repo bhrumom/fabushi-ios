@@ -1,7 +1,10 @@
-use mahayana_app_host::{AppHostFeatureMode, HostResponse, default_app_data_dir};
-use mahayana_unified_app_host::{UnifiedAppHost, dispatch_json};
+use mahayana_app_host::{AppHostFeatureMode, HostRequest, HostResponse, default_app_data_dir};
+use mahayana_unified_app_host::{UnifiedAppHost, dispatch_json as dispatch_unified_json};
 use std::ffi::{CStr, CString, c_char};
+use std::future::Future;
 use std::path::PathBuf;
+use std::pin::Pin;
+use std::sync::Arc;
 
 #[path = "../../../../internal/host-extensions.rs"]
 mod host_extensions;
@@ -320,6 +323,161 @@ mod experiments_diagnostic_telemetry;
 #[path = "../../../../host/runner/tool-call-identity.rs"]
 mod tool_call_identity;
 
+struct MobileTurnRunner {
+    host: Arc<UnifiedAppHost>,
+    _session: turn_execution_service::TurnExecutionValue,
+    _hooks: turn_execution_service::TurnExecutionValue,
+    overrides: Option<turn_execution_service::TurnExecutionValue>,
+}
+
+impl MobileTurnRunner {
+    fn host_is_live(&self) -> bool {
+        self.host
+            .dispatch(HostRequest {
+                id: None,
+                method: "host.platform".to_owned(),
+                params: serde_json::Value::Null,
+            })
+            .ok
+    }
+
+    fn is_group_member(&self) -> bool {
+        self.overrides.is_some()
+    }
+}
+
+#[derive(Clone)]
+struct MobileTurnExecutor {
+    host: Arc<UnifiedAppHost>,
+}
+
+impl turn_execution_service::TurnExecutor for MobileTurnExecutor {
+    fn is_inference_ready(
+        &self,
+    ) -> Pin<Box<dyn Future<Output = bool> + Send + '_>> {
+        Box::pin(async move {
+            self.host
+                .dispatch(HostRequest {
+                    id: None,
+                    method: "feature.info".to_owned(),
+                    params: serde_json::Value::Null,
+                })
+                .ok
+        })
+    }
+
+    fn create_runner(
+        &self,
+        session: turn_execution_service::TurnExecutionValue,
+        hooks: turn_execution_service::TurnExecutionValue,
+    ) -> turn_execution_service::TurnExecutionValue {
+        Arc::new(MobileTurnRunner {
+            host: self.host.clone(),
+            _session: session,
+            _hooks: hooks,
+            overrides: None,
+        })
+    }
+
+    fn create_group_member_runner(
+        &self,
+        session: turn_execution_service::TurnExecutionValue,
+        hooks: turn_execution_service::TurnExecutionValue,
+        overrides: turn_execution_service::TurnExecutionValue,
+    ) -> turn_execution_service::TurnExecutionValue {
+        Arc::new(MobileTurnRunner {
+            host: self.host.clone(),
+            _session: session,
+            _hooks: hooks,
+            overrides: Some(overrides),
+        })
+    }
+}
+
+struct MobileAppHost {
+    host: Arc<UnifiedAppHost>,
+    extension_runtime: tokio::runtime::Runtime,
+    extensions: Option<host_extensions::StartedHostExtensions>,
+}
+
+impl MobileAppHost {
+    fn new(app_data_dir: impl Into<PathBuf>) -> Result<Self, String> {
+        UnifiedAppHost::new(app_data_dir)
+            .map_err(|error| error.to_string())
+            .and_then(Self::from_unified)
+    }
+
+    fn new_with_feature_mode(
+        app_data_dir: impl Into<PathBuf>,
+        feature_mode: AppHostFeatureMode,
+    ) -> Result<Self, String> {
+        UnifiedAppHost::new_with_feature_mode(app_data_dir, feature_mode)
+            .map_err(|error| error.to_string())
+            .and_then(Self::from_unified)
+    }
+
+    fn new_with_feature_mode_and_storage_passphrase(
+        app_data_dir: impl Into<PathBuf>,
+        feature_mode: AppHostFeatureMode,
+        storage_passphrase: String,
+    ) -> Result<Self, String> {
+        UnifiedAppHost::new_with_feature_mode_and_storage_passphrase(
+            app_data_dir,
+            feature_mode,
+            storage_passphrase,
+        )
+        .map_err(|error| error.to_string())
+        .and_then(Self::from_unified)
+    }
+
+    fn from_unified(host: UnifiedAppHost) -> Result<Self, String> {
+        let host = Arc::new(host);
+        let extension_runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .map_err(|error| format!("create mobile Host extension runtime: {error}"))?;
+        let executor: Arc<dyn turn_execution_service::TurnExecutor> =
+            Arc::new(MobileTurnExecutor { host: host.clone() });
+        let extension =
+            turn_execution_extension::bound_turn_execution_extension::<UnifiedAppHost>(executor);
+        let extensions = extension_runtime
+            .block_on(host_extensions::start_host_extensions(
+                &[extension],
+                host.clone(),
+                |_extension_id, _error| {},
+            ))
+            .map_err(|error| format!("start mobile Host extensions: {error}"))?;
+        Ok(Self {
+            host,
+            extension_runtime,
+            extensions: Some(extensions),
+        })
+    }
+
+    fn dispatch_json(&self, input: &str) -> String {
+        dispatch_unified_json(self.host.as_ref(), input)
+    }
+
+    #[cfg(test)]
+    fn turn_execution_registry(&self) -> Arc<turn_execution_service::TurnExecutionRegistry> {
+        self.extensions
+            .as_ref()
+            .and_then(|extensions| {
+                extensions.api::<turn_execution_service::TurnExecutionRegistry>(
+                    extension_ids_generated::TURN_EXECUTION,
+                )
+            })
+            .expect("production turn-execution extension")
+    }
+}
+
+impl Drop for MobileAppHost {
+    fn drop(&mut self) {
+        if let Some(mut extensions) = self.extensions.take() {
+            self.extension_runtime.block_on(extensions.stop());
+        }
+    }
+}
+
 fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
     serde_json::to_string(&HostResponse {
         id: None,
@@ -338,7 +496,7 @@ fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mahayana_app_host_create(
     app_data_dir: *const c_char,
-) -> *mut UnifiedAppHost {
+) -> *mut MobileAppHost {
     let path = if app_data_dir.is_null() {
         default_app_data_dir()
     } else {
@@ -348,7 +506,7 @@ pub unsafe extern "C" fn mahayana_app_host_create(
                 .into_owned(),
         )
     };
-    match UnifiedAppHost::new(path) {
+    match MobileAppHost::new(path) {
         Ok(host) => Box::into_raw(Box::new(host)),
         Err(_) => std::ptr::null_mut(),
     }
@@ -364,7 +522,7 @@ pub unsafe extern "C" fn mahayana_app_host_create(
 pub unsafe extern "C" fn mahayana_app_host_create_with_storage_passphrase(
     app_data_dir: *const c_char,
     storage_passphrase: *const c_char,
-) -> *mut UnifiedAppHost {
+) -> *mut MobileAppHost {
     if storage_passphrase.is_null() {
         return std::ptr::null_mut();
     }
@@ -383,7 +541,7 @@ pub unsafe extern "C" fn mahayana_app_host_create_with_storage_passphrase(
     if passphrase.is_empty() {
         return std::ptr::null_mut();
     }
-    match UnifiedAppHost::new_with_feature_mode_and_storage_passphrase(
+    match MobileAppHost::new_with_feature_mode_and_storage_passphrase(
         path,
         AppHostFeatureMode::Production,
         passphrase,
@@ -402,7 +560,7 @@ pub unsafe extern "C" fn mahayana_app_host_create_with_storage_passphrase(
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mahayana_app_host_create_test(
     app_data_dir: *const c_char,
-) -> *mut UnifiedAppHost {
+) -> *mut MobileAppHost {
     let path = if app_data_dir.is_null() {
         default_app_data_dir()
     } else {
@@ -412,7 +570,7 @@ pub unsafe extern "C" fn mahayana_app_host_create_test(
                 .into_owned(),
         )
     };
-    match UnifiedAppHost::new_with_feature_mode(path, AppHostFeatureMode::Test) {
+    match MobileAppHost::new_with_feature_mode(path, AppHostFeatureMode::Test) {
         Ok(host) => Box::into_raw(Box::new(host)),
         Err(_) => std::ptr::null_mut(),
     }
@@ -425,7 +583,7 @@ pub unsafe extern "C" fn mahayana_app_host_create_test(
 /// `request_json` must point to a valid NUL-terminated C string for this call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn mahayana_app_host_dispatch_with_handle(
-    host: *mut UnifiedAppHost,
+    host: *mut MobileAppHost,
     request_json: *const c_char,
 ) -> *mut c_char {
     if host.is_null() || request_json.is_null() {
@@ -436,7 +594,7 @@ pub unsafe extern "C" fn mahayana_app_host_dispatch_with_handle(
     let input = unsafe { CStr::from_ptr(request_json) }.to_string_lossy();
     let host_ref = unsafe { &*host };
     let output = match process_crash_guard::catch_host_fault("mahayana-app-host", || {
-        dispatch_json(host_ref, &input)
+        host_ref.dispatch_json(&input)
     }) {
         Ok(output) => output,
         Err(fault) => host_fault_response(fault),
@@ -452,7 +610,7 @@ pub unsafe extern "C" fn mahayana_app_host_dispatch_with_handle(
 /// `host` must be null or a live pointer returned by `mahayana_app_host_create`
 /// that has not previously been destroyed.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn mahayana_app_host_destroy(host: *mut UnifiedAppHost) {
+pub unsafe extern "C" fn mahayana_app_host_destroy(host: *mut MobileAppHost) {
     if !host.is_null() {
         unsafe {
             drop(Box::from_raw(host));
@@ -472,9 +630,9 @@ pub unsafe extern "C" fn mahayana_app_host_dispatch(request_json: *const c_char)
             .into_raw();
     }
     let input = unsafe { CStr::from_ptr(request_json) }.to_string_lossy();
-    let output = match UnifiedAppHost::new(default_app_data_dir()) {
+    let output = match MobileAppHost::new(default_app_data_dir()) {
         Ok(host) => match process_crash_guard::catch_host_fault("mahayana-app-host-temporary", || {
-            dispatch_json(&host, &input)
+            host.dispatch_json(&input)
         }) {
             Ok(output) => output,
             Err(fault) => host_fault_response(fault),
@@ -506,6 +664,65 @@ pub unsafe extern "C" fn mahayana_app_host_free_string(pointer: *mut c_char) {
     }
 }
 
+#[cfg(test)]
+mod mobile_turn_execution_composition_tests {
+    use super::*;
+    use std::any::Any;
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_dir() -> PathBuf {
+        let path = std::env::temp_dir().join(format!(
+            "fabushi-ios-mobile-turn-execution-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&path).unwrap();
+        path
+    }
+
+    fn value<T: Any + Send + Sync>(value: T) -> turn_execution_service::TurnExecutionValue {
+        Arc::new(value)
+    }
+
+    #[test]
+    fn shipping_mobile_host_starts_and_binds_turn_execution() {
+        let root = temp_dir();
+        let host = MobileAppHost::new_with_feature_mode(&root, AppHostFeatureMode::Test).unwrap();
+        let registry = host.turn_execution_registry();
+
+        assert!(registry.can_execute());
+        let probe_runtime = tokio::runtime::Builder::new_current_thread().build().unwrap();
+        assert!(probe_runtime.block_on(registry.is_run_ready()));
+
+        let runner = registry
+            .create_runner(value("session"), value("hooks"))
+            .unwrap()
+            .downcast::<MobileTurnRunner>()
+            .unwrap();
+        assert!(runner.host_is_live());
+        assert!(!runner.is_group_member());
+
+        let group_runner = registry
+            .create_group_member_runner(
+                value("session"),
+                value("hooks"),
+                value("overrides"),
+            )
+            .unwrap()
+            .downcast::<MobileTurnRunner>()
+            .unwrap();
+        assert!(group_runner.host_is_live());
+        assert!(group_runner.is_group_member());
+
+        drop(host);
+        let _ = fs::remove_dir_all(root);
+    }
+}
+
 #[cfg(target_os = "android")]
 mod android_jni {
     use super::*;
@@ -531,7 +748,7 @@ mod android_jni {
         if passphrase.is_empty() {
             return 0;
         }
-        match UnifiedAppHost::new_with_feature_mode_and_storage_passphrase(
+        match MobileAppHost::new_with_feature_mode_and_storage_passphrase(
             path,
             AppHostFeatureMode::Production,
             passphrase,
@@ -551,7 +768,7 @@ mod android_jni {
             Ok(value) => PathBuf::from(value.to_string_lossy().into_owned()),
             Err(_) => return 0,
         };
-        match UnifiedAppHost::new_with_feature_mode(path, AppHostFeatureMode::Test) {
+        match MobileAppHost::new_with_feature_mode(path, AppHostFeatureMode::Test) {
             Ok(host) => Box::into_raw(Box::new(host)) as jlong,
             Err(_) => 0,
         }
@@ -574,8 +791,8 @@ mod android_jni {
             Ok(value) => value.to_string_lossy().into_owned(),
             Err(error) => format!("{{\"ok\":false,\"error\":\"invalid request: {error}\"}}"),
         };
-        let host = unsafe { &*(handle as *mut UnifiedAppHost) };
-        env.new_string(dispatch_json(host, &input))
+        let host = unsafe { &*(handle as *mut MobileAppHost) };
+        env.new_string(host.dispatch_json(&input))
             .map(|value| value.into_raw())
             .unwrap_or(std::ptr::null_mut())
     }
@@ -588,7 +805,7 @@ mod android_jni {
     ) {
         if handle != 0 {
             unsafe {
-                drop(Box::from_raw(handle as *mut UnifiedAppHost));
+                drop(Box::from_raw(handle as *mut MobileAppHost));
             }
         }
     }
