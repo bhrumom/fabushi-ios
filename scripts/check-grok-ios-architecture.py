@@ -71,6 +71,8 @@ required = [
     "source/ios-main/dev/dev-controls-gate.swift",
     "source/ios-main/dev/dev-gateway-offline.swift",
     "source/ios-main/dev/dev-network-latency.swift",
+    "source/ios-main/account/cursor-machine-id.swift",
+    "source/ios-main/downloads/download-path.swift",
     "source/ios-main/background-transfer/ios-background-transfer-service.swift",
     "source/ios-main/adapters/ios-native-local-capability-backend.swift",
     "source/ios-main/auth/ios-passkey-provider.swift",
@@ -226,6 +228,7 @@ required = [
     "source/packages/hooks/validators/sessionStartResponse.rs",
     "source/packages/hooks/validators/preToolUseResponse.rs",
     "mobile/ios/FabushiTests/DevControlsParityTests.swift",
+    "mobile/ios/FabushiTests/IOSMainPolicyParityTests.swift",
     "mobile/ios/FabushiTests/IOSPlatformMainParityTests.swift",
 ]
 for relative in required:
@@ -376,6 +379,15 @@ for required_token in [
 ]:
     if required_token not in dock_badge:
         errors.append(f"iOS dock-badge adaptation is incomplete: {required_token}")
+
+ios_main_policy_tests = (ROOT / "mobile/ios/FabushiTests/IOSMainPolicyParityTests.swift").read_text()
+for required_token in [
+    "testDownloadPathPolicyPreservesSafeBasenamesAndAbsoluteOverride",
+    "testMachineIDResolverDoubleChecksAfterEncryptedStorageSettles",
+    "testMachineIDResolverPersistsGeneratedIDWhenStillMissing",
+]:
+    if required_token not in ios_main_policy_tests:
+        errors.append(f"iOS main policy parity XCTest evidence is incomplete: {required_token}")
 
 dev_control_tests = (ROOT / "mobile/ios/FabushiTests/DevControlsParityTests.swift").read_text()
 for required_token in [
