@@ -112,21 +112,21 @@ final class MarketplaceModel {
     var activeOperationId: String?
     let globalDharmaCommerce: GlobalDharmaCommerceModel
 
-    private let host: MahayanaHost
+    private let bridge: IOSPreloadBridge
     private let onboardingKey = "fabushi.mobile.onboarding-complete.v1"
     @ObservationIgnored private let browserAuthPresentationContext = BrowserAuthPresentationContext()
     @ObservationIgnored private var webAuthenticationSession: ASWebAuthenticationSession?
 
-    init(host: MahayanaHost) {
-        self.host = host
-        globalDharmaCommerce = GlobalDharmaCommerceModel(host: host)
+    init(bridge: IOSPreloadBridge) {
+        self.bridge = bridge
+        globalDharmaCommerce = GlobalDharmaCommerceModel(bridge: bridge)
         onboardingStep = UserDefaults.standard.bool(forKey: onboardingKey) ? 3 : 0
     }
 
     func initializeApp() async {
         authResolved = false
         do {
-            let result = try await host.request(method: "feature.auth.status")
+            let result = try await bridge.request(method: "feature.auth.status")
             applyAuth(result.value as? [String: Any])
             authResolved = true
             if loggedIn { await refresh() }
@@ -162,12 +162,12 @@ final class MarketplaceModel {
         loginBusy = true
         loginError = nil
         do {
-            let result = try await host.request(method: "feature.auth.browserStart")
+            let result = try await bridge.request(method: "feature.auth.browserStart")
             guard let object = result.value as? [String: Any],
                   let attemptId = object["attemptId"] as? String,
                   let loginURLString = (object["loginUrl"] as? String) ?? (object["authorizationUrl"] as? String),
                   let loginURL = URL(string: loginURLString)
-            else { throw MahayanaHost.HostError.invalidResponse }
+            else { throw MahayanaCoordinator.CoordinatorError.invalidResponse }
             browserLoginAttemptId = attemptId
             browserLoginURL = loginURL
             loginBusy = false
@@ -187,11 +187,11 @@ final class MarketplaceModel {
     func reopenBrowserLogin() async {
         guard let attemptId = browserLoginAttemptId else { return }
         do {
-            let result = try await host.request(method: "feature.auth.browserReopen", params: ["attemptId": attemptId])
+            let result = try await bridge.request(method: "feature.auth.browserReopen", params: ["attemptId": attemptId])
             guard let object = result.value as? [String: Any],
                   let loginURLString = (object["loginUrl"] as? String) ?? (object["authorizationUrl"] as? String),
                   let loginURL = URL(string: loginURLString)
-            else { throw MahayanaHost.HostError.invalidResponse }
+            else { throw MahayanaCoordinator.CoordinatorError.invalidResponse }
             browserLoginURL = loginURL
             if loginURLString.hasPrefix("about:blank#fabushi-test-browser-login") {
                 await completeBrowserLogin(attemptId: attemptId)
@@ -210,7 +210,7 @@ final class MarketplaceModel {
     private func cancelBrowserLoginAttempt() async {
         guard let attemptId = browserLoginAttemptId else { return }
         do {
-            _ = try await host.request(method: "feature.auth.browserCancel", params: ["attemptId": attemptId])
+            _ = try await bridge.request(method: "feature.auth.browserCancel", params: ["attemptId": attemptId])
         } catch { loginError = error.localizedDescription }
         browserLoginAttemptId = nil
         browserLoginURL = nil
@@ -255,41 +255,41 @@ final class MarketplaceModel {
         guard ProcessInfo.processInfo.environment["FABUSHI_FEATURE_HOST_SMOKE"] == "1" else { return }
         featureHostSmokeStatus = "running"
         do {
-            let infoResult = try await host.request(method: "feature.info")
+            let infoResult = try await bridge.request(method: "feature.info")
             guard let info = infoResult.value as? [String: Any],
                   info["platform"] as? String == "ios",
                   let protocolVersion = info["protocolVersion"] as? String,
                   !protocolVersion.isEmpty,
                   (info["runtimeVersion"] as? String)?.contains("test") == true
             else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
 
-            _ = try await host.request(method: "feature.auth.status")
-            let providers = try await host.request(method: "feature.auth.providers")
+            _ = try await bridge.request(method: "feature.auth.status")
+            let providers = try await bridge.request(method: "feature.auth.providers")
             guard let providerRows = providers.value as? [[String: Any]],
                   providerRows.contains(where: { $0["id"] as? String == "google" })
             else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
 
-            let oauth = try await host.request(
+            let oauth = try await bridge.request(
                 method: "feature.auth.oauthStart",
                 params: ["provider": "google"]
             )
             guard let oauthObject = oauth.value as? [String: Any],
                   let attemptId = oauthObject["attemptId"] as? String
             else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
-            let oauthCompleted = try await host.request(
+            let oauthCompleted = try await bridge.request(
                 method: "feature.auth.oauthPoll",
                 params: ["attemptId": attemptId]
             )
             guard let completedObject = oauthCompleted.value as? [String: Any],
                   completedObject["status"] as? String == "completed"
             else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
 
             _ = try await executeFeatureCommand(
@@ -318,9 +318,9 @@ final class MarketplaceModel {
             )
             let approval = try await receiveFeatureEvent(type: "approval.requested")
             guard let approvalId = approval["approvalId"] as? String else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
-            _ = try await host.request(
+            _ = try await bridge.request(
                 method: "feature.approval.resolve",
                 params: [
                     "resolution": [
@@ -336,9 +336,9 @@ final class MarketplaceModel {
                 fields: ["label": "iOS simulated user operation"]
             )
             guard let operationId = longTask["operationId"] as? String else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
-            _ = try await host.request(
+            _ = try await bridge.request(
                 method: "feature.interrupt",
                 params: ["operationId": operationId]
             )
@@ -361,25 +361,25 @@ final class MarketplaceModel {
         var command = fields
         command["type"] = type
         command["requestId"] = requestId
-        let result = try await host.request(
+        let result = try await bridge.request(
             method: "feature.execute",
             params: ["command": command]
         )
         guard let accepted = result.value as? [String: Any],
               accepted["requestId"] as? String == requestId
         else {
-            throw MahayanaHost.HostError.invalidResponse
+            throw MahayanaCoordinator.CoordinatorError.invalidResponse
         }
         return accepted
     }
 
     private func receiveFeatureEvent(type expectedType: String) async throws -> [String: Any] {
         for _ in 0..<64 {
-            let result = try await host.request(method: "feature.receive")
+            let result = try await bridge.request(method: "feature.receive")
             guard let event = result.value as? [String: Any] else { continue }
             if event["type"] as? String == expectedType { return event }
         }
-        throw MahayanaHost.HostError.requestFailed("未收到 FeatureHost 事件 \(expectedType)")
+        throw MahayanaCoordinator.CoordinatorError.requestFailed("未收到 FeatureHost 事件 \(expectedType)")
     }
 
     func handleDeepLink(_ url: URL) {
@@ -409,14 +409,14 @@ final class MarketplaceModel {
     func completeBrowserLogin(attemptId: String) async {
         message = "登录授权已完成，正在通过 Rust Host 同步账号状态"
         do {
-            let result = try await host.request(
+            let result = try await bridge.request(
                 method: "feature.auth.browserPoll",
                 params: ["attemptId": attemptId]
             )
             guard let object = result.value as? [String: Any],
                   let status = object["status"] as? String
             else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
             switch status {
             case "completed":
@@ -445,10 +445,10 @@ final class MarketplaceModel {
 
     func logout() async {
         if let operationId = activeOperationId {
-            _ = try? await host.request(method: "feature.interrupt", params: ["operationId": operationId])
+            _ = try? await bridge.request(method: "feature.interrupt", params: ["operationId": operationId])
         }
         do {
-            let result = try await host.request(method: "feature.auth.logout")
+            let result = try await bridge.request(method: "feature.auth.logout")
             applyAuth(result.value as? [String: Any])
         } catch {
             message = "退出登录失败：\(error.localizedDescription)"
@@ -504,14 +504,14 @@ final class MarketplaceModel {
 
     func stopChat() async {
         guard let operationId = activeOperationId else { return }
-        _ = try? await host.request(method: "feature.interrupt", params: ["operationId": operationId])
+        _ = try? await bridge.request(method: "feature.interrupt", params: ["operationId": operationId])
     }
 
     private func pumpChatEvents(operationId: String) async -> MahayanaChatPumpOutcome {
         for _ in 0..<1800 {
             if Task.isCancelled { return .nonTerminal }
             do {
-                let result = try await host.request(method: "feature.receive")
+                let result = try await bridge.request(method: "feature.receive")
                 guard let event = result.value as? [String: Any], let type = event["type"] as? String else {
                     try? await Task.sleep(nanoseconds: 80_000_000)
                     continue
@@ -605,7 +605,7 @@ final class MarketplaceModel {
         loading = true
         defer { loading = false }
         do {
-            let result = try await host.request(
+            let result = try await bridge.request(
                 method: "feature.marketplace.browse",
                 params: ["query": query.isEmpty ? NSNull() : query, "platform": "ios"]
             )
@@ -644,12 +644,12 @@ final class MarketplaceModel {
         installingPluginId = plugin.pluginId
         message = "正在安装 \(plugin.pluginId)@\(version)…"
         do {
-            let metadata = try await host.request(
+            let metadata = try await bridge.request(
                 method: "feature.marketplace.release",
                 params: ["pluginId": plugin.pluginId, "version": version]
             )
             guard let release = (metadata.value as? [String: Any])?["releaseManifest"] as? [String: Any] else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
             let install = (metadata.value as? [String: Any])?["install"] as? [String: Any]
                 ?? release["install"] as? [String: Any]
@@ -659,18 +659,18 @@ final class MarketplaceModel {
                   let sourceRef = source["sourceRef"] as? String,
                   !sourceRef.isEmpty,
                   source["marketplaceHostsPackage"] as? Bool != true
-            else { throw MahayanaHost.HostError.invalidResponse }
-            let installed = try await host.request(
+            else { throw MahayanaCoordinator.CoordinatorError.invalidResponse }
+            let installed = try await bridge.request(
                 method: "feature.plugin.install",
                 params: ["release": release, "platform": "ios"]
             )
             guard let object = installed.value as? [String: Any] else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
             let pluginId = object["pluginId"] as? String ?? plugin.pluginId
             let runtime = object["runtime"] as? String ?? "unknown"
             let permissions = object["requestedPermissions"] as? [String] ?? []
-            let accountInstall = try await host.request(
+            let accountInstall = try await bridge.request(
                 method: "feature.marketplace.add",
                 params: ["pluginId": pluginId, "platform": "ios"]
             )
@@ -680,7 +680,7 @@ final class MarketplaceModel {
                   let botId = bot["id"] as? String,
                   !botId.isEmpty
             else {
-                throw MahayanaHost.HostError.requestFailed("Mini App 已本地安装，但 Fabushi 账号/Bot 同步未完成")
+                throw MahayanaCoordinator.CoordinatorError.requestFailed("Mini App 已本地安装，但 Fabushi 账号/Bot 同步未完成")
             }
             installingPluginId = nil
             if permissions.isEmpty {
@@ -706,7 +706,7 @@ final class MarketplaceModel {
         message = "正在授权 \(request.pluginId)…"
         do {
             for permission in request.permissions {
-                _ = try await host.request(
+                _ = try await bridge.request(
                     method: "plugin.permission.grant",
                     params: ["pluginId": request.pluginId, "permission": permission]
                 )
@@ -733,14 +733,14 @@ final class MarketplaceModel {
         }
         installingPluginId = pluginId
         do {
-            let compatibility = try await host.request(
+            let compatibility = try await bridge.request(
                 method: "plugin.compatibility",
                 params: ["pluginId": pluginId]
             )
             guard let object = compatibility.value as? [String: Any], object["portableCompatible"] as? Bool == true else {
-                throw MahayanaHost.HostError.requestFailed("插件不满足移动端 portable runtime 约束")
+                throw MahayanaCoordinator.CoordinatorError.requestFailed("插件不满足移动端 portable runtime 约束")
             }
-            _ = try await host.request(
+            _ = try await bridge.request(
                 method: "runtime.start",
                 params: ["pluginId": pluginId, "config": [String: Any]()]
             )
@@ -753,7 +753,7 @@ final class MarketplaceModel {
 
     func loadLocalMiniAppHtml(pluginId: String) async -> String? {
         do {
-            let result = try await host.request(
+            let result = try await bridge.request(
                 method: "feature.plugin.uiDocument",
                 params: ["pluginId": pluginId]
             )
@@ -766,9 +766,9 @@ final class MarketplaceModel {
 
     func callRuntimeTool(pluginId: String, name: String, arguments: [String: Any]) async throws -> Any {
         guard name.range(of: #"^[A-Za-z0-9_.-]{1,128}$"#, options: .regularExpression) != nil else {
-            throw MahayanaHost.HostError.requestFailed("Invalid WebMCP tool name")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Invalid WebMCP tool name")
         }
-        let result = try await host.request(
+        let result = try await bridge.request(
             method: "runtime.call",
             params: [
                 "pluginId": pluginId,
