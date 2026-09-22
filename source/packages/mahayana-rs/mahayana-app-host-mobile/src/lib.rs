@@ -54,6 +54,8 @@ mod transcript_occurrence_deriver;
 mod transcript_mirror;
 #[path = "../../../../host/transcript-mirror/legacy-transcript-mirror.rs"]
 mod legacy_transcript_mirror;
+#[path = "../../../../host/transcript-mirror/production-provider.rs"]
+mod production_provider;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
 mod box_monitor_layout;
 #[path = "../../../../host/box/box-store-backend-policy.rs"]
