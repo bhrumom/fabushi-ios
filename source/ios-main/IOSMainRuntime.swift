@@ -33,6 +33,31 @@ final class IOSMainRuntime {
         lifecycleRecovery.markResyncCompleted()
     }
 
+    func protectedDataWillBecomeUnavailable() {
+        lifecycleRecovery.markResyncRequired()
+        lifecycleReporter.report(
+            .rendererLifecycle,
+            level: .warn,
+            metadata: ["phase": "protected-data-unavailable"]
+        )
+        coordinator.sceneWillSuspend()
+    }
+
+    func protectedDataDidBecomeAvailable() {
+        lifecycleReporter.report(
+            .rendererLifecycle,
+            metadata: ["phase": "protected-data-available"]
+        )
+    }
+
+    func memoryPressureReceived() {
+        lifecycleReporter.report(
+            .processRecovery,
+            level: .warn,
+            metadata: ["reason": "memory-pressure"]
+        )
+    }
+
     /// Compatibility entry for platform-only callers. Renderer-facing code uses
     /// IOSPreloadBridge and never receives a Coordinator or Host reference.
     func dispatch(method: String, params: [String: Any] = [:]) async throws -> MahayanaCoordinator.JSONResult {

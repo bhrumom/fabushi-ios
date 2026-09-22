@@ -87,6 +87,19 @@ final class IOSLifecycleParityTests: XCTestCase {
         XCTAssertFalse(second.requiresColdStartResync)
     }
 
+
+    @MainActor
+    func testExplicitRecoveryRequirementPersistsAcrossRelaunch() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let first = try IOSLifecycleRecoveryStore(appDataDirectory: directory)
+        first.markResyncRequired()
+        let second = try IOSLifecycleRecoveryStore(appDataDirectory: directory)
+        XCTAssertTrue(second.requiresColdStartResync)
+    }
+
     @MainActor
     func testLifecycleReporterBuffersAndFlushesInOrder() {
         let reporter = IOSLifecycleReporter()

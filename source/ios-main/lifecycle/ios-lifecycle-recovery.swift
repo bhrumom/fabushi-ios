@@ -62,6 +62,12 @@ final class IOSLifecycleRecoveryStore {
         try? persist()
     }
 
+    func markResyncRequired() {
+        currentCheckpoint.needsResync = true
+        currentCheckpoint.updatedAt = now()
+        try? persist()
+    }
+
     func markResyncCompleted() {
         currentCheckpoint.needsResync = false
         currentCheckpoint.updatedAt = now()

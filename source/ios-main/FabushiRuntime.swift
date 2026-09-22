@@ -87,6 +87,21 @@ final class FabushiRuntime {
         }
     }
 
+    func protectedDataWillBecomeUnavailable() {
+        main.protectedDataWillBecomeUnavailable()
+    }
+
+    func protectedDataDidBecomeAvailable() async {
+        main.protectedDataDidBecomeAvailable()
+        if !wasBackgrounded {
+            await resyncAfterLifecycleRecovery(reason: "protected-data-available")
+        }
+    }
+
+    func memoryPressureReceived() {
+        main.memoryPressureReceived()
+    }
+
     func handleOpenURL(_ url: URL) {
         _ = deepLinkController?.handleCandidate(
             url.absoluteString,
