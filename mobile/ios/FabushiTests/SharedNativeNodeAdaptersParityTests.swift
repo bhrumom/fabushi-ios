@@ -64,6 +64,22 @@ final class SharedNativeNodeAdaptersParityTests: XCTestCase {
         try? FileManager.default.removeItem(at: root)
     }
 
+    func testIOSLocalInferenceNeverSimulatesDesktopCLIProcesses() {
+        XCTAssertNil(resolveCodexCliPath())
+        XCTAssertNil(resolveClaudeCodeCliPath())
+
+        let status = getLocalInferenceCliStatus()
+        XCTAssertFalse(status.codex.installed)
+        XCTAssertFalse(status.codex.authenticated)
+        XCTAssertNil(status.codex.executablePath)
+        XCTAssertEqual(status.codex.route, .nativeProvider)
+
+        XCTAssertFalse(status.claudeCode.installed)
+        XCTAssertFalse(status.claudeCode.authenticated)
+        XCTAssertNil(status.claudeCode.executablePath)
+        XCTAssertEqual(status.claudeCode.route, .remoteRunner)
+    }
+
     func testVariantMetadataAndHeaders() {
         let dev = ["SAND_CLIENT_APP_VERSION":"1.2.3-beta","SAND_PACKAGED":"0"]
         XCTAssertEqual(getSandVariant(dev), .dev)
