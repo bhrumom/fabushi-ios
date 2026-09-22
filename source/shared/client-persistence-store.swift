@@ -170,8 +170,7 @@ actor SandClientPersistenceStore {
                 continue
             }
             guard let key = decodeClientPersistenceFileName(name),
-                  let size = try? await files.fileSize(files.joinPath(dir, name)),
-                  let size else { continue }
+                  let size = try? await files.fileSize(files.joinPath(dir, name)) else { continue }
             loaded[name] = .init(key: key, size: size)
         }
         blobs = loaded
