@@ -339,6 +339,7 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         "host/sand-user-identity.rs",
         "host/selected-image-inputs.rs",
         "host/transcript-mutation-events.rs",
+        "host/workflows/stat-keyed-parse-cache.rs",
     ]:
         if required_module not in mobile_ffi_text:
             errors.append(f"iOS-owned Rust internal module is not compiled by mobile host: {required_module}")
