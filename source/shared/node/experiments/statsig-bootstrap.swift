@@ -26,7 +26,7 @@ func createCursorChecksum(
 ) -> String {
     let unixKiloSeconds = nowMs / 1_000_000
     var bytes: [UInt8] = [40,32,24,16,8,0].map { shift in
-        UInt8((unixKiloSeconds >> Int64(shift)) & 255)
+        UInt8((unixKiloSeconds >> shift) & 255)
     }
     var lastByte: UInt8 = 165
     for index in bytes.indices {
