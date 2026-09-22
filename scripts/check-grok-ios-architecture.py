@@ -35,6 +35,7 @@ if set(paths) != {row["path"] for row in manifest["files"]}:
 
 required = [
     "frontend/src/production/ProductionRenderer.view.swift",
+    "frontend/src/recovered/features/app-shell/ContentView.swift",
     "source/ios-main/main.swift",
     "source/ios-main/FabushiRuntime.swift",
     "source/ios-preload/preload.swift",
@@ -85,6 +86,8 @@ if args.strict and (ROOT / "mobile/native/include/mahayana_app_host.h").exists()
     errors.append("legacy mobile/native header still exists")
 if args.strict and (ROOT / "mobile/ios/Fabushi/GrokMobileShell.swift").exists():
     errors.append("legacy giant GrokMobileShell.swift still exists")
+if args.strict and (ROOT / "mobile/ios/Fabushi/ContentView.swift").exists():
+    errors.append("legacy giant ContentView.swift still exists")
 
 if warnings:
     for warning in warnings:
