@@ -223,10 +223,10 @@ final class EgressTunnelExitClient: @unchecked Sendable, EgressTunnelClient {
 
         guard let remoteRelay else {
             if case .open(let streamId, _, _) = frame {
-                lock.lock()
-                lastError = "iOS local TCP egress is disabled; Remote Runner required"
-                let status = snapshotLocked()
-                lock.unlock()
+                let status = lock.withLock {
+                    lastError = "iOS local TCP egress is disabled; Remote Runner required"
+                    return snapshotLocked()
+                }
                 onStatus(status)
                 return [encodeClose(streamId)]
             }
@@ -238,10 +238,10 @@ final class EgressTunnelExitClient: @unchecked Sendable, EgressTunnelClient {
             let responses = try await remoteRelay.relay(frame)
             return responses.map(encodeFrame)
         } catch {
-            lock.lock()
-            lastError = String(describing: type(of: error))
-            let status = snapshotLocked()
-            lock.unlock()
+            let status = lock.withLock {
+                lastError = String(describing: type(of: error))
+                return snapshotLocked()
+            }
             onStatus(status)
             if case .open(let streamId, _, _) = frame {
                 return [encodeClose(streamId)]
