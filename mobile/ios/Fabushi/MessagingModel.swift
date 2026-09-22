@@ -125,14 +125,14 @@ final class MessagingModel {
     private(set) var loading = false
     private(set) var errorMessage: String?
 
-    private let host: MahayanaHost
+    private let bridge: IOSPreloadBridge
     private var actorId = ""
     private var displayName = "当前用户"
     private let deviceId = "ios:native"
     private let sessionId = "account-session:ios-native"
 
-    init(host: MahayanaHost) {
-        self.host = host
+    init(bridge: IOSPreloadBridge) {
+        self.bridge = bridge
     }
 
     var currentActorId: String { actorId }
@@ -164,7 +164,7 @@ final class MessagingModel {
 
     func createConversation(kind: ConversationKind, title: String, description: String = "", participantActorIds: [String] = []) async throws -> ConversationSummary? {
         guard kind == .group || kind == .channel else {
-            throw MahayanaHost.HostError.requestFailed("私聊请从联系人列表发起")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("私聊请从联系人列表发起")
         }
         try await ensureIdentity()
         let now = Int64(Date().timeIntervalSince1970 * 1000)
@@ -239,9 +239,9 @@ final class MessagingModel {
         let chunkSize = 1024 * 1024
         while offset < sizeBytes {
             let requested = min(chunkSize, sizeBytes - offset)
-            let response = try await host.request(method: "feature.messaging.blob.read", params: ["blobId": blobId, "offset": offset, "length": requested])
+            let response = try await bridge.request(method: "feature.messaging.blob.read", params: ["blobId": blobId, "offset": offset, "length": requested])
             guard let object = response.value as? [String: Any], let encoded = object["dataBase64"] as? String, let chunk = Data(base64Encoded: encoded), !chunk.isEmpty else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
             result.append(chunk)
             offset += chunk.count
@@ -250,7 +250,7 @@ final class MessagingModel {
     }
 
     func sendVoice(conversationId: String, fileName: String, mimeType: String, data: Data, waveform: [UInt8] = []) async throws {
-        guard !data.isEmpty else { throw MahayanaHost.HostError.requestFailed("不能发送空语音") }
+        guard !data.isEmpty else { throw MahayanaCoordinator.CoordinatorError.requestFailed("不能发送空语音") }
         try await ensureIdentity()
         let blobId = "voice-\(UUID().uuidString.lowercased())"
         let createdAt = Int64(Date().timeIntervalSince1970 * 1000)
@@ -272,7 +272,7 @@ final class MessagingModel {
     }
 
     func sendAttachment(conversationId: String, fileName: String, mimeType: String, data: Data) async throws {
-        guard !data.isEmpty else { throw MahayanaHost.HostError.requestFailed("不能发送空文件") }
+        guard !data.isEmpty else { throw MahayanaCoordinator.CoordinatorError.requestFailed("不能发送空文件") }
         try await ensureIdentity()
         let blobId = "blob-\(UUID().uuidString.lowercased())"
         let createdAt = Int64(Date().timeIntervalSince1970 * 1000)
@@ -436,16 +436,16 @@ final class MessagingModel {
 
     private func ensureIdentity() async throws {
         guard actorId.isEmpty else { return }
-        let auth = try await host.request(method: "feature.auth.status")
+        let auth = try await bridge.request(method: "feature.auth.status")
         if let object = auth.value as? [String: Any], let user = object["user"] as? [String: Any] {
             displayName = (user["nickname"] as? String) ?? (user["username"] as? String) ?? displayName
         }
-        let access = try await host.request(
+        let access = try await bridge.request(
             method: "feature.messaging.access.issue",
             params: ["deviceId": deviceId, "sessionId": sessionId, "scopes": ["messaging", "calls", "blobsRead", "blobsWrite", "payments", "miniApps"]]
         )
         guard let object = access.value as? [String: Any], let resolvedActor = object["actorId"] as? String, !resolvedActor.isEmpty else {
-            throw MahayanaHost.HostError.invalidResponse
+            throw MahayanaCoordinator.CoordinatorError.invalidResponse
         }
         actorId = resolvedActor
         _ = try await execute(command: [
@@ -478,9 +478,9 @@ final class MessagingModel {
             ],
             "command": command,
         ]
-        let result = try await host.request(method: "feature.messaging.execute", params: ["requestId": requestId, "envelope": envelope])
+        let result = try await bridge.request(method: "feature.messaging.execute", params: ["requestId": requestId, "envelope": envelope])
         guard let root = result.value as? [String: Any], let envelopes = root["envelopes"] as? [[String: Any]] else {
-            throw MahayanaHost.HostError.invalidResponse
+            throw MahayanaCoordinator.CoordinatorError.invalidResponse
         }
         apply(envelopes)
         return envelopes
