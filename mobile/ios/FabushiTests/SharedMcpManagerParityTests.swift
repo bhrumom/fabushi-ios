@@ -281,10 +281,8 @@ final class SharedMcpManagerParityTests: XCTestCase {
 
         XCTAssertTrue(fixture.settings.getMcpCustomInstructionsByServerId().isEmpty)
         XCTAssertTrue(fixture.settings.getMcpDisabledToolsByServerId().isEmpty)
-        XCTAssertEqual(
-            (await fixture.manager.lastAccountDisplayConfigView())?.cacheScope,
-            "account-b"
-        )
+        let lastDisplayConfig = await fixture.manager.lastAccountDisplayConfigView()
+        XCTAssertEqual(lastDisplayConfig?.cacheScope, "account-b")
     }
 
     func testFreshResolutionDoesNotFallBackToStaleUnavailableDisplay() async throws {
