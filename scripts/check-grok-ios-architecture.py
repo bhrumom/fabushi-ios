@@ -151,6 +151,15 @@ required = [
     "source/packages/hooks/sanitize-system-reminder.rs",
     "source/packages/local-exec/int32.rs",
     "source/packages/local-exec/mcp.rs",
+    "source/packages/hooks/validators/base.rs",
+    "source/packages/hooks/validators/baseHookResponse.rs",
+    "source/packages/hooks/validators/afterAgentResponseResponse.rs",
+    "source/packages/hooks/validators/afterAgentThoughtResponse.rs",
+    "source/packages/hooks/validators/afterEditFileResponse.rs",
+    "source/packages/hooks/validators/afterMCPExecutionResponse.rs",
+    "source/packages/hooks/validators/afterShellExecutionResponse.rs",
+    "source/packages/hooks/validators/afterTabFileEditResponse.rs",
+    "source/packages/hooks/validators/sessionEndResponse.rs",
     "mobile/ios/FabushiTests/DevControlsParityTests.swift",
 ]
 for relative in required:

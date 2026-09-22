@@ -208,6 +208,24 @@ mod package_hooks_sanitize_system_reminder;
 mod package_local_exec_int32;
 #[path = "../../../local-exec/mcp.rs"]
 mod package_local_exec_mcp;
+#[path = "../../../hooks/validators/base.rs"]
+mod package_hooks_validators_base;
+#[path = "../../../hooks/validators/baseHookResponse.rs"]
+mod package_hooks_validators_base_hook_response;
+#[path = "../../../hooks/validators/afterAgentResponseResponse.rs"]
+mod package_hooks_validators_after_agent_response_response;
+#[path = "../../../hooks/validators/afterAgentThoughtResponse.rs"]
+mod package_hooks_validators_after_agent_thought_response;
+#[path = "../../../hooks/validators/afterEditFileResponse.rs"]
+mod package_hooks_validators_after_edit_file_response;
+#[path = "../../../hooks/validators/afterMCPExecutionResponse.rs"]
+mod package_hooks_validators_after_m_c_p_execution_response;
+#[path = "../../../hooks/validators/afterShellExecutionResponse.rs"]
+mod package_hooks_validators_after_shell_execution_response;
+#[path = "../../../hooks/validators/afterTabFileEditResponse.rs"]
+mod package_hooks_validators_after_tab_file_edit_response;
+#[path = "../../../hooks/validators/sessionEndResponse.rs"]
+mod package_hooks_validators_session_end_response;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
