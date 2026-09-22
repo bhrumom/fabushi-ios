@@ -138,6 +138,7 @@ required = [
     "source/mahayana-agent-coordinator/renderer-port-server.swift",
     "source/mahayana-agent-coordinator/control-port-client.swift",
     "source/host/MahayanaHostRuntime.swift",
+    "source/host/host-paths.rs",
     "source/host/process-crash-guard.rs",
     "source/host/notify-drain-gate.rs",
     "source/host/mcp-auth/mcp-auth-wait-registry.rs",
@@ -260,6 +261,24 @@ for required_token in [
 ]:
     if required_token not in coordinator_runtime:
         errors.append(f"MahayanaCoordinator is missing fail-closed Host recovery: {required_token}")
+
+mobile_host_crate = (ROOT / "source/packages/mahayana-rs/mahayana-app-host-mobile/src/lib.rs").read_text()
+if 'host/host-paths.rs' not in mobile_host_crate:
+    errors.append("shipping mobile Host crate does not compile source/host/host-paths.rs")
+
+host_paths = (ROOT / "source/host/host-paths.rs").read_text()
+for required_token in [
+    "ensure_data_root_alias",
+    "resolve_sand_user_data_dir",
+    "reanchor_sand_path_with",
+    "get_gateway_discovery_path",
+    "get_host_lock_path",
+    "get_host_secrets_path",
+    "get_host_upgrade_marker_path",
+    "get_host_crash_marker_path",
+]:
+    if required_token not in host_paths:
+        errors.append(f"host-paths parity is incomplete: {required_token}")
 
 local_host_supervisor = (ROOT / "source/mahayana-agent-coordinator/local-host-supervisor.swift").read_text()
 for required_token in [

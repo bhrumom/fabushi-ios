@@ -323,6 +323,8 @@ mod package_hooks_validators_session_start_response;
 #[path = "../../../hooks/validators/preToolUseResponse.rs"]
 mod package_hooks_validators_pre_tool_use_response;
 
+#[path = "../../../../host/host-paths.rs"]
+mod host_paths;
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
 #[path = "../../../../host/notify-drain-gate.rs"]
