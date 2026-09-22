@@ -339,4 +339,85 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
         XCTAssertEqual(recorder.reloads, 1)
     }
 
+
+    func testAuthenticationRegistersOAuthCallbackStateBeforeStartingWatch() async throws {
+        let recorder = AuthWatchRecorder()
+        let server = authWatchHTTPServer()
+        let registrationLock = NSLock()
+        nonisolated(unsafe) var registered: [(String, String)] = []
+        let lifecycle = SandMcpAuthWatchLifecycle(deps: .init(
+            checkAuthStatus: { _, redirect, _, _ in
+                XCTAssertEqual(redirect, MCP_OAUTH_IOS_CALLBACK_URL)
+                var components = try XCTUnwrap(
+                    URLComponents(string: "https://login.example.test/oauth")
+                )
+                components.queryItems = [
+                    .init(name: "redirect_uri", value: MCP_OAUTH_IOS_CALLBACK_URL),
+                    .init(name: "state", value: "mcp-state-1"),
+                ]
+                return .init(
+                    isAvailable: true,
+                    requiresAuth: true,
+                    hasValidToken: false,
+                    authUrl: try XCTUnwrap(components.url?.absoluteString),
+                    error: ""
+                )
+            },
+            validateTokens: { _ in [] },
+            resolveDisplayServer: { _, _ in server },
+            reload: { recorder.reload() },
+            registerOAuthCallback: { authorizationUrl, serverName in
+                registrationLock.lock()
+                registered.append((authorizationUrl, serverName))
+                registrationLock.unlock()
+                return parseMcpOAuthLoopbackAuthorization(authorizationUrl) != nil
+            },
+            onConnectorAuth: recorder.event,
+            autoPollEnabled: false
+        ))
+
+        let result = try await lifecycle.authenticateServer("12")
+
+        XCTAssertEqual(result.status, .started)
+        registrationLock.lock()
+        let registrations = registered
+        registrationLock.unlock()
+        XCTAssertEqual(registrations.count, 1)
+        XCTAssertEqual(registrations.first?.1, "GitHub")
+        XCTAssertEqual(
+            registrations.first.flatMap { parseMcpOAuthLoopbackAuthorization($0.0)?.state },
+            "mcp-state-1"
+        )
+        XCTAssertEqual(await lifecycle.pendingWatchCount(), 1)
+    }
+
+    func testAuthenticationFailsClosedWhenOAuthCallbackStateCannotRegister() async throws {
+        let recorder = AuthWatchRecorder()
+        let server = authWatchHTTPServer()
+        let lifecycle = SandMcpAuthWatchLifecycle(deps: .init(
+            checkAuthStatus: { _, _, _, _ in
+                .init(
+                    isAvailable: true,
+                    requiresAuth: true,
+                    hasValidToken: false,
+                    authUrl: "https://login.example.test/oauth?state=bad-state",
+                    error: ""
+                )
+            },
+            validateTokens: { _ in [] },
+            resolveDisplayServer: { _, _ in server },
+            reload: { recorder.reload() },
+            registerOAuthCallback: { _, _ in false },
+            onConnectorAuth: recorder.event,
+            autoPollEnabled: false
+        ))
+
+        let result = try await lifecycle.authenticateServer("12")
+
+        XCTAssertEqual(result.status, .notSupported)
+        XCTAssertTrue(result.message?.contains("registered iOS OAuth callback") == true)
+        XCTAssertEqual(await lifecycle.pendingWatchCount(), 0)
+        XCTAssertEqual(recorder.events.last?.reason, "invalid_auth_url")
+    }
+
 }
