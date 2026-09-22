@@ -8,6 +8,17 @@ mod host_extensions;
 #[path = "../../../../internal/scheduling.rs"]
 mod scheduling;
 
+#[path = "../../../utils/workspace-paths.rs"]
+mod package_utils_workspace_paths;
+#[path = "../../../utils/repo-url.rs"]
+mod package_utils_repo_url;
+#[path = "../../../utils/web-search-year-guidance.rs"]
+mod package_utils_web_search_year_guidance;
+#[path = "../../../utils/command-glob.rs"]
+mod package_utils_command_glob;
+#[path = "../../../utils/model-utils.rs"]
+mod package_utils_model_utils;
+
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;
 #[path = "../../../../host/notify-drain-gate.rs"]
