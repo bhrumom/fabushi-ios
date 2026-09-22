@@ -102,7 +102,10 @@ pub struct StatKeyedParseCache<Value> {
     insertion_order: VecDeque<String>,
 }
 
-impl<Value> Default for StatKeyedParseCache<Value> {
+impl<Value> Default for StatKeyedParseCache<Value>
+where
+    Value: Clone,
+{
     fn default() -> Self {
         Self::new(DEFAULT_STAT_PARSE_CACHE_CAPACITY)
     }
