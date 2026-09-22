@@ -1,9 +1,7 @@
 use crate::box_env::{
     BoxEnvironmentControlClient, BoxEnvironmentUpdate,
 };
-use crate::box_mcp::{
-    BoxMcpControlClient, ConnectErrorClassification, ConnectErrorCode,
-};
+use crate::box_mcp::BoxMcpControlClient;
 use crate::box_remote_accessor::{
     BoxConnectError, BoxPingControlClient,
 };
@@ -91,12 +89,6 @@ where
         self.service
             .update_environment_variables(context, request)
             .await
-    }
-}
-
-impl ConnectErrorClassification for BoxConnectError {
-    fn connect_error_code(&self) -> Option<ConnectErrorCode> {
-        self.code.clone()
     }
 }
 
