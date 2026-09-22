@@ -3,7 +3,7 @@ import Foundation
 final class MutableGateProperty: @unchecked Sendable {
     private let lock = NSLock()
     private var value: Bool
-    private var listeners: [UUID: @Sendable (Bool) -> Void] = [:]
+    private var listeners: [UUID: (Bool) -> Void] = [:]
 
     init(_ value: Bool) { self.value = value }
 
@@ -13,7 +13,7 @@ final class MutableGateProperty: @unchecked Sendable {
     }
 
     @discardableResult
-    func subscribe(_ listener: @escaping @Sendable (Bool) -> Void) -> @Sendable () -> Void {
+    func subscribe(_ listener: @escaping (Bool) -> Void) -> () -> Void {
         let id = UUID()
         lock.lock(); listeners[id] = listener; lock.unlock()
         return { [weak self] in
@@ -23,7 +23,7 @@ final class MutableGateProperty: @unchecked Sendable {
     }
 
     func set(_ next: Bool) {
-        let snapshot: [@Sendable (Bool) -> Void]
+        let snapshot: [(Bool) -> Void]
         lock.lock()
         if value == next { lock.unlock(); return }
         value = next

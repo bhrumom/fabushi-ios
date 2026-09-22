@@ -67,10 +67,9 @@ final class SharedExperimentsSupportParityTests: XCTestCase {
     func testDiagnosticsBuffersBeforePinAndGatePropertyOnlyEmitsChanges() {
         pinExperimentsDiagnosticsReporter(nil)
         reportExperimentsDiagnostic(.init(kind: "before"))
-        let lock = NSLock()
         var kinds: [String] = []
         pinExperimentsDiagnosticsReporter { value in
-            lock.lock(); kinds.append(value.kind); lock.unlock()
+            kinds.append(value.kind)
         }
         XCTAssertTrue(kinds.contains("before"))
 

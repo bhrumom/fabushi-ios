@@ -18,13 +18,13 @@ private struct FeatureFlagOverrideFile: Codable {
 
 final class SandFeatureFlagOverrideStore: @unchecked Sendable {
     private let lock = NSLock()
-    private let getCacheDir: @Sendable () -> String
-    private let now: @Sendable () -> Int64
+    private let getCacheDir: () -> String
+    private let now: () -> Int64
     private var overrides: [String: FeatureFlagOverrideEntry] = [:]
 
     init(
-        getCacheDir: @escaping @Sendable () -> String,
-        now: @escaping @Sendable () -> Int64 = { Int64(Date().timeIntervalSince1970 * 1_000) }
+        getCacheDir: @escaping () -> String,
+        now: @escaping () -> Int64 = { Int64(Date().timeIntervalSince1970 * 1_000) }
     ) {
         self.getCacheDir = getCacheDir
         self.now = now

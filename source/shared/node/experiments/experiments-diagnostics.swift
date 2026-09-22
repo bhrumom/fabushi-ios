@@ -9,14 +9,14 @@ struct ExperimentDiagnostic: Equatable, Sendable {
 
 private final class ExperimentsDiagnosticsState: @unchecked Sendable {
     let lock = NSLock()
-    var reporter: (@Sendable (ExperimentDiagnostic) -> Void)?
+    var reporter: ((ExperimentDiagnostic) -> Void)?
     var buffered: [ExperimentDiagnostic] = []
 }
 
 private let EXPERIMENTS_DIAGNOSTICS_STATE = ExperimentsDiagnosticsState()
 
 func pinExperimentsDiagnosticsReporter(
-    _ reporter: (@Sendable (ExperimentDiagnostic) -> Void)?
+    _ reporter: ((ExperimentDiagnostic) -> Void)?
 ) {
     let backlog: [ExperimentDiagnostic]
     EXPERIMENTS_DIAGNOSTICS_STATE.lock.lock()
@@ -29,7 +29,7 @@ func pinExperimentsDiagnosticsReporter(
 }
 
 func reportExperimentsDiagnostic(_ diagnostic: ExperimentDiagnostic) {
-    let reporter: (@Sendable (ExperimentDiagnostic) -> Void)?
+    let reporter: ((ExperimentDiagnostic) -> Void)?
     EXPERIMENTS_DIAGNOSTICS_STATE.lock.lock()
     reporter = EXPERIMENTS_DIAGNOSTICS_STATE.reporter
     if reporter == nil, EXPERIMENTS_DIAGNOSTICS_STATE.buffered.count < PRE_PIN_BUFFER_CAP {
