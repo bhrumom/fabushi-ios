@@ -13,7 +13,7 @@ settings:
     HEADER_SEARCH_PATHS:
       - $(SRCROOT)/../../source/host/include
     LIBRARY_SEARCH_PATHS:
-      - $(SRCROOT)/Frameworks
+      - $(SRCROOT)/../../build/rust/$(PLATFORM_NAME)
     OTHER_LDFLAGS:
       - $(inherited)
       - -lmahayana_app_host
@@ -25,12 +25,18 @@ targets:
       - path: Fabushi
         excludes:
           - MahayanaHost.swift
+      - path: ../../frontend
       - path: ../../source/host/MahayanaHostRuntime.swift
       - path: ../../source/mahayana-agent-coordinator
       - path: ../../source/ios-main
       - path: ../../source/ios-preload
       - path: ../../source/local-exec-daemon
       - path: ../../source/box-exec-daemon
+    preBuildScripts:
+      - name: Build iOS-owned Mahayana runtime
+        script: |
+          "$SRCROOT/../../scripts/build-mahayana-ios.sh" "$PLATFORM_NAME" "${CURRENT_ARCH:-arm64}"
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ombhrum.fabushi
