@@ -2,9 +2,10 @@ name: iOS Grok architecture parity
 
 on:
   pull_request:
-  push:
-    branches:
-      - spec/grok-bot-018-ios-parity-20260922
+
+concurrency:
+  group: ios-grok-architecture-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
