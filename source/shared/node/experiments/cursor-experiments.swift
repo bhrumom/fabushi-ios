@@ -356,12 +356,14 @@ final class SandExperimentService: @unchecked Sendable {
             pin(checkFeatureGate(name))
             return
         }
-        var unsubscribe: (() -> Void)?
-        unsubscribe = subscribe { [weak self] _ in
+        let listenerId = UUID()
+        lock.lock()
+        listeners[listenerId] = { [weak self] _ in
             guard let self, self.hasAuthenticatedStatsigBootstrap() else { return }
-            unsubscribe?()
+            self.removeListener(listenerId)
             pin(self.checkFeatureGate(name))
         }
+        lock.unlock()
     }
 
     func hasAuthenticatedStatsigBootstrap() -> Bool {

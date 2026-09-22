@@ -108,53 +108,60 @@ func resolveCachedSandPrivacyMode(
 ) async -> SandPrivacyMode? {
     let accountScope = accountCacheScope(options.accessToken)
 
-    SAND_PRIVACY_MODE_CACHE.lock.lock()
-    if let cached = SAND_PRIVACY_MODE_CACHE.entry,
-       cached.backendUrl == options.backendUrl,
-       cached.accountScope == accountScope,
-       cached.expiresAtMs == nil || nowMs() <= cached.expiresAtMs! {
-        let task = cached.value
-        SAND_PRIVACY_MODE_CACHE.lock.unlock()
-        return await task.value
-    }
+    let resolution = SAND_PRIVACY_MODE_CACHE.lock.withLock { () -> (
+        task: Task<SandPrivacyMode?, Never>,
+        id: UUID?,
+        startedAtMs: Int64?
+    ) in
+        if let cached = SAND_PRIVACY_MODE_CACHE.entry,
+           cached.backendUrl == options.backendUrl,
+           cached.accountScope == accountScope,
+           cached.expiresAtMs == nil || nowMs() <= cached.expiresAtMs! {
+            return (cached.value, nil, nil)
+        }
 
-    let startedAt = nowMs()
-    let id = UUID()
-    let task = Task {
-        await settlePrivacyMode(
-            fetchPrivacyMode: fetchPrivacyMode,
-            options: options,
-            log: log
+        let startedAtMs = nowMs()
+        let id = UUID()
+        let task = Task {
+            await settlePrivacyMode(
+                fetchPrivacyMode: fetchPrivacyMode,
+                options: options,
+                log: log
+            )
+        }
+        SAND_PRIVACY_MODE_CACHE.entry = .init(
+            id: id,
+            backendUrl: options.backendUrl,
+            accountScope: accountScope,
+            value: task,
+            expiresAtMs: nil
         )
+        return (task, id, startedAtMs)
     }
-    SAND_PRIVACY_MODE_CACHE.entry = .init(
-        id: id,
-        backendUrl: options.backendUrl,
-        accountScope: accountScope,
-        value: task,
-        expiresAtMs: nil
-    )
-    SAND_PRIVACY_MODE_CACHE.lock.unlock()
 
-    let privacyMode = await task.value
+    let privacyMode = await resolution.task.value
+    guard let id = resolution.id, let startedAtMs = resolution.startedAtMs else {
+        return privacyMode
+    }
     let ttl = privacyMode == nil
         ? PRIVACY_MODE_FALLBACK_CACHE_MAX_AGE_MS
         : PRIVACY_MODE_CACHE_MAX_AGE_MS
 
-    SAND_PRIVACY_MODE_CACHE.lock.lock()
-    if var current = SAND_PRIVACY_MODE_CACHE.entry, current.id == id {
-        current.expiresAtMs = startedAt + ttl
-        SAND_PRIVACY_MODE_CACHE.entry = current
+    SAND_PRIVACY_MODE_CACHE.lock.withLock {
+        if var current = SAND_PRIVACY_MODE_CACHE.entry, current.id == id {
+            current.expiresAtMs = startedAtMs + ttl
+            SAND_PRIVACY_MODE_CACHE.entry = current
+        }
     }
-    SAND_PRIVACY_MODE_CACHE.lock.unlock()
     return privacyMode
 }
 
 func clearSandPrivacyModeCacheForTesting() {
-    SAND_PRIVACY_MODE_CACHE.lock.lock()
-    let task = SAND_PRIVACY_MODE_CACHE.entry?.value
-    SAND_PRIVACY_MODE_CACHE.entry = nil
-    SAND_PRIVACY_MODE_CACHE.lock.unlock()
+    let task = SAND_PRIVACY_MODE_CACHE.lock.withLock {
+        let task = SAND_PRIVACY_MODE_CACHE.entry?.value
+        SAND_PRIVACY_MODE_CACHE.entry = nil
+        return task
+    }
     task?.cancel()
 }
 
