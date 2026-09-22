@@ -1,5 +1,8 @@
 use crate::conversation_blob_gc::to_hex_id;
+use crate::conversation_state_binary::decode_transcript_mirror_conversation_state;
+use crate::legacy_transcript_mirror::LegacyFileTranscriptMirror;
 use crate::transcript_mirror_offload::TranscriptMirrorJob;
+use crate::transcript_occurrence_deriver::TranscriptOccurrenceBlobStore;
 use rusqlite::{Connection, OpenFlags, OptionalExtension};
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -101,6 +104,12 @@ impl ReadOnlySqliteBlobStore {
     }
 }
 
+impl TranscriptOccurrenceBlobStore for ReadOnlySqliteBlobStore {
+    fn get_blob(&self, id: &[u8]) -> Option<Vec<u8>> {
+        ReadOnlySqliteBlobStore::get_blob(self, id)
+    }
+}
+
 #[derive(Debug)]
 pub enum TranscriptMirrorExecutionError<WriterError> {
     MissingState(MissingTranscriptStateError),
@@ -137,6 +146,38 @@ where
         &job.conversation_id,
     )
     .map_err(TranscriptMirrorExecutionError::Writer)
+}
+
+#[derive(Debug)]
+pub enum LegacyTranscriptMirrorExecutionError {
+    MissingState(MissingTranscriptStateError),
+    Decode(String),
+    Writer(String),
+}
+
+impl fmt::Display for LegacyTranscriptMirrorExecutionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingState(error) => error.fmt(formatter),
+            Self::Decode(error) | Self::Writer(error) => formatter.write_str(error),
+        }
+    }
+}
+
+impl std::error::Error for LegacyTranscriptMirrorExecutionError {}
+
+pub fn execute_legacy_mirror_job(
+    job: &TranscriptMirrorJob,
+) -> Result<bool, LegacyTranscriptMirrorExecutionError> {
+    let store = ReadOnlySqliteBlobStore::new(job.blob_db_paths.iter().cloned());
+    let state_blob = store
+        .load_state_blob(&job.conversation_id, &job.state_blob_id)
+        .map_err(LegacyTranscriptMirrorExecutionError::MissingState)?;
+    let state = decode_transcript_mirror_conversation_state(&state_blob)
+        .map_err(|error| LegacyTranscriptMirrorExecutionError::Decode(error.to_string()))?;
+    LegacyFileTranscriptMirror::new(&job.transcripts_dir)
+        .write_full(&job.conversation_id, &state, &store)
+        .map_err(|error| LegacyTranscriptMirrorExecutionError::Writer(error.to_string()))
 }
 
 #[cfg(test)]
@@ -189,6 +230,70 @@ mod tests {
             store.reject_write().unwrap_err(),
             ReadOnlyTranscriptBlobStoreWriteError
         );
+    }
+
+    fn bytes_field(field: u64, value: &[u8]) -> Vec<u8> {
+        let mut out = Vec::new();
+        let mut tag = field * 8 + 2;
+        loop {
+            let mut byte = (tag & 0x7f) as u8;
+            tag >>= 7;
+            if tag != 0 {
+                byte |= 0x80;
+            }
+            out.push(byte);
+            if tag == 0 {
+                break;
+            }
+        }
+        let mut length = value.len() as u64;
+        loop {
+            let mut byte = (length & 0x7f) as u8;
+            length >>= 7;
+            if length != 0 {
+                byte |= 0x80;
+            }
+            out.push(byte);
+            if length == 0 {
+                break;
+            }
+        }
+        out.extend_from_slice(value);
+        out
+    }
+
+    #[test]
+    fn production_legacy_executor_decodes_checkpoint_and_writes_jsonl() {
+        let dir = temp_dir();
+        let db = dir.join("conversation.sqlite");
+        let state_id = [9u8];
+        let root_id = [7u8];
+        create_blob_db(&db, &state_id, &bytes_field(1, &root_id));
+        let connection = Connection::open(&db).unwrap();
+        connection
+            .execute(
+                "INSERT INTO blobs (id, data) VALUES (?1, ?2)",
+                params![
+                    to_hex_id(&root_id),
+                    br#"{"role":"user","content":"hello from checkpoint"}"#.as_slice()
+                ],
+            )
+            .unwrap();
+
+        let job = TranscriptMirrorJob {
+            conversation_id: "conversation-a".into(),
+            state_blob_id: state_id.to_vec(),
+            blob_db_paths: vec![db],
+            transcripts_dir: dir.join("transcripts"),
+        };
+        assert!(execute_legacy_mirror_job(&job).unwrap());
+        let jsonl = fs::read_to_string(
+            job.transcripts_dir
+                .join("conversation-a")
+                .join("conversation-a.jsonl"),
+        )
+        .unwrap();
+        assert!(jsonl.contains("hello from checkpoint"));
     }
 
     #[test]

@@ -158,7 +158,7 @@ fn normalize_newlines(mut text: String) -> String {
     text.trim().to_owned()
 }
 
-fn strip_context_tags(text: &str) -> String {
+pub(crate) fn strip_context_tags(text: &str) -> String {
     let mut result = text.to_owned();
     for tag in CONTEXT_TAGS_TO_STRIP {
         result = remove_tag_blocks(result, tag);
@@ -166,7 +166,7 @@ fn strip_context_tags(text: &str) -> String {
     normalize_newlines(result)
 }
 
-fn strip_hidden_thinking_tags(text: &str) -> String {
+pub(crate) fn strip_hidden_thinking_tags(text: &str) -> String {
     let result = remove_tag_blocks(text.to_owned(), "think");
     let result = remove_tag_blocks(result, "thinking");
     normalize_newlines(result)
