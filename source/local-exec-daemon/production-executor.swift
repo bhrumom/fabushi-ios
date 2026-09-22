@@ -11,7 +11,7 @@ protocol IOSLocalCapabilityBackend: Sendable {
 ///
 /// Only explicitly allow-listed native capabilities execute on-device.
 /// Shell/process/file-daemon semantics are delegated to RemoteRunner and are
-/// never emulated with Process/NSTask/posix_spawn on the phone.
+/// never emulated with unrestricted native process-spawn APIs on the phone.
 actor IOSProductionLocalExecutor {
     private let capabilityRunner: LocalCapabilityRunner
     private let localBackend: any IOSLocalCapabilityBackend
