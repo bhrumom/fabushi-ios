@@ -101,7 +101,7 @@ func resolvePluginLogo(
             )
             return responseToImageDataUrl(
                 response,
-                chunks: [data],
+                body: data,
                 maxBytes: LOGO_MAX_BYTES
             )
         }

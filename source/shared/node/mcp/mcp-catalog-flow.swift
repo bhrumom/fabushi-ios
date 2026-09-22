@@ -52,8 +52,8 @@ actor SandMcpCatalogFlow {
         let views = listing.plugins.map { plugin in
             catalog[plugin.pluginId] = plugin
             return marketplacePluginToView(plugin)
-        }.sorted {
-            $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
+        }.sorted { (lhs: SandMarketplacePluginView, rhs: SandMarketplacePluginView) in
+            lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
         }
         viewsCache = .init(
             views: views,

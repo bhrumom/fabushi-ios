@@ -37,7 +37,8 @@ func pinMcpDiagnosticsReporter(_ reporter: ((McpDiagnostic) -> Void)?) {
 
 func mcpErrorClassOf(_ error: Any) -> String {
     if let connect = error as? any ConnectErrorLike {
-        return "ConnectError.\(MCP_CONNECT_CODE_NAMES[connect.connectCode].map(String.init) ?? "undefined")"
+        let codeName = MCP_CONNECT_CODE_NAMES[connect.connectCode] ?? "undefined"
+        return "ConnectError.\(codeName)"
     }
     if let error = error as? Error {
         let name = String(describing: type(of: error))
