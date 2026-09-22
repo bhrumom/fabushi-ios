@@ -36,16 +36,16 @@ final class MahayanaCoordinator {
         case failed(String)
     }
 
-    private let host: MahayanaHostRuntime
+    private let hostSupervisor: MahayanaLocalHostSupervisor
     private let webAuthnSigner: CoordinatorWebAuthnSigner?
     private(set) var lifecycleState: LifecycleState = .starting
     private var inFlight = Set<String>()
 
     init(
-        host: MahayanaHostRuntime,
+        hostSupervisor: MahayanaLocalHostSupervisor,
         passkeyProvider: (any PasskeyProviding)? = nil
     ) {
-        self.host = host
+        self.hostSupervisor = hostSupervisor
         webAuthnSigner = passkeyProvider.map {
             CoordinatorWebAuthnSigner(
                 passkeys: CoordinatorPasskeyProvider(provider: $0)
@@ -54,13 +54,17 @@ final class MahayanaCoordinator {
         lifecycleState = .ready
     }
 
+    var hostGeneration: UInt64 {
+        hostSupervisor.generation
+    }
+
     static func make(
         appDataDirectory: URL,
         featureHostTest: Bool = false,
         passkeyProvider: (any PasskeyProviding)? = nil
     ) throws -> MahayanaCoordinator {
         MahayanaCoordinator(
-            host: try MahayanaHostRuntime(
+            hostSupervisor: try MahayanaLocalHostSupervisor.make(
                 appDataDirectory: appDataDirectory,
                 featureHostTest: featureHostTest
             ),
@@ -79,12 +83,36 @@ final class MahayanaCoordinator {
     /// replacing dictionary-shaped calls. Host ownership remains here.
     func request(method: String, params: [String: Any] = [:]) async throws -> JSONResult {
         guard lifecycleState != .shuttingDown else { throw CoordinatorError.unavailable }
+        if case .failed = lifecycleState {
+            do {
+                _ = try hostSupervisor.recoverAfterFailure(
+                    observedGeneration: hostSupervisor.generation
+                )
+                lifecycleState = .ready
+            } catch {
+                throw CoordinatorError.unavailable
+            }
+        }
+
         let requestId = UUID().uuidString.lowercased()
+        let observedHostGeneration = hostSupervisor.generation
         inFlight.insert(requestId)
         defer { inFlight.remove(requestId) }
+
         do {
-            let result = try await host.request(method: method, params: params)
+            let result = try await hostSupervisor.request(method: method, params: params)
             return JSONResult(value: result.value)
+        } catch let hostError as MahayanaHostRuntime.HostError {
+            if hostError.requiresRecovery {
+                do {
+                    _ = try hostSupervisor.recoverAfterFailure(
+                        observedGeneration: observedHostGeneration
+                    )
+                } catch {
+                    lifecycleState = .failed(error.localizedDescription)
+                }
+            }
+            throw CoordinatorError.requestFailed(hostError.localizedDescription)
         } catch {
             throw CoordinatorError.requestFailed(error.localizedDescription)
         }
@@ -108,14 +136,27 @@ final class MahayanaCoordinator {
     }
 
     func sceneBecameActive() {
-        lifecycleState = .ready
+        if case .failed = lifecycleState {
+            do {
+                _ = try hostSupervisor.recoverAfterFailure(
+                    observedGeneration: hostSupervisor.generation
+                )
+                lifecycleState = .ready
+            } catch {
+                return
+            }
+        } else {
+            lifecycleState = .ready
+        }
     }
 
     func sceneEnteredBackground() {
+        if case .failed = lifecycleState { return }
         lifecycleState = .background
     }
 
     func sceneWillSuspend() {
+        if case .failed = lifecycleState { return }
         lifecycleState = .suspended
     }
 
