@@ -177,16 +177,20 @@ final class SharedPlatformContractsParityTests: XCTestCase {
         let field = BoxSettingsField(port: port, mirror: mirror)
 
         local = "stale"
-        XCTAssertEqual(await field.absorbFromBox(), .cleared)
+        let cleared = await field.absorbFromBox()
+        XCTAssertEqual(cleared, .cleared)
         XCTAssertNil(local)
 
-        XCTAssertEqual(await field.apply("dark"), .persisted("dark"))
+        let persisted = await field.apply("dark")
+        XCTAssertEqual(persisted, .persisted("dark"))
         XCTAssertEqual(local, "dark")
         XCTAssertEqual(remote.mode, "dark")
-        XCTAssertEqual(await field.reconcile(), "dark")
+        let reconciled = await field.reconcile()
+        XCTAssertEqual(reconciled, "dark")
 
         remote.mode = "light"
-        XCTAssertEqual(await field.absorbFromBox(), .repainted)
+        let repainted = await field.absorbFromBox()
+        XCTAssertEqual(repainted, .repainted)
         XCTAssertEqual(local, "light")
     }
 
