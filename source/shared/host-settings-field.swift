@@ -1,21 +1,21 @@
 import Foundation
 
 struct HostSettingsPort<Settings, Value> {
-    let isReadable: () -> Bool
-    let read: () async throws -> Settings
-    let write: (Value) async throws -> Settings?
-    let value: (Settings) -> Value?
+    let isReadable: @MainActor () -> Bool
+    let read: @MainActor () async throws -> Settings
+    let write: @MainActor (Value) async throws -> Settings?
+    let value: @MainActor (Settings) -> Value?
 }
 
 struct HostSettingsMirror<Value> {
-    let read: () -> Value?
-    let write: (Value) -> Void
-    let clear: (() -> Void)?
+    let read: @MainActor () -> Value?
+    let write: @MainActor (Value) -> Void
+    let clear: (@MainActor () -> Void)?
 
     init(
-        read: @escaping () -> Value?,
-        write: @escaping (Value) -> Void,
-        clear: (() -> Void)? = nil
+        read: @escaping @MainActor () -> Value?,
+        write: @escaping @MainActor (Value) -> Void,
+        clear: (@MainActor () -> Void)? = nil
     ) {
         self.read = read
         self.write = write
