@@ -72,7 +72,7 @@ pub fn is_goal_owner_valid(goal_state: &GoalState, agent_session_id: Option<&str
 }
 
 pub fn is_goal_identity_valid(goal_state: &GoalState, identity: GoalIdentity<'_>) -> bool {
-    match goal_state.agent_session_id {
+    match goal_state.agent_session_id.as_deref() {
         None => goal_state.conversation_id.as_deref() == Some(identity.conversation_id),
         Some(_) => is_goal_owner_valid(goal_state, identity.agent_session_id),
     }
