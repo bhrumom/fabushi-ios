@@ -321,6 +321,7 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         "host/transcript-mirror/conversation-state-binary.rs",
         "host/transcript-mirror/transcript-journal-codec.rs",
         "host/transcript-mirror/transcript-mirror-router.rs",
+        "host/transcript-mirror/transcript-occurrence-deriver.rs",
         "host/extensions/extension-ids.generated.rs",
         "host/extensions/session/session-diagnostics.rs",
         "host/extensions/telemetry/send-trace-sampler.rs",

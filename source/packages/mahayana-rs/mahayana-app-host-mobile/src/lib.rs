@@ -46,6 +46,8 @@ mod conversation_state_binary;
 mod transcript_journal_codec;
 #[path = "../../../../host/transcript-mirror/transcript-mirror-router.rs"]
 mod transcript_mirror_router;
+#[path = "../../../../host/transcript-mirror/transcript-occurrence-deriver.rs"]
+mod transcript_occurrence_deriver;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
 mod box_monitor_layout;
 #[path = "../../../../host/box/box-store-backend-policy.rs"]
