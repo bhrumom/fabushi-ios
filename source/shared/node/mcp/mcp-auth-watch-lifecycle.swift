@@ -379,6 +379,17 @@ actor SandMcpAuthWatchLifecycle {
         clearPendingAuthWatchesForServerInternal(serverId).map(reference)
     }
 
+    func notifyWatchCancelled(_ reference: McpAuthWatchReference) {
+        observer?(.init(
+            serverId: reference.serverId,
+            accountKey: reference.accountKey,
+            serverName: reference.serverName ?? reference.serverId,
+            serverIdentifier: reference.serverIdentifier,
+            requestingAgentId: reference.requestingAgentId,
+            outcome: .cancelled
+        ))
+    }
+
     func clearAllPendingAuthWatches() {
         for watch in pending.values {
             watch.pollTask?.cancel()
