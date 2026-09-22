@@ -2,6 +2,10 @@ use crate::package_agent_core_conversation_actions_receiver_contract::{
     ConversationActionReceiver, ConversationActionReceiverEntry,
 };
 
+// The pinned module also retains creation of this default manager logger.
+#[allow(dead_code)]
+const REMOTE_MANAGER_LOGGER_NAME: &str = "RemoteConversationActionManager";
+
 #[derive(Debug, Default, Clone, Copy)]
 pub struct NoopConversationActionReceiver;
 
@@ -23,6 +27,11 @@ impl<Context, Action> ConversationActionReceiver<Context, Action>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn preserves_retained_remote_manager_logger_identity() {
+        assert_eq!(REMOTE_MANAGER_LOGGER_NAME, "RemoteConversationActionManager");
+    }
 
     #[tokio::test]
     async fn noop_receiver_never_surfaces_or_consumes_an_action() {

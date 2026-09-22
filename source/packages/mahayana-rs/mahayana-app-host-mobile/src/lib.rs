@@ -88,6 +88,20 @@ mod package_agent_core_goal_pursuit_guidelines;
 mod package_agent_core_domain_utils;
 #[path = "../../../agent-core/goal-continuation.rs"]
 mod package_agent_core_goal_continuation;
+#[path = "../../../agent-core/mcp-auth-flow.rs"]
+mod package_agent_core_mcp_auth_flow;
+#[path = "../../../agent-exec/await-outcome.rs"]
+mod package_agent_exec_await_outcome;
+#[path = "../../../agent-exec/background-work-metadata.rs"]
+mod package_agent_exec_background_work_metadata;
+#[path = "../../../agent-exec/common.rs"]
+mod package_agent_exec_common;
+#[path = "../../../agent-exec/exec-error.rs"]
+mod package_agent_exec_exec_error;
+#[path = "../../../agent-exec/execution-timing.rs"]
+mod package_agent_exec_execution_timing;
+#[path = "../../../agent-exec/request-context-parts.rs"]
+mod package_agent_exec_request_context_parts;
 #[path = "../../../agent-transcript/context-stripping.rs"]
 mod package_agent_transcript_context_stripping;
 #[path = "../../../agent-transcript/paths.rs"]
