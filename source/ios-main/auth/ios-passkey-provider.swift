@@ -37,7 +37,7 @@ final class IOSAuthenticationServicesPasskeyProvider:
         super.init()
     }
 
-    static func isAllowedRelyingPartyID(
+    nonisolated static func isAllowedRelyingPartyID(
         _ relyingPartyID: String,
         allowed: Set<String>
     ) -> Bool {

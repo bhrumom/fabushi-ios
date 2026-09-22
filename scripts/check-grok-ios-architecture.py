@@ -61,6 +61,7 @@ required = [
     "frontend/src/production/ProductionRenderer.view.swift",
     "frontend/src/recovered/features/app-shell/ContentView.swift",
     "source/ios-main/IOSMainRuntime.swift",
+    "source/ios-main/auth/ios-passkey-provider.swift",
     "source/ios-main/deep-link/deep-link-controller.swift",
     "source/ios-main/lifecycle/ios-lifecycle-recovery.swift",
     "source/ios-main/telemetry/desktop-lifecycle-telemetry.swift",
@@ -141,6 +142,16 @@ for forbidden in ["CoordinatorControlPortClient", "main.dispatch("]:
 if "IOSCoordinatorPortClient" not in preload:
     errors.append("iOS preload does not use its renderer-facing coordinator-port client")
 
+
+
+passkey_provider = (ROOT / "source/ios-main/auth/ios-passkey-provider.swift").read_text()
+for required_token in [
+    "ASAuthorizationPlatformPublicKeyCredentialProvider",
+    "ASAuthorizationController",
+    "allowedRelyingPartyIDs",
+]:
+    if required_token not in passkey_provider:
+        errors.append(f"native iOS passkey provider is incomplete: {required_token}")
 
 runtime = (ROOT / "source/ios-main/FabushiRuntime.swift").read_text()
 for required_token in ["IOSDeepLinkController", "resyncAfterLifecycleRecovery", "resumeAfterBackground"]:
