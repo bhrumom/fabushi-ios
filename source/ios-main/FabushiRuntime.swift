@@ -26,7 +26,7 @@ final class FabushiRuntime {
 
         do {
             let main = try IOSMainRuntime(appDataDirectory: base, featureHostTest: featureHostTest)
-            let bridge = IOSPreloadBridge(main: main)
+            let bridge = IOSPrimaryPreloadEntrypoint.install(main: main)
             let surface = FabushiAppAgentSurface()
             self.main = main
             self.bridge = bridge
