@@ -159,6 +159,8 @@ mod package_cursor_plugins_snapshot_state;
 mod package_local_exec_pi_truncate;
 #[path = "../../../hooks-carriers/limits.rs"]
 mod package_hooks_carriers_limits;
+#[path = "../../../hooks-carriers/errors.rs"]
+mod package_hooks_carriers_errors;
 #[path = "../../../mcp-core/config/mcp-focus-retry-cooldown.rs"]
 mod package_mcp_core_focus_retry_cooldown;
 #[path = "../../../mcp-core/config/mcp-fsm-timing-config.rs"]
@@ -213,6 +215,8 @@ mod package_agent_context_processing_invocation;
 mod package_hooks_carriers_hook_additional_context_render;
 #[path = "../../../agent/context-processing-cursor-commands.rs"]
 mod package_agent_context_processing_cursor_commands;
+#[path = "../../../agent/context-processing-documentation.rs"]
+mod package_agent_context_processing_documentation;
 
 #[path = "../../../local-exec/pending-decision-provider.rs"]
 mod package_local_exec_pending_decision_provider;
@@ -280,6 +284,8 @@ mod package_hooks_sanitize_system_reminder;
 mod package_local_exec_int32;
 #[path = "../../../local-exec/mcp.rs"]
 mod package_local_exec_mcp;
+#[path = "../../../local-exec/mcp-tool-annotations.rs"]
+mod package_local_exec_mcp_tool_annotations;
 #[path = "../../../hooks/hook-step.rs"]
 mod package_hooks_hook_step;
 #[path = "../../../hooks/validators/base.rs"]

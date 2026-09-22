@@ -188,13 +188,16 @@ required = [
     "source/packages/cursor-plugins/cloud-manifest.rs",
     "source/packages/agent/context-processing-invocation.rs",
     "source/packages/hooks-carriers/hook-additional-context-render.rs",
+    "source/packages/hooks-carriers/errors.rs",
     "source/packages/agent/context-processing-cursor-commands.rs",
+    "source/packages/agent/context-processing-documentation.rs",
     "source/packages/agent-store-sync/sync-client-config.rs",
     "source/packages/context/browser-bridge.rs",
     "source/packages/hooks/sanitize-system-reminder.rs",
     "source/packages/hooks/hook-step.rs",
     "source/packages/local-exec/int32.rs",
     "source/packages/local-exec/mcp.rs",
+    "source/packages/local-exec/mcp-tool-annotations.rs",
     "source/packages/hooks/validators/base.rs",
     "source/packages/hooks/validators/baseHookResponse.rs",
     "source/packages/hooks/validators/afterAgentResponseResponse.rs",
@@ -270,6 +273,9 @@ if 'host/host-paths.rs' not in mobile_host_crate:
 for required_token in [
     'agent/state-agent-type.rs',
     'agent/common.rs',
+    'agent/context-processing-documentation.rs',
+    'hooks-carriers/errors.rs',
+    'local-exec/mcp-tool-annotations.rs',
 ]:
     if required_token not in mobile_host_crate:
         errors.append(f"shipping mobile Host crate does not compile package parity module: {required_token}")
