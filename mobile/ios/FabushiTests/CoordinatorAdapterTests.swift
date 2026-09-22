@@ -64,16 +64,19 @@ final class CoordinatorAdapterTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(try await supervisor.ensureConnection(), expected)
+        let first = try await supervisor.ensureConnection()
+        XCTAssertEqual(first, expected)
         XCTAssertEqual(resolveCount, 1)
         XCTAssertEqual(probeCount, 0)
 
-        XCTAssertEqual(try await supervisor.ensureConnection(), expected)
+        let second = try await supervisor.ensureConnection()
+        XCTAssertEqual(second, expected)
         XCTAssertEqual(resolveCount, 1)
         XCTAssertEqual(probeCount, 1)
 
         now = now.addingTimeInterval(1)
-        XCTAssertEqual(try await supervisor.ensureConnection(), expected)
+        let third = try await supervisor.ensureConnection()
+        XCTAssertEqual(third, expected)
         XCTAssertEqual(resolveCount, 1)
         XCTAssertEqual(probeCount, 1)
     }
@@ -95,7 +98,9 @@ final class CoordinatorAdapterTests: XCTestCase {
 
     func testLocalExecSupervisorRoutesDesktopProcessSemanticsRemote() async {
         let supervisor = IOSLocalExecSupervisor()
-        XCTAssertEqual(await supervisor.route(capabilityName: "process.spawn"), .remote)
-        XCTAssertEqual(await supervisor.route(capabilityName: "openExternalURL"), .local(.openExternalURL))
+        let processRoute = await supervisor.route(capabilityName: "process.spawn")
+        let localRoute = await supervisor.route(capabilityName: "openExternalURL")
+        XCTAssertEqual(processRoute, .remote)
+        XCTAssertEqual(localRoute, .local(.openExternalURL))
     }
 }
