@@ -406,8 +406,15 @@ if internal_host_extensions.is_file() and internal_scheduling.is_file() and mobi
         if required_module not in mobile_ffi_text:
             errors.append(f"iOS-owned Rust internal module is not compiled by mobile host: {required_module}")
 
+legacy_runtime_import_workflow = ROOT / ".github/workflows/import-ios-owned-mahayana.yml"
+if legacy_runtime_import_workflow.exists():
+    errors.append(
+        "legacy external Mahayana source import workflow remains; "
+        "fabushi-ios must own its runtime source without a repository fallback"
+    )
+
 if not runtime_manifest.is_file() or not mobile_ffi.is_file():
-    message = "iOS-owned Mahayana Rust source import is not complete"
+    message = "iOS-owned Mahayana Rust source is missing from this repository"
     (errors if args.strict else warnings).append(message)
 
 for legacy in [
