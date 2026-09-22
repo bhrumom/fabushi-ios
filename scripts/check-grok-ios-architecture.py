@@ -67,6 +67,10 @@ required = [
     "frontend/src/production/GrokMobileBotService.swift",
     "frontend/src/recovered/features/app-shell/ContentView.swift",
     "source/ios-main/IOSMainRuntime.swift",
+    "source/ios-main/dev/dev-capability.swift",
+    "source/ios-main/dev/dev-controls-gate.swift",
+    "source/ios-main/dev/dev-gateway-offline.swift",
+    "source/ios-main/dev/dev-network-latency.swift",
     "source/ios-main/background-transfer/ios-background-transfer-service.swift",
     "source/ios-main/adapters/ios-native-local-capability-backend.swift",
     "source/ios-main/auth/ios-passkey-provider.swift",
@@ -142,6 +146,7 @@ required = [
     "source/shared/rpc/coordinator-port.swift",
     "source/shared/rpc/coordinator.swift",
     "source/shared/rpc/SharedRPCContracts.swift",
+    "mobile/ios/FabushiTests/DevControlsParityTests.swift",
 ]
 for relative in required:
     if not (ROOT / relative).is_file():
@@ -181,6 +186,9 @@ for required_token in [
     "MahayanaLocalHostSupervisor",
     "observedHostGeneration",
     "recoverAfterFailure",
+    "CoordinatorDevControlAdapting",
+    "devControlAdapter.route(method: method, params: params)",
+    "devControlAdapter.beforeProductionRequest()",
 ]:
     if required_token not in coordinator_runtime:
         errors.append(f"MahayanaCoordinator is missing fail-closed Host recovery: {required_token}")
@@ -200,9 +208,42 @@ for required_token in ["IOSDeepLinkController", "resyncAfterLifecycleRecovery", 
         errors.append(f"FabushiRuntime is missing production lifecycle/deep-link integration: {required_token}")
 
 ios_main = (ROOT / "source/ios-main/IOSMainRuntime.swift").read_text()
-for required_token in ["IOSLifecycleRecoveryStore", "lifecycleReporter", "markResyncCompleted"]:
+for required_token in ["IOSLifecycleRecoveryStore", "lifecycleReporter", "markResyncCompleted", "IOSNativeDevControlAdapter", "devControlAdapter: devControlAdapter"]:
     if required_token not in ios_main:
         errors.append(f"IOSMainRuntime is missing lifecycle recovery integration: {required_token}")
+
+dev_capability = (ROOT / "source/ios-main/dev/dev-capability.swift").read_text()
+for required_token in ["FABUSHI_DEV_CAPABILITY", "preloadKind", "#if DEBUG"]:
+    if required_token not in dev_capability:
+        errors.append(f"iOS dev capability is incomplete: {required_token}")
+
+dev_gate = (ROOT / "source/ios-main/dev/dev-controls-gate.swift").read_text()
+for required_token in ["IOSNativeDevControlAdapter", "beforeProductionRequest", "dev.setGatewayOffline", "dev.setNetworkLatency"]:
+    if required_token not in dev_gate:
+        errors.append(f"iOS dev controls gate/wiring is incomplete: {required_token}")
+
+dev_offline = (ROOT / "source/ios-main/dev/dev-gateway-offline.swift").read_text()
+for required_token in ["requireOnline", "reapplyAfterCoordinatorLaunch", "MainActor"]:
+    if required_token not in dev_offline:
+        errors.append(f"iOS gateway-offline control is incomplete: {required_token}")
+
+dev_latency = (ROOT / "source/ios-main/dev/dev-network-latency.swift").read_text()
+for required_token in ["maximumMilliseconds = 10_000", "applyBeforeProductionRequest", "Task<Never, Never>.sleep"]:
+    if required_token not in dev_latency:
+        errors.append(f"iOS network-latency control is incomplete: {required_token}")
+
+coordinator_restart = (ROOT / "source/ios-main/coordinator/coordinator-runtime.swift").read_text()
+if coordinator_restart.count("coordinatorDidLaunchForDevControls()") < 2:
+    errors.append("coordinator relaunch does not reapply native developer-control state")
+
+preload_dev = (ROOT / "source/ios-preload/preload-dev-controls.swift").read_text()
+for required_token in ["dev.gateway.offline", "dev.setNetworkLatency", "dev.networkLatencyStatus"]:
+    if required_token not in preload_dev:
+        errors.append(f"dev-controls preload is missing native network wiring: {required_token}")
+
+runtime_dev_preload = (ROOT / "source/ios-preload/runtime/DevControlsPreloadEntrypoint.swift").read_text()
+if "installIfEnabled" not in runtime_dev_preload or "capability.preloadKind == .devControls" not in runtime_dev_preload:
+    errors.append("dev-capability does not gate the iOS developer-controls preload")
 
 app = (ROOT / "mobile/ios/Fabushi/FabushiApp.swift").read_text()
 for forbidden in ["MahayanaHost", "MahayanaCoordinator", "MarketplaceModel(", "MessagingModel("]:

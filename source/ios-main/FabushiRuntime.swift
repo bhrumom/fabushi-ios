@@ -17,6 +17,9 @@ final class FabushiRuntime {
     @ObservationIgnored private var deepLinkController: IOSDeepLinkController?
     @ObservationIgnored private var wasBackgrounded = false
     @ObservationIgnored private var resumeTask: Task<Void, Never>?
+    #if DEBUG
+    @ObservationIgnored private var devControlsPreload: IOSDevControlsPreload?
+    #endif
 
     init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -34,6 +37,12 @@ final class FabushiRuntime {
             let surface = FabushiAppAgentSurface()
             self.main = main
             self.bridge = bridge
+            #if DEBUG
+            devControlsPreload = IOSDevControlsPreloadEntrypoint.installIfEnabled(
+                bridge: bridge,
+                capability: main.devCapability
+            )
+            #endif
             appAgentSurface = surface
             marketplace = MarketplaceModel(bridge: bridge)
             messaging = MessagingModel(bridge: bridge)

@@ -5,6 +5,18 @@ import Foundation
 /// The coordinator is the only production owner allowed to invoke the native
 /// Mahayana Host. Renderer and platform code communicate through typed
 /// Coordinator frames carried by IOSMainRuntime/IOSPreloadBridge.
+enum CoordinatorDevControlRouting {
+    case notHandled
+    case handled(Any)
+}
+
+@MainActor
+protocol CoordinatorDevControlAdapting: AnyObject {
+    func route(method: String, params: [String: Any]) async throws -> CoordinatorDevControlRouting
+    func beforeProductionRequest() async throws
+    func coordinatorDidLaunch()
+}
+
 @MainActor
 final class MahayanaCoordinator {
     struct JSONResult: @unchecked Sendable {
@@ -40,6 +52,7 @@ final class MahayanaCoordinator {
     private let settingsStore: SandSettingsStore?
     private let experimentService: SandExperimentService?
     private let webAuthnSigner: CoordinatorWebAuthnSigner?
+    private let devControlAdapter: (any CoordinatorDevControlAdapting)?
     private(set) var lifecycleState: LifecycleState = .starting
     private var inFlight = Set<String>()
 
@@ -47,11 +60,13 @@ final class MahayanaCoordinator {
         hostSupervisor: MahayanaLocalHostSupervisor,
         passkeyProvider: (any PasskeyProviding)? = nil,
         settingsStore: SandSettingsStore? = nil,
-        experimentService: SandExperimentService? = nil
+        experimentService: SandExperimentService? = nil,
+        devControlAdapter: (any CoordinatorDevControlAdapting)? = nil
     ) {
         self.hostSupervisor = hostSupervisor
         self.settingsStore = settingsStore
         self.experimentService = experimentService
+        self.devControlAdapter = devControlAdapter
         webAuthnSigner = passkeyProvider.map {
             CoordinatorWebAuthnSigner(
                 passkeys: CoordinatorPasskeyProvider(provider: $0)
@@ -67,7 +82,8 @@ final class MahayanaCoordinator {
     static func make(
         appDataDirectory: URL,
         featureHostTest: Bool = false,
-        passkeyProvider: (any PasskeyProviding)? = nil
+        passkeyProvider: (any PasskeyProviding)? = nil,
+        devControlAdapter: (any CoordinatorDevControlAdapting)? = nil
     ) throws -> MahayanaCoordinator {
         let experimentCacheDirectory = appDataDirectory
             .appendingPathComponent("experiments", isDirectory: true)
@@ -85,7 +101,8 @@ final class MahayanaCoordinator {
             settingsStore: SandSettingsStore(
                 settingsPath: appDataDirectory.appendingPathComponent("sand-settings.json").path
             ),
-            experimentService: experimentService
+            experimentService: experimentService,
+            devControlAdapter: devControlAdapter
         )
     }
 
@@ -134,6 +151,20 @@ final class MahayanaCoordinator {
                 lifecycleState = .ready
             } catch {
                 throw CoordinatorError.unavailable
+            }
+        }
+
+        if let devControlAdapter {
+            switch try await devControlAdapter.route(method: method, params: params) {
+            case .handled(let value):
+                return JSONResult(value: value)
+            case .notHandled:
+                break
+            }
+            do {
+                try await devControlAdapter.beforeProductionRequest()
+            } catch {
+                throw CoordinatorError.requestFailed(error.localizedDescription)
             }
         }
 

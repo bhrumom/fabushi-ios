@@ -8,6 +8,28 @@ final class PreloadDevControlsAPI {
         self.primary = primary
     }
 
+    func gatewayOfflineStatus() async throws -> CoordinatorPayload {
+        try await invoke(method: "gatewayOfflineStatus")
+    }
+
+    func setGatewayOffline(_ induced: Bool) async throws -> CoordinatorPayload {
+        try await invoke(
+            method: "setGatewayOffline",
+            payload: .object(["induced": .bool(induced)])
+        )
+    }
+
+    func networkLatencyStatus() async throws -> CoordinatorPayload {
+        try await invoke(method: "networkLatencyStatus")
+    }
+
+    func setNetworkLatency(_ milliseconds: Int) async throws -> CoordinatorPayload {
+        try await invoke(
+            method: "setNetworkLatency",
+            payload: .object(["ms": .number(Double(milliseconds))])
+        )
+    }
+
     func invoke(method: String, payload: CoordinatorPayload = .object([:])) async throws -> CoordinatorPayload {
         switch IOSDevControlsContract.disposition(for: method) {
         case .local:

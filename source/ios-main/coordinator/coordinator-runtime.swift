@@ -24,6 +24,7 @@ final class IOSCoordinatorRuntime {
         if let handle { return handle }
         highestAcceptedGeneration &+= 1
         let launched = IOSCoordinatorLauncher.launch(main: main)
+        main.coordinatorDidLaunchForDevControls()
         handle = launched
         state = .running(generation: highestAcceptedGeneration)
         return launched
@@ -41,6 +42,7 @@ final class IOSCoordinatorRuntime {
         state = .restarting(generation: highestAcceptedGeneration)
         handle?.dispose()
         handle = IOSCoordinatorLauncher.launch(main: main)
+        main.coordinatorDidLaunchForDevControls()
         state = .running(generation: highestAcceptedGeneration)
     }
 

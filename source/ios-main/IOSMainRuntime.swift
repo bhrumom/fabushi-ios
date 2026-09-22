@@ -10,15 +10,25 @@ final class IOSMainRuntime {
     let lifecycleReporter = IOSLifecycleReporter()
     private let lifecycleRecovery: IOSLifecycleRecoveryStore
     private let passkeyProvider: IOSAuthenticationServicesPasskeyProvider
+    let devCapability: IOSDevCapability
+    private let devControlAdapter: IOSNativeDevControlAdapter
 
-    init(appDataDirectory: URL, featureHostTest: Bool = false) throws {
+    init(
+        appDataDirectory: URL,
+        featureHostTest: Bool = false,
+        devCapability: IOSDevCapability = .live(),
+        devControlsGate: IOSDevControlsGate = .live()
+    ) throws {
+        self.devCapability = devCapability
+        devControlAdapter = IOSNativeDevControlAdapter(gate: devControlsGate)
         lifecycleRecovery = try IOSLifecycleRecoveryStore(appDataDirectory: appDataDirectory)
         let passkeyProvider = IOSAuthenticationServicesPasskeyProvider()
         self.passkeyProvider = passkeyProvider
         coordinator = try MahayanaCoordinator.make(
             appDataDirectory: appDataDirectory,
             featureHostTest: featureHostTest,
-            passkeyProvider: passkeyProvider
+            passkeyProvider: passkeyProvider,
+            devControlAdapter: devControlAdapter
         )
         lifecycleReporter.report(
             .startup,
@@ -27,6 +37,14 @@ final class IOSMainRuntime {
                 "session_id": lifecycleRecovery.currentCheckpoint.sessionID,
             ]
         )
+    }
+
+    var devControlsEnabled: Bool {
+        devControlAdapter.isEnabled
+    }
+
+    func coordinatorDidLaunchForDevControls() {
+        devControlAdapter.coordinatorDidLaunch()
     }
 
     var requiresColdStartResync: Bool {

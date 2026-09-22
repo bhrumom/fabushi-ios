@@ -15,5 +15,20 @@ final class IOSDevControls {
             params: ["offline": offline]
         )
     }
+
+    func gatewayOfflineStatus() async throws -> MahayanaCoordinator.JSONResult {
+        try await main.dispatch(method: "dev.gatewayOfflineStatus")
+    }
+
+    func setNetworkLatency(_ milliseconds: Int) async throws {
+        _ = try await main.dispatch(
+            method: "dev.setNetworkLatency",
+            params: ["ms": milliseconds]
+        )
+    }
+
+    func networkLatencyStatus() async throws -> MahayanaCoordinator.JSONResult {
+        try await main.dispatch(method: "dev.networkLatencyStatus")
+    }
 }
 #endif

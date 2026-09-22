@@ -10,7 +10,7 @@ enum IOSDevControlsContract {
     static func disposition(for method: String) -> IOSDevControlDisposition {
         switch method {
         case "restartOnboarding", "skipOnboarding", "themeStatus", "setThemePreference",
-             "gatewayOfflineStatus", "setGatewayOffline":
+             "gatewayOfflineStatus", "setGatewayOffline", "networkLatencyStatus", "setNetworkLatency":
             return .local
         case "boxStatus", "boxHealth", "upgradeHost", "pokeHostUpgrade", "rebuildBox",
              "tailLogs", "startBox", "teardownBox", "nukeBox", "openDesktop",

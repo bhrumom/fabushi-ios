@@ -15,5 +15,20 @@ final class IOSDevControlsPreload {
             params: ["offline": offline]
         )
     }
+
+    func setNetworkLatency(_ milliseconds: Int) async throws {
+        _ = try await bridge.request(
+            method: "dev.setNetworkLatency",
+            params: ["ms": milliseconds]
+        )
+    }
+
+    func gatewayOfflineStatus() async throws -> IOSPreloadBridge.JSONResult {
+        try await bridge.request(method: "dev.gatewayOfflineStatus")
+    }
+
+    func networkLatencyStatus() async throws -> IOSPreloadBridge.JSONResult {
+        try await bridge.request(method: "dev.networkLatencyStatus")
+    }
 }
 #endif
