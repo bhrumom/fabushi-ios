@@ -92,7 +92,8 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
         XCTAssertEqual(result.status, .notSupported)
         XCTAssertTrue(result.message?.contains("Runner-managed stdio") == true)
         XCTAssertEqual(recorder.events.last?.reason, "stdio_unsupported")
-        XCTAssertEqual(await lifecycle.pendingWatchCount(), 0)
+        let pendingCount1 = await lifecycle.pendingWatchCount()
+        XCTAssertEqual(pendingCount1, 0)
     }
 
     func testHttpsAuthenticationStartsWatchAndCompletesAfterTokenLands() async throws {
@@ -136,11 +137,13 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
         )
         XCTAssertEqual(result.status, .started)
         XCTAssertEqual(result.authorizationUrl?.hasPrefix("https://login.example.test/"), true)
-        XCTAssertEqual(await lifecycle.pendingWatchCount(), 1)
+        let pendingCount2 = await lifecycle.pendingWatchCount()
+        XCTAssertEqual(pendingCount2, 1)
 
         await lifecycle.pollPendingAuthWatch(serverId: "12", accountKey: "work")
 
-        XCTAssertEqual(await lifecycle.pendingWatchCount(), 0)
+        let pendingCount3 = await lifecycle.pendingWatchCount()
+        XCTAssertEqual(pendingCount3, 0)
         XCTAssertEqual(recorder.reloads, 1)
         XCTAssertEqual(recorder.completions.last?.outcome, .completed)
         XCTAssertEqual(recorder.completions.last?.serverIdentifier, "github--work")
@@ -181,14 +184,16 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
             serverId: "12",
             accountKey: DEFAULT_MCP_ACCOUNT_KEY
         )
-        XCTAssertEqual(await lifecycle.pendingWatchCount(), 1)
+        let pendingCount4 = await lifecycle.pendingWatchCount()
+        XCTAssertEqual(pendingCount4, 1)
         XCTAssertTrue(recorder.completions.isEmpty)
 
         await lifecycle.pollPendingAuthWatch(
             serverId: "12",
             accountKey: DEFAULT_MCP_ACCOUNT_KEY
         )
-        XCTAssertEqual(await lifecycle.pendingWatchCount(), 0)
+        let pendingCount5 = await lifecycle.pendingWatchCount()
+        XCTAssertEqual(pendingCount5, 0)
         XCTAssertEqual(recorder.completions.last?.outcome, .completed)
     }
 
@@ -280,7 +285,8 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
             accountKey: DEFAULT_MCP_ACCOUNT_KEY
         )
 
-        XCTAssertEqual(await lifecycle.pendingWatchCount(), 0)
+        let pendingCount6 = await lifecycle.pendingWatchCount()
+        XCTAssertEqual(pendingCount6, 0)
         XCTAssertEqual(recorder.events.last?.outcome, "timeout")
     }
 }
