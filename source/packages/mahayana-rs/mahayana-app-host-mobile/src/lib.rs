@@ -30,6 +30,10 @@ mod conversation_blob_gc;
 mod legacy_blob_retirement;
 #[path = "../../../../host/agent-isolation/conversation-blob-store.rs"]
 mod conversation_blob_store;
+#[path = "../../../../host/agent-isolation/agent-store-worker.rs"]
+mod agent_store_worker;
+#[path = "../../../../host/agent-isolation/agent-worker-pool.rs"]
+mod agent_worker_pool;
 #[path = "../../../../host/agent-isolation/worker-blob-store.rs"]
 mod worker_blob_store;
 #[path = "../../../../host/box/box-monitor-layout.rs"]
