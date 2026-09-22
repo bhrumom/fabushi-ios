@@ -2,7 +2,7 @@
 import argparse
 import csv
 import json
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,17 +60,19 @@ for row in rows:
 required = [
     "frontend/src/production/ProductionRenderer.view.swift",
     "frontend/src/recovered/features/app-shell/ContentView.swift",
-    "source/ios-main/main.swift",
+    "source/ios-main/IOSMainRuntime.swift",
     "source/ios-main/FabushiRuntime.swift",
     "source/ios-preload/preload.swift",
-    "source/mahayana-agent-coordinator/main.swift",
+    "source/ios-dev-controls/IOSDevControls.swift",
+    "source/mahayana-agent-coordinator/MahayanaCoordinator.swift",
     "source/mahayana-agent-coordinator/renderer-port-server.swift",
     "source/mahayana-agent-coordinator/control-port-client.swift",
     "source/host/MahayanaHostRuntime.swift",
-    "source/local-exec-daemon/main.swift",
-    "source/box-exec-daemon/main.swift",
+    "source/local-exec-daemon/LocalCapabilityRunner.swift",
+    "source/box-exec-daemon/RemoteRunner.swift",
     "source/shared/rpc/coordinator-port.swift",
     "source/shared/rpc/coordinator.swift",
+    "source/shared/rpc/SharedRPCContracts.swift",
 ]
 for relative in required:
     if not (ROOT / relative).is_file():
@@ -94,6 +96,34 @@ for root in ["source/box-exec-daemon", "source/local-exec-daemon", "source/host"
         if "IOSPreloadBridge" in text:
             errors.append(f"lower runtime layer depends on renderer preload bridge: {path.relative_to(ROOT)}")
 
+# Swift requires source basenames to be unique inside one compilation target.
+# Grok's repeated main.ts/view.tsx names are mapped to semantic iOS filenames
+# unless/until those folders become separate Swift modules.
+compiled_roots = [
+    ROOT / "mobile/ios/Fabushi",
+    ROOT / "frontend",
+    ROOT / "source/internal",
+    ROOT / "source/shared",
+    ROOT / "source/ios-dev-controls",
+    ROOT / "source/ios-main",
+    ROOT / "source/ios-preload",
+    ROOT / "source/mahayana-agent-coordinator",
+    ROOT / "source/local-exec-daemon",
+    ROOT / "source/box-exec-daemon",
+]
+by_basename = defaultdict(list)
+for root in compiled_roots:
+    if not root.exists():
+        continue
+    for path in root.rglob("*.swift"):
+        by_basename[path.name].append(path.relative_to(ROOT))
+for basename, duplicates in sorted(by_basename.items()):
+    if len(duplicates) > 1:
+        errors.append(
+            f"Swift filename collision in app target ({basename}): "
+            + ", ".join(str(path) for path in duplicates)
+        )
+
 project = (ROOT / "mobile/ios/project.yml").read_text()
 for required_source in [
     "../../frontend",
@@ -116,14 +146,20 @@ if not runtime_manifest.is_file() or not mobile_ffi.is_file():
     message = "iOS-owned Mahayana Rust source import is not complete"
     (errors if args.strict else warnings).append(message)
 
-if args.strict and (ROOT / "mobile/ios/Fabushi/MahayanaHost.swift").exists():
-    errors.append("legacy mobile/ios MahayanaHost.swift still exists")
-if args.strict and (ROOT / "mobile/native/include/mahayana_app_host.h").exists():
-    errors.append("legacy mobile/native header still exists")
-if args.strict and (ROOT / "mobile/ios/Fabushi/GrokMobileShell.swift").exists():
-    errors.append("legacy giant GrokMobileShell.swift still exists")
-if args.strict and (ROOT / "mobile/ios/Fabushi/ContentView.swift").exists():
-    errors.append("legacy giant ContentView.swift still exists")
+for legacy in [
+    "mobile/ios/Fabushi/MahayanaHost.swift",
+    "mobile/native/include/mahayana_app_host.h",
+    "mobile/ios/Fabushi/GrokMobileShell.swift",
+    "mobile/ios/Fabushi/ContentView.swift",
+    "source/ios-main/main.swift",
+    "source/ios-dev-controls/main.swift",
+    "source/mahayana-agent-coordinator/main.swift",
+    "source/local-exec-daemon/main.swift",
+    "source/box-exec-daemon/main.swift",
+    "source/shared/rpc/main.swift",
+]:
+    if args.strict and (ROOT / legacy).exists():
+        errors.append(f"legacy or collision-prone source still exists: {legacy}")
 
 print(
     "INFO: parity materialized="

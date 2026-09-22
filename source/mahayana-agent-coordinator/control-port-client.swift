@@ -18,12 +18,19 @@ final class CoordinatorControlPortClient {
     private let port: CoordinatorPort
     private var pending: [String: CheckedContinuation<CoordinatorPayload, Error>] = [:]
     private var nextRequestID = 0
+    private var started = false
 
     private(set) var readyObserved = false
     private(set) var settlement: Settlement?
 
-    init(port: CoordinatorPort) {
+    init(port: CoordinatorPort, autoStart: Bool = true) {
         self.port = port
+        if autoStart { start() }
+    }
+
+    func start() {
+        guard !started, settlement == nil else { return }
+        started = true
         port.post(.hello(protocolVersion: CoordinatorProtocol.version))
     }
 
@@ -31,12 +38,22 @@ final class CoordinatorControlPortClient {
         guard settlement == nil else {
             throw ControlPortCallError(code: "port-settled", message: "control port is no longer available")
         }
+        if !started { start() }
         nextRequestID += 1
         let requestId = "c-\(nextRequestID)"
-        return try await withCheckedThrowingContinuation { continuation in
-            pending[requestId] = continuation
-            port.post(.request(requestId: requestId, method: method, args: args))
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                pending[requestId] = continuation
+                port.post(.request(requestId: requestId, method: method, args: args))
+            }
+        } onCancel: {
+            Task { @MainActor [weak self] in self?.cancel(requestId: requestId) }
         }
+    }
+
+    func cancel(requestId: String) {
+        guard settlement == nil, pending[requestId] != nil else { return }
+        port.post(.cancel(requestId: requestId))
     }
 
     func receive(_ frame: CoordinatorFrame) {

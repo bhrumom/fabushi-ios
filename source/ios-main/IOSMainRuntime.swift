@@ -15,8 +15,19 @@ final class IOSMainRuntime {
         )
     }
 
+    /// Compatibility entry for platform-only callers. Renderer-facing code uses
+    /// IOSPreloadBridge and never receives a Coordinator or Host reference.
     func dispatch(method: String, params: [String: Any] = [:]) async throws -> MahayanaCoordinator.JSONResult {
         try await coordinator.request(method: method, params: params)
+    }
+
+    func makeRendererPortServer(port: CoordinatorPort) -> RendererPortServer {
+        RendererPortServer(port: port) { [weak self] method, args in
+            guard let self else {
+                return .failed(.init(code: "coordinator-unavailable", message: "iOS main runtime was released"))
+            }
+            return await self.coordinator.dispatchTransport(method: method, args: args)
+        }
     }
 
     func scenePhaseChanged(_ phase: ScenePhase) {

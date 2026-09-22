@@ -71,6 +71,35 @@ final class CoordinatorContractTests: XCTestCase {
         XCTAssertEqual(server.phase, .serving)
     }
 
+    @MainActor
+    func testInProcessCarrierProvidesHandshakeAndRequestReply() async throws {
+        let pair = InProcessCoordinatorPort.makePair()
+        let server = RendererPortServer(port: pair.server) { method, args in
+            .ok(.object(["method": .string(method), "args": args]))
+        }
+        let client = CoordinatorControlPortClient(port: pair.client, autoStart: false)
+
+        pair.server.onFrame = { [weak server] frame in server?.receive(frame) }
+        pair.server.onClose = { [weak server] in server?.portClosed() }
+        pair.client.onFrame = { [weak client] frame in client?.receive(frame) }
+        pair.client.onClose = { [weak client] in client?.portClosed() }
+
+        client.start()
+        XCTAssertTrue(client.readyObserved)
+
+        let response = try await client.call(
+            method: "sendPrompt",
+            args: .object(["text": .string("hello")])
+        )
+        XCTAssertEqual(
+            response,
+            .object([
+                "method": .string("sendPrompt"),
+                "args": .object(["text": .string("hello")]),
+            ])
+        )
+    }
+
     func testSSEDecoderPreservesEventDataBoundaries() {
         var decoder = SSEBlockDecoder()
         XCTAssertEqual(decoder.append("event: transcript\nid: 7\ndata: one\n"), [])

@@ -3,7 +3,7 @@ import Foundation
 /// iOS adaptation of Grok local-exec-daemon. iOS does not spawn arbitrary
 /// shell/process daemons. Local work is an allow-listed in-process capability.
 actor LocalCapabilityRunner {
-    enum Capability: String, Sendable, CaseIterable {
+    enum Capability: String, Sendable, CaseIterable, Equatable {
         case openExternalURL
         case backgroundTransfer
         case shareItem
