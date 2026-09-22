@@ -3,7 +3,7 @@ import Foundation
 let SAND_TEACH_MAX_DURATION_MS = 10 * 60 * 1_000
 
 struct TeachRecordingStatus: Equatable, Sendable {
-    enum State: String, Sendable {
+    enum State: String, Equatable, Sendable {
         case idle
         case recording
     }
