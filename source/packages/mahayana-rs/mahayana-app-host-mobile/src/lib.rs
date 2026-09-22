@@ -62,6 +62,10 @@ mod package_constants_sand_supervisor;
 mod package_constants_agent_store_ids;
 #[path = "../../../constants/repo-label.rs"]
 mod package_constants_repo_label;
+#[path = "../../../agent-transcript/context-stripping.rs"]
+mod package_agent_transcript_context_stripping;
+#[path = "../../../agent-transcript/paths.rs"]
+mod package_agent_transcript_paths;
 
 #[path = "../../../../host/process-crash-guard.rs"]
 mod process_crash_guard;

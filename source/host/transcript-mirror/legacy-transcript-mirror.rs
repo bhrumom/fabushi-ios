@@ -26,20 +26,6 @@ fn error(message: impl Into<String>) -> LegacyTranscriptMirrorError {
     LegacyTranscriptMirrorError(message.into())
 }
 
-fn safe_id(id: &str) -> Result<&str, LegacyTranscriptMirrorError> {
-    if id != "."
-        && id != ".."
-        && !id.is_empty()
-        && id
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
-    {
-        Ok(id)
-    } else {
-        Err(error("unsafe conversation id"))
-    }
-}
-
 fn binary_marker_placeholder(value: &mut Value) {
     match value {
         Value::Array(values) => {
@@ -295,10 +281,10 @@ impl LegacyFileTranscriptMirror {
         &self,
         conversation_id: &str,
     ) -> Result<PathBuf, LegacyTranscriptMirrorError> {
-        let safe = safe_id(conversation_id)?;
+        let safe = crate::package_utils_workspace_paths::get_safe_conversation_id(conversation_id);
         Ok(self
             .transcripts_dir
-            .join(safe)
+            .join(&safe)
             .join(format!("{safe}.jsonl")))
     }
 
