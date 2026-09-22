@@ -79,6 +79,9 @@ required = [
     "source/ios-main/telemetry/desktop-lifecycle-telemetry.swift",
     "source/ios-main/telemetry/sentry-conversation.swift",
     "source/ios-main/notifications/dock-badge.swift",
+    "source/ios-main/telemetry/send-telemetry.swift",
+    "source/ios-main/process-metrics/redaction.swift",
+    "source/ios-main/onepassword/onepassword-provisioning-contract.swift",
     "source/ios-main/FabushiRuntime.swift",
     "source/ios-preload/preload.swift",
     "source/ios-preload/coordinator-port-bridge.swift",
@@ -353,6 +356,9 @@ platform_main_tests = (ROOT / "mobile/ios/FabushiTests/IOSPlatformMainParityTest
 for required_token in [
     "testSentryConversationReportRequiresNullOrBoundedAgentId",
     "testDockBadgeMatchesRecoveredUnreadRulesAndAppliesNativeBadgeCount",
+    "testSendTelemetryValidationAndProjectionMatchRecoveredContract",
+    "testProcessNameRedactionPreservesOnlyKnownHelperLabels",
+    "testUnavailableOnePasswordProvisioningSinkFailsClosed",
     "IOSDockBadgeController",
 ]:
     if required_token not in platform_main_tests:
@@ -459,6 +465,9 @@ for required_token in [
 reviewed_desktop_only_not_applicable = {
     "source/electron-main/startup/move-to-applications-folder.ts",
     "source/electron-main/update/win32-installer.ts",
+    "source/electron-main/process-metrics/wiring.ts",
+    "source/electron-main/update/update-gate.ts",
+    "source/electron-main/update/safe-relaunch-gate.ts",
 }
 for grok_path in reviewed_desktop_only_not_applicable:
     row = next((row for row in rows if row["grok_path"] == grok_path), None)
@@ -476,6 +485,7 @@ reviewed_barrel_not_applicable = {
     "source/packages/shell-exec/index.ts",
     "source/packages/chat-inference-proto/index.ts",
     "source/packages/local-exec/index.ts",
+    "source/electron-main/adapters/index.ts",
 }
 for grok_path in reviewed_barrel_not_applicable:
     row = next((row for row in rows if row["grok_path"] == grok_path), None)
