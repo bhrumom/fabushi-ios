@@ -1,6 +1,6 @@
 import Foundation
 
-enum ListenerIntegrationPlatform: String, Codable, CaseIterable, Sendable {
+enum ListenerIntegrationPlatform: String, Codable, CaseIterable, Equatable, Sendable {
     case github
     case slack
 }
