@@ -46,6 +46,11 @@ struct SandStoredSidebarSection: Codable, Equatable, Sendable {
     var name: String
     var agentIDs: [String]
     var isCollapsed: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, isCollapsed
+        case agentIDs = "agentIds"
+    }
 }
 
 struct SandStoredSettings: Codable, Equatable, Sendable {
@@ -130,7 +135,7 @@ private func normalizeStoredSettings(_ decoded: SandStoredSettings) -> SandStore
         if !tools.isEmpty { result[pair.key] = tools }
     }
     if let raw = value.updateTrackOverride,
-       UpdateTrackPolicy.managedTrack(raw) == nil {
+       FabushiUpdateTrack(rawValue: raw) == nil {
         value.updateTrackOverride = nil
     }
     if let raw = value.themePreference,
@@ -150,12 +155,107 @@ private func normalizeStoredSettings(_ decoded: SandStoredSettings) -> SandStore
         !$0.id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
-    for keyPath in [\SandStoredSettings.userTimeZone, \.userTimeZoneOverride, \.mcpCustomInstructionsAccountScope] {
-        if let raw = value[keyPath: keyPath]?.trimmingCharacters(in: .whitespacesAndNewlines), raw.isEmpty {
-            value[keyPath: keyPath] = nil
-        }
+    if value.userTimeZone?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
+        value.userTimeZone = nil
+    }
+    if value.userTimeZoneOverride?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
+        value.userTimeZoneOverride = nil
+    }
+    if value.mcpCustomInstructionsAccountScope?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
+        value.mcpCustomInstructionsAccountScope = nil
     }
     return value
+}
+
+private func storedStringArray(_ raw: Any?) -> [String] {
+    (raw as? [Any])?.compactMap { $0 as? String } ?? []
+}
+
+private func storedStringMap(_ raw: Any?) -> [String: String] {
+    guard let raw = raw as? [String: Any] else { return [:] }
+    return raw.reduce(into: [:]) { result, pair in
+        if let value = pair.value as? String { result[pair.key] = value }
+    }
+}
+
+private func storedStringListMap(_ raw: Any?) -> [String: [String]] {
+    guard let raw = raw as? [String: Any] else { return [:] }
+    return raw.reduce(into: [:]) { result, pair in
+        let values = storedStringArray(pair.value)
+        if !values.isEmpty { result[pair.key] = values }
+    }
+}
+
+private func decodeStoredValue<T: Decodable>(_ type: T.Type, from raw: Any?) -> T? {
+    guard let raw, JSONSerialization.isValidJSONObject(raw),
+          let data = try? JSONSerialization.data(withJSONObject: raw) else { return nil }
+    return try? JSONDecoder().decode(type, from: data)
+}
+
+private func parseStoredSettingsObject(_ rawValue: Any) -> SandStoredSettings? {
+    guard let raw = rawValue as? [String: Any],
+          (raw["version"] as? NSNumber)?.intValue == SETTINGS_VERSION else {
+        return nil
+    }
+
+    var value = emptySandSettings()
+    value.settingsMigrations = storedStringArray(raw["settingsMigrations"])
+    value.mcpBoxServers = storedStringArray(raw["mcpBoxServers"])
+    value.autoUpdateWhenIdleOptIn = raw["autoUpdateWhenIdleOptIn"] as? Bool ?? false
+    value.egressTunnelEnabled = raw["egressTunnelEnabled"] as? Bool ?? false
+    value.webauthnProxyEnabled = (raw["webauthnProxyEnabled"] as? Bool) != false
+    value.mcpCustomInstructions = storedStringMap(raw["mcpCustomInstructions"])
+    value.mcpCustomInstructionsByServerId = storedStringMap(raw["mcpCustomInstructionsByServerId"])
+    value.mcpDisabledToolsByServerId = storedStringListMap(raw["mcpDisabledToolsByServerId"])
+    if let consent = raw["conciergeConsent"] as? String,
+       ["unset", "allowed", "denied"].contains(consent) {
+        value.conciergeConsent = consent
+    }
+
+    value.hasSeenOnboarding = raw["hasSeenOnboarding"] as? Bool
+    value.hasSeenOnboardingAccountScope = raw["hasSeenOnboardingAccountScope"] as? String
+    value.updateTrackOverride = raw["updateTrackOverride"] as? String
+    value.themePreference = raw["themePreference"] as? String
+    value.agentDefaultModel = decodeStoredValue(SandAgentModelSelection.self, from: raw["agentDefaultModel"])
+    value.computerUseModel = decodeStoredValue(SandAgentModelSelection.self, from: raw["computerUseModel"])
+    value.notifications = decodeStoredValue([String: SandStoredJSONValue].self, from: raw["notifications"])
+    value.userTimeZone = raw["userTimeZone"] as? String
+    value.userTimeZoneOverride = raw["userTimeZoneOverride"] as? String
+
+    if let review = raw["autoReviewInstructions"] as? [String: Any] {
+        value.autoReviewInstructions = .init(
+            isEnabled: review["isEnabled"] as? Bool ?? true,
+            allowInstructions: storedStringArray(review["allowInstructions"]),
+            blockInstructions: storedStringArray(review["blockInstructions"])
+        )
+    }
+
+    value.localToolPermission = raw["localToolPermission"] as? String
+    value.localToolPermissionCeiling = raw["localToolPermissionCeiling"] as? String
+    if let provider = raw["inferenceProvider"] as? String {
+        value.inferenceProvider = SandInferenceProvider(rawValue: provider)
+    }
+    value.inferenceRouterUsage = decodeStoredValue(SandInferenceRouterUsage.self, from: raw["inferenceRouterUsage"])
+    if let runtime = raw["boxRuntime"] as? String {
+        value.boxRuntime = SandBoxRuntime(rawValue: runtime)
+    }
+    value.mcpCustomInstructionsAccountScope = raw["mcpCustomInstructionsAccountScope"] as? String
+    value.pinnedAgentIds = storedStringArray(raw["pinnedAgentIds"])
+
+    if let sections = raw["sidebarSections"] as? [[String: Any]] {
+        value.sidebarSections = sections.compactMap { section in
+            guard let id = section["id"] as? String,
+                  let name = section["name"] as? String else { return nil }
+            return .init(
+                id: id,
+                name: name,
+                agentIDs: storedStringArray(section["agentIds"] ?? section["agentIDs"]),
+                isCollapsed: section["isCollapsed"] as? Bool
+            )
+        }
+    }
+
+    return normalizeStoredSettings(value)
 }
 
 private func downgradePersistedFast(_ model: SandAgentModelSelection) -> SandAgentModelSelection {
@@ -186,9 +286,8 @@ final class SandSettingsStore: @unchecked Sendable {
         guard FileManager.default.fileExists(atPath: settingsPath) else { return emptySandSettings() }
         do {
             let data = try Data(contentsOf: URL(fileURLWithPath: settingsPath))
-            guard let parsed = normalizeStoredSettings(try JSONDecoder().decode(SandStoredSettings.self, from: data)) else {
-                return emptySandSettings()
-            }
+            let raw = try JSONSerialization.jsonObject(with: data)
+            guard let parsed = parseStoredSettingsObject(raw) else { return emptySandSettings() }
             return applyPendingMigrationsLocked(parsed)
         } catch {
             return emptySandSettings()
@@ -284,7 +383,7 @@ final class SandSettingsStore: @unchecked Sendable {
 
     func getUpdateTrackOverride() -> FabushiUpdateTrack? {
         guard let raw = load().updateTrackOverride,
-              let track = UpdateTrackPolicy.managedTrack(raw) else { return nil }
+              let track = FabushiUpdateTrack(rawValue: raw) else { return nil }
         let coerced = UpdateTrackPolicy.coerceToEnabled(track)
         if coerced != track { setUpdateTrackOverride(coerced) }
         return coerced
