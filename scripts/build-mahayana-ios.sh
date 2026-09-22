@@ -8,7 +8,7 @@ ARCH="${2:-arm64}"
 
 if [[ ! -f "$MANIFEST" ]]; then
   echo "Missing iOS-owned Mahayana sources at $MANIFEST" >&2
-  echo "Run/complete the pinned runtime-source import before building." >&2
+  echo "fabushi-ios must contain its own runtime sources; external source import is not a supported build fallback." >&2
   exit 2
 fi
 
