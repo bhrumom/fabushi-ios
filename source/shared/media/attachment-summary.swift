@@ -48,7 +48,7 @@ enum AttachmentClassification {
 
     static func classifyPathLike(_ source: String) -> SandAttachmentKind? {
         let subject = extensionSubject(source)
-        switch FilePreviewPolicy.kind(for: subject) {
+        return switch FilePreviewPolicy.kind(for: subject) {
         case .image: .image
         case .video: .video
         case .audio: .audio
