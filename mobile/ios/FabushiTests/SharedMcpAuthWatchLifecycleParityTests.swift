@@ -44,6 +44,24 @@ private final class AuthWatchRecorder: @unchecked Sendable {
     }
 }
 
+private final class AuthRegistrationRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var values: [(String, String)] = []
+
+    func append(_ authorizationUrl: String, _ serverName: String) {
+        lock.lock()
+        values.append((authorizationUrl, serverName))
+        lock.unlock()
+    }
+
+    func snapshot() -> [(String, String)] {
+        lock.lock()
+        defer { lock.unlock() }
+        return values
+    }
+}
+
+
 private func authWatchHTTPServer(
     disabled: Bool = false,
     accounts: [McpDisplayAccountSlot] = []
@@ -343,8 +361,7 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
     func testAuthenticationRegistersOAuthCallbackStateBeforeStartingWatch() async throws {
         let recorder = AuthWatchRecorder()
         let server = authWatchHTTPServer()
-        let registrationLock = NSLock()
-        nonisolated(unsafe) var registered: [(String, String)] = []
+        let registrations = AuthRegistrationRecorder()
         let lifecycle = SandMcpAuthWatchLifecycle(deps: .init(
             checkAuthStatus: { _, redirect, _, _ in
                 XCTAssertEqual(redirect, MCP_OAUTH_IOS_CALLBACK_URL)
@@ -367,9 +384,7 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
             resolveDisplayServer: { _, _ in server },
             reload: { recorder.reload() },
             registerOAuthCallback: { authorizationUrl, serverName in
-                registrationLock.lock()
-                registered.append((authorizationUrl, serverName))
-                registrationLock.unlock()
+                registrations.append(authorizationUrl, serverName)
                 return parseMcpOAuthLoopbackAuthorization(authorizationUrl) != nil
             },
             onConnectorAuth: recorder.event,
@@ -379,13 +394,11 @@ final class SharedMcpAuthWatchLifecycleParityTests: XCTestCase {
         let result = try await lifecycle.authenticateServer("12")
 
         XCTAssertEqual(result.status, .started)
-        registrationLock.lock()
-        let registrations = registered
-        registrationLock.unlock()
-        XCTAssertEqual(registrations.count, 1)
-        XCTAssertEqual(registrations.first?.1, "GitHub")
+        let recordedRegistrations = registrations.snapshot()
+        XCTAssertEqual(recordedRegistrations.count, 1)
+        XCTAssertEqual(recordedRegistrations.first?.1, "GitHub")
         XCTAssertEqual(
-            registrations.first.flatMap { parseMcpOAuthLoopbackAuthorization($0.0)?.state },
+            recordedRegistrations.first.flatMap { parseMcpOAuthLoopbackAuthorization($0.0)?.state },
             "mcp-state-1"
         )
         XCTAssertEqual(await lifecycle.pendingWatchCount(), 1)
