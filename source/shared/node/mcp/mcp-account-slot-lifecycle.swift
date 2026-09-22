@@ -25,8 +25,8 @@ final class SandMcpAccountSlotLifecycle {
     private let getListedState: () -> McpListedState?
     private let setListedState: (McpListedState) -> Void
     private let adoptAccountConfig: (McpRuntimeConfig?) async -> Void
-    private let invalidateToolsCache: () -> Void
-    private let resetPushState: () -> Void
+    private let invalidateToolsCache: () async -> Void
+    private let resetPushState: () async -> Void
 
     init(
         backend: any McpAccountBackend,
@@ -39,8 +39,8 @@ final class SandMcpAccountSlotLifecycle {
         getListedState: @escaping () -> McpListedState?,
         setListedState: @escaping (McpListedState) -> Void,
         adoptAccountConfig: @escaping (McpRuntimeConfig?) async -> Void,
-        invalidateToolsCache: @escaping () -> Void,
-        resetPushState: @escaping () -> Void
+        invalidateToolsCache: @escaping () async -> Void,
+        resetPushState: @escaping () async -> Void
     ) {
         self.backend = backend
         self.resolveDisplayServer = resolveDisplayServer
@@ -160,8 +160,8 @@ final class SandMcpAccountSlotLifecycle {
         )
         setDisplay(patchedDisplay)
         await adoptAccountConfig(runtimeConfigFromDisplay(patchedDisplay))
-        invalidateToolsCache()
-        resetPushState()
+        await invalidateToolsCache()
+        await resetPushState()
 
         let patchedState = McpListedState(
             servers: patchSummaries(state.servers, rowIdentifier)
