@@ -266,6 +266,10 @@ mod package_agent_actions_cancel_action_handler;
 mod package_agent_state_utils;
 #[path = "../../../agent/constants.rs"]
 mod package_agent_constants;
+#[path = "../../../agent/state-agent-type.rs"]
+mod package_agent_state_agent_type;
+#[path = "../../../agent/common.rs"]
+mod package_agent_common;
 #[path = "../../../context/browser-bridge.rs"]
 mod package_context_browser_bridge;
 #[path = "../../../agent-store-sync/sync-client-config.rs"]

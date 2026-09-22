@@ -149,6 +149,8 @@ required = [
     "source/shared/rpc/SharedRPCContracts.swift",
     "source/packages/agent/state-utils.rs",
     "source/packages/agent/constants.rs",
+    "source/packages/agent/state-agent-type.rs",
+    "source/packages/agent/common.rs",
     "source/packages/agent/self-summary/constants.rs",
     "source/packages/agent/tools/task-tool-name.rs",
     "source/packages/cursor-plugins/schema-version.rs",
@@ -265,6 +267,12 @@ for required_token in [
 mobile_host_crate = (ROOT / "source/packages/mahayana-rs/mahayana-app-host-mobile/src/lib.rs").read_text()
 if 'host/host-paths.rs' not in mobile_host_crate:
     errors.append("shipping mobile Host crate does not compile source/host/host-paths.rs")
+for required_token in [
+    'agent/state-agent-type.rs',
+    'agent/common.rs',
+]:
+    if required_token not in mobile_host_crate:
+        errors.append(f"shipping mobile Host crate does not compile package parity module: {required_token}")
 
 host_paths = (ROOT / "source/host/host-paths.rs").read_text()
 for required_token in [
