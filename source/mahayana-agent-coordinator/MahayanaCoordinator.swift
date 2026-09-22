@@ -37,15 +37,18 @@ final class MahayanaCoordinator {
     }
 
     private let hostSupervisor: MahayanaLocalHostSupervisor
+    private let settingsStore: SandSettingsStore?
     private let webAuthnSigner: CoordinatorWebAuthnSigner?
     private(set) var lifecycleState: LifecycleState = .starting
     private var inFlight = Set<String>()
 
     init(
         hostSupervisor: MahayanaLocalHostSupervisor,
-        passkeyProvider: (any PasskeyProviding)? = nil
+        passkeyProvider: (any PasskeyProviding)? = nil,
+        settingsStore: SandSettingsStore? = nil
     ) {
         self.hostSupervisor = hostSupervisor
+        self.settingsStore = settingsStore
         webAuthnSigner = passkeyProvider.map {
             CoordinatorWebAuthnSigner(
                 passkeys: CoordinatorPasskeyProvider(provider: $0)
@@ -68,8 +71,23 @@ final class MahayanaCoordinator {
                 appDataDirectory: appDataDirectory,
                 featureHostTest: featureHostTest
             ),
-            passkeyProvider: passkeyProvider
+            passkeyProvider: passkeyProvider,
+            settingsStore: SandSettingsStore(
+                settingsPath: appDataDirectory.appendingPathComponent("sand-settings.json").path
+            )
         )
+    }
+
+    func sharedSettingsSnapshot() -> SandStoredSettings {
+        settingsStore?.load() ?? emptySandSettings()
+    }
+
+    func updateAccountSettingsScope(_ accountScope: String?) {
+        if let accountScope {
+            settingsStore?.scopeToAccount(accountScope)
+        } else {
+            settingsStore?.clearAccountScope()
+        }
     }
 
     func signPasskey(_ challenge: PasskeyChallenge) async throws -> CoordinatorPayload {
