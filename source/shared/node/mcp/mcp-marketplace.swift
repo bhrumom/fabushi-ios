@@ -173,11 +173,15 @@ protocol SandMarketplaceListingClient: Sendable {
     func getPluginMcpConfig(pluginId: UInt64, timeoutMs: Int) async throws -> String?
 }
 
+private func defaultMarketplaceRememberPluginLogoUrl(_ url: String) {
+    rememberPluginLogoUrl(url)
+}
+
 struct MarketplaceListingDependencies: @unchecked Sendable {
     let bestEffortToken: @Sendable () async -> String?
     let createClient: @Sendable () async throws -> any SandMarketplaceListingClient
     var timeoutMs: Int = CURSOR_MARKETPLACE_REQUEST_TIMEOUT_MS
-    var rememberPluginLogoUrl: @Sendable (String) -> Void = rememberPluginLogoUrl
+    var rememberPluginLogoUrl: @Sendable (String) -> Void = defaultMarketplaceRememberPluginLogoUrl
 }
 
 private func marketplaceCategory(_ keys: [String]) -> String {

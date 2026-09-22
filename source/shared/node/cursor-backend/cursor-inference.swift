@@ -221,12 +221,6 @@ func getSandInferenceBackendUrl(
     getConfiguredBackendUrl(env)
 }
 
-struct SandRequestLineage: Equatable, Sendable {
-    let parentRequestId: String
-    let rootParentRequestId: String
-    var parentAgentToolCallId: String? = nil
-}
-
 private func sanitizedHeaderValue(_ value: String) -> String {
     value.replacingOccurrences(of: "\r", with: "")
         .replacingOccurrences(of: "\n", with: "")
