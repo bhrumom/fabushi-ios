@@ -74,15 +74,19 @@ final class SharedMcpOAuthLifecycleParityTests: XCTestCase {
             .init(name: "redirect_uri", value: MCP_OAUTH_IOS_CALLBACK_URL),
             .init(name: "state", value: "state-once"),
         ]
-        XCTAssertTrue(await lifecycle.registerPendingAuthFromUrl(
+        let registered = await lifecycle.registerPendingAuthFromUrl(
             authorizationUrl: try XCTUnwrap(components.url?.absoluteString),
             serverName: "GitHub"
-        ))
+        )
+        XCTAssertTrue(registered)
 
         let callback = try XCTUnwrap(URL(string: "fabushi://auth/callback?state=state-once&code=abc"))
-        XCTAssertEqual(await lifecycle.handleCallback(callback), .success)
-        XCTAssertEqual(await recorder.snapshot().map { [$0.0, $0.1] }, [["state-once", "abc"]])
-        XCTAssertEqual(await lifecycle.handleCallback(callback), .notFound)
+        let firstResult = await lifecycle.handleCallback(callback)
+        XCTAssertEqual(firstResult, .success)
+        let completionSnapshot = await recorder.snapshot()
+        XCTAssertEqual(completionSnapshot.map { [$0.0, $0.1] }, [["state-once", "abc"]])
+        let secondResult = await lifecycle.handleCallback(callback)
+        XCTAssertEqual(secondResult, .notFound)
     }
 
     func testProviderErrorAndMissingCodeConsumePendingState() async throws {
@@ -99,29 +103,29 @@ final class SharedMcpOAuthLifecycleParityTests: XCTestCase {
             return try XCTUnwrap(components.url?.absoluteString)
         }
 
-        XCTAssertTrue(await lifecycle.registerPendingAuthFromUrl(
+        let providerRegistered = await lifecycle.registerPendingAuthFromUrl(
             authorizationUrl: try authorization("provider-error")
-        ))
+        )
+        XCTAssertTrue(providerRegistered)
         let providerError = try XCTUnwrap(URL(string:
             "fabushi://auth/callback?state=provider-error&error=access_denied"
         ))
-        XCTAssertEqual(
-            await lifecycle.handleCallback(providerError),
-            .refused(.providerError)
-        )
-        XCTAssertFalse(await lifecycle.hasPendingState("provider-error"))
+        let providerResult = await lifecycle.handleCallback(providerError)
+        XCTAssertEqual(providerResult, .refused(.providerError))
+        let providerPending = await lifecycle.hasPendingState("provider-error")
+        XCTAssertFalse(providerPending)
 
-        XCTAssertTrue(await lifecycle.registerPendingAuthFromUrl(
+        let missingRegistered = await lifecycle.registerPendingAuthFromUrl(
             authorizationUrl: try authorization("missing-code")
-        ))
+        )
+        XCTAssertTrue(missingRegistered)
         let missing = try XCTUnwrap(URL(string:
             "fabushi://auth/callback?state=missing-code"
         ))
-        XCTAssertEqual(
-            await lifecycle.handleCallback(missing),
-            .refused(.missingCode)
-        )
-        XCTAssertFalse(await lifecycle.hasPendingState("missing-code"))
+        let missingResult = await lifecycle.handleCallback(missing)
+        XCTAssertEqual(missingResult, .refused(.missingCode))
+        let missingPending = await lifecycle.hasPendingState("missing-code")
+        XCTAssertFalse(missingPending)
     }
 
     func testTransientCompletionRetriesOnceWithoutDuplicateSuccess() async throws {
@@ -138,15 +142,19 @@ final class SharedMcpOAuthLifecycleParityTests: XCTestCase {
             .init(name: "redirect_uri", value: MCP_OAUTH_IOS_CALLBACK_URL),
             .init(name: "state", value: "retry-state"),
         ]
-        XCTAssertTrue(await lifecycle.registerPendingAuthFromUrl(
+        let retryRegistered = await lifecycle.registerPendingAuthFromUrl(
             authorizationUrl: try XCTUnwrap(authorization.url?.absoluteString)
-        ))
+        )
+        XCTAssertTrue(retryRegistered)
         let callback = try XCTUnwrap(URL(string:
             "fabushi://auth/callback?state=retry-state&code=retry-code"
         ))
-        XCTAssertEqual(await lifecycle.handleCallback(callback), .success)
-        XCTAssertEqual(await recorder.snapshot().count, 2)
-        XCTAssertFalse(await lifecycle.hasPendingState("retry-state"))
+        let retryResult = await lifecycle.handleCallback(callback)
+        XCTAssertEqual(retryResult, .success)
+        let retrySnapshot = await recorder.snapshot()
+        XCTAssertEqual(retrySnapshot.count, 2)
+        let retryPending = await lifecycle.hasPendingState("retry-state")
+        XCTAssertFalse(retryPending)
     }
 
     func testSceneResumeStyleExpiryAndUnsupportedURLAreFailClosed() async throws {
@@ -160,17 +168,20 @@ final class SharedMcpOAuthLifecycleParityTests: XCTestCase {
             .init(name: "redirect_uri", value: MCP_OAUTH_IOS_CALLBACK_URL),
             .init(name: "state", value: "expiring-state"),
         ]
-        XCTAssertTrue(await lifecycle.registerPendingAuthFromUrl(
+        let expiringRegistered = await lifecycle.registerPendingAuthFromUrl(
             authorizationUrl: try XCTUnwrap(authorization.url?.absoluteString)
-        ))
+        )
+        XCTAssertTrue(expiringRegistered)
         clock.advance(Int64(MCP_OAUTH_PENDING_TTL_MS) + 1)
         await lifecycle.expirePending()
-        XCTAssertFalse(await lifecycle.hasPendingState("expiring-state"))
+        let expiringPending = await lifecycle.hasPendingState("expiring-state")
+        XCTAssertFalse(expiringPending)
 
         let browserLogin = try XCTUnwrap(URL(string:
             "fabushi://auth/complete?attemptId=browser-login-1&status=completed"
         ))
-        XCTAssertEqual(await lifecycle.handleCallback(browserLogin), .unsupportedURL)
+        let unsupportedResult = await lifecycle.handleCallback(browserLogin)
+        XCTAssertEqual(unsupportedResult, .unsupportedURL)
     }
 
     func testCoordinatorRegistryUsesSameTTLAndSingleUseCallbackIdentity() async throws {
