@@ -128,65 +128,33 @@ extension ContentView {
             Button("取消", role: .cancel) {}
         }
         .sheet(isPresented: $profileMenuPresented) {
-            NavigationStack {
-                List {
-                    Section("账号") {
-                        HStack(spacing: 12) {
-                            avatar.frame(width: 42, height: 42)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(model.accountName).font(.headline)
-                                if !model.accountEmail.isEmpty { Text(model.accountEmail).font(.caption).foregroundStyle(.secondary) }
-                            }
-                        }
-                        Button("退出登录", role: .destructive) {
-                            signOutConfirmationPresented = true
-                        }
-                        .accessibilityIdentifier("mobile-logout")
-                    }
-                    Section("工作台") {
-                        Button {
-                            profileMenuPresented = false
-                            destination = .remoteComputer
-                        } label: {
-                            Label("我的电脑", systemImage: "desktopcomputer")
-                        }
-                        .accessibilityIdentifier("remote-computer-entry")
-                        Button {
-                            profileMenuPresented = false
-                            destination = .marketplace
-                        } label: {
-                            Label("插件市场", systemImage: "puzzlepiece.extension")
-                        }
-                        .accessibilityIdentifier("marketplace-entry")
-                    }
-                    Section("导航") {
-                        ForEach(MobileSection.allCases) { section in
-                            Button {
-                                profileMenuPresented = false
-                                handleSection(section)
-                            } label: {
-                                Label(section.label, systemImage: section.symbol)
-                            }
-                            .accessibilityIdentifier("profile-section-\(section.rawValue)")
-                        }
-                    }
+            AccountMenuView(
+                model: model,
+                avatar: AnyView(avatar),
+                onClose: { profileMenuPresented = false },
+                onRequestSignOut: { signOutConfirmationPresented = true },
+                onOpenRemoteComputer: {
+                    profileMenuPresented = false
+                    destination = .remoteComputer
+                },
+                onOpenMarketplace: {
+                    profileMenuPresented = false
+                    destination = .marketplace
+                },
+                onOpenSection: { section in
+                    profileMenuPresented = false
+                    handleSection(section)
                 }
-                .navigationTitle("导航")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("取消") { profileMenuPresented = false }
+            )
+            .sheet(isPresented: $signOutConfirmationPresented) {
+                AccountSignOutDialogView(
+                    model: model,
+                    onCancel: { signOutConfirmationPresented = false },
+                    onSignedOut: {
+                        signOutConfirmationPresented = false
+                        profileMenuPresented = false
                     }
-                }
-                .sheet(isPresented: $signOutConfirmationPresented) {
-                    AccountSignOutDialogView(
-                        model: model,
-                        onCancel: { signOutConfirmationPresented = false },
-                        onSignedOut: {
-                            signOutConfirmationPresented = false
-                            profileMenuPresented = false
-                        }
-                    )
-                }
+                )
             }
         }
         .sheet(item: $composeKind) { kind in composeSheet(kind) }

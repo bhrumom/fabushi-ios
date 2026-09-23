@@ -101,6 +101,9 @@ final class MarketplaceModel {
     var loggedIn = false
     var accountName = "Fabushi"
     var accountEmail = ""
+    var accountUsage: AccountUsageProjection?
+    var accountUsageLoading = false
+    var accountUsageError: String?
     var onboardingStep: Int
     var browserLoginAttemptId: String?
     var browserLoginURL: URL?
@@ -129,7 +132,10 @@ final class MarketplaceModel {
             let result = try await bridge.request(method: "feature.auth.status")
             applyAuth(result.value as? [String: Any])
             authResolved = true
-            if loggedIn { await refresh() }
+            if loggedIn {
+                await refreshAccountUsage()
+                await refresh()
+            }
         } catch {
             authResolved = true
             message = "账号状态加载失败：\(error.localizedDescription)"
@@ -138,6 +144,10 @@ final class MarketplaceModel {
 
     private func applyAuth(_ object: [String: Any]?, defaultLoggedIn: Bool = false) {
         loggedIn = object?["loggedIn"] as? Bool ?? defaultLoggedIn
+        if !loggedIn {
+            accountUsage = nil
+            accountUsageError = nil
+        }
         guard let user = object?["user"] as? [String: Any] else {
             accountName = "Fabushi"
             accountEmail = ""
@@ -429,6 +439,7 @@ final class MarketplaceModel {
                 browserLoginURL = nil
                 webAuthenticationSession = nil
                 loginError = nil
+                await refreshAccountUsage()
                 await refresh()
                 message = "登录成功，账号状态已同步"
             case "cancelled":
@@ -455,6 +466,8 @@ final class MarketplaceModel {
             return
         }
         loggedIn = false
+        accountUsage = nil
+        accountUsageError = nil
         chatMessages = []
         activeOperationId = nil
         chatBusy = false
@@ -599,6 +612,35 @@ final class MarketplaceModel {
         let id = "action:\(operationId):\(stepId)"
         let entry = MobileChatMessage(id: id, role: .assistant, text: "", kind: .action, operationId: operationId, actionTitle: title, actionDetail: detail, actionStatus: status)
         if let index = chatMessages.firstIndex(where: { $0.id == id }) { chatMessages[index] = entry } else { chatMessages.append(entry) }
+    }
+
+    func refreshAccountUsage() async {
+        guard loggedIn else {
+            accountUsage = nil
+            accountUsageError = nil
+            accountUsageLoading = false
+            return
+        }
+
+        accountUsageLoading = true
+        defer { accountUsageLoading = false }
+
+        do {
+            let result = try await bridge.request(method: "feature.usage.status")
+            guard let payload = result.value as? [String: Any],
+                  let usage = AccountUsageProjection(payload: payload)
+            else {
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
+            }
+            accountUsage = usage
+            accountUsageError = nil
+        } catch {
+            // Usage is supplementary account UI. A temporarily unavailable
+            // budget endpoint must not turn a valid authenticated session into
+            // a login/marketplace failure.
+            accountUsage = nil
+            accountUsageError = "usage_unavailable"
+        }
     }
 
     func refresh() async {

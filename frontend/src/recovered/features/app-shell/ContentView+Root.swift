@@ -74,6 +74,9 @@ extension ContentView {
     homeQuery,
     String(profileMenuPresented),
     String(signOutConfirmationPresented),
+    String(model.accountUsageLoading),
+    model.accountUsage.map { "\($0.windowStart):\($0.windowEnd):\($0.tokenLimit):\($0.remainingTokens):\($0.unlimited)" } ?? "",
+    model.accountUsageError ?? "",
     String(composeMenuPresented),
     composeKind?.rawValue ?? "",
     composeName,
@@ -613,6 +616,20 @@ return fingerprintParts.joined(separator: "|")
         if profileMenuPresented {
             add("profile-menu", role: "dialog", name: "导航")
             add("profile-account", role: "status", name: model.accountName)
+            if let usage = model.accountUsage {
+                add("profile-usage", role: "status", name: usage.semanticSummary)
+            } else if model.accountUsageLoading {
+                add("profile-usage-loading", role: "status", name: "正在加载账号用量")
+            } else if model.accountUsageError != nil {
+                add(
+                    "profile-usage-refresh",
+                    role: "button",
+                    name: "重新加载账号用量",
+                    action: .init(allowed: ["invoke"]) { _ in
+                        Task { await model.refreshAccountUsage() }
+                    }
+                )
+            }
             add(
                 "mobile-logout",
                 role: "button",

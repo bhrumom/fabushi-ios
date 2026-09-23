@@ -1148,7 +1148,7 @@ This table is an evidence register, not a migration progress counter. `pending` 
 | R6 | pending | iOS-safe local capability and remote/box adaptations exist; full Runner behavior/evidence closure remains incomplete. |
 | R7 | pending | Shipping IOSPreloadBridge/Coordinator port boundary exists; UI-facing free-form payload cleanup and complete parity evidence remain open. |
 | R8 | pending | IOSMainRuntime now owns production main composition with account, lifecycle and update wiring; remaining electron-main → ios-main rows are not fully implemented/verified. |
-| R9 | pending | Frontend now has 2 implemented account-session rows and 320 mapped rows; renderer migration remains the largest unresolved implementation domain. |
+| R9 | pending | Frontend has 2 implemented account-session rows and 320 mapped rows. The mapped account menu now has native production wiring for identity navigation sign-out and server-authoritative usage; mutable profile and remaining desktop menu affordances are still open, so the row is not promoted yet. Renderer migration remains the largest unresolved implementation domain. |
 | R10 | pending | All 165 source/shared rows are implemented in the ledger snapshot, but exact behavior verification is still required before final closure. |
 | R11 | pending | source/packages has 164 implemented, 680 mapped and 8 reviewed N/A rows at the audited snapshot; package parity is incomplete. |
 | R12 | pending | Cross-feature effect-parity acceptance is incomplete. |

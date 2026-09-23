@@ -25,4 +25,42 @@ final class AccountSessionFrontendParityTests: XCTestCase {
             .failed(message: "退出登录失败，请重试。")
         )
     }
+
+    func testUsageProjectionParsesServerAuthoritativeBudget() {
+        let usage = AccountUsageProjection(payload: [
+            "windowStart": 1_725_235_200,
+            "windowEnd": 1_725_840_000,
+            "tokenLimit": 100_000,
+            "usedTokens": 25_000,
+            "reservedTokens": 5_000,
+            "remainingTokens": 70_000,
+            "unlimited": false,
+        ])
+
+        XCTAssertNotNil(usage)
+        XCTAssertEqual(usage?.committedTokens, 30_000)
+        XCTAssertEqual(usage?.usagePercent, 30)
+        XCTAssertEqual(usage?.semanticSummary, "当前周期用量 30% · 剩余 70000 tokens")
+    }
+
+    func testUsageProjectionRejectsMalformedOrBooleanNumbers() {
+        XCTAssertNil(AccountUsageProjection(payload: [
+            "windowStart": 10,
+            "windowEnd": 9,
+            "tokenLimit": 100,
+            "usedTokens": 1,
+            "reservedTokens": 0,
+            "remainingTokens": 99,
+            "unlimited": false,
+        ]))
+        XCTAssertNil(AccountUsageProjection(payload: [
+            "windowStart": 1,
+            "windowEnd": 2,
+            "tokenLimit": true,
+            "usedTokens": 1,
+            "reservedTokens": 0,
+            "remainingTokens": 99,
+            "unlimited": false,
+        ]))
+    }
 }
