@@ -11,9 +11,9 @@ settings:
     CODE_SIGN_STYLE: Automatic
     CLANG_ENABLE_MODULES: YES
     HEADER_SEARCH_PATHS:
-      - $(SRCROOT)/../native/include
+      - $(SRCROOT)/../../source/host/include
     LIBRARY_SEARCH_PATHS:
-      - $(SRCROOT)/Frameworks
+      - $(SRCROOT)/../../build/rust/$(PLATFORM_NAME)
     OTHER_LDFLAGS:
       - $(inherited)
       - -lmahayana_app_host
@@ -23,6 +23,36 @@ targets:
     platform: iOS
     sources:
       - path: Fabushi
+        excludes:
+          - MahayanaHost.swift
+      - path: ../../frontend
+      - path: ../../source/internal
+      - path: ../../source/mime-types.types.swift
+      - path: ../../source/shared
+      - path: ../../source/ios-dev-controls
+      - path: ../../source/host/MahayanaHostRuntime.swift
+      - path: ../../source/mahayana-agent-coordinator
+      - path: ../../source/ios-main
+      - path: ../../source/ios-preload
+      - path: ../../source/local-exec-daemon
+      - path: ../../source/box-exec-daemon
+      - path: ../../source/packages/agent-client/agent-client-errors.swift
+      - path: ../../source/packages/context/core.swift
+      - path: ../../source/packages/context/abort-reason.swift
+      - path: ../../source/packages/context/logger.swift
+      - path: ../../source/packages/context/otel.swift
+      - path: ../../source/packages/metrics/index.swift
+      - path: ../../source/packages/prompt-jsx/prompt-runtime.swift
+      - path: ../../source/packages/shell-exec/event-loop-pressure.swift
+      - path: ../../source/packages/shell-exec/types.swift
+      - path: ../../source/packages/shell-exec/output-suppression.swift
+      - path: ../../source/packages/shell-exec/env-filter.swift
+      - path: ../../source/packages/shell-exec/sandbox/network-policy-utils.swift
+    preBuildScripts:
+      - name: Build iOS-owned Mahayana runtime
+        script: |
+          "$SRCROOT/../../scripts/build-mahayana-ios.sh" "$PLATFORM_NAME" "${CURRENT_ARCH:-arm64}"
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ombhrum.fabushi

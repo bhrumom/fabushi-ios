@@ -9,7 +9,7 @@ This repository is the canonical source for **native iOS application, iOS-specif
 - Verify the current GitHub repository before product-affecting work.
 - Do not implement another Fabushi platform's product code here. Switch to that platform's canonical repository first.
 - `bhrumom/fabushi` is the legacy migration/source-history repository, not the canonical implementation repository for this scope.
-- Shared Mahayana/Rust runtime/contracts belong in `bhrumom/fabushi-platform-core`; this repository owns only its platform-specific consumer/integration.
+- For the active standalone iOS architecture, this repository owns the complete iOS product runtime and contracts, including iOS-local Mahayana Coordinator/Host/Runner source and build integration. Do not require another Fabushi source repository to build or run the iOS product. Task-specific active Specs may define the exact local module layout.
 
 ## CRITICAL: Spec-first development — No Spec, No Code
 

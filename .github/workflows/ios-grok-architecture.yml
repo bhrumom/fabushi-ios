@@ -1,0 +1,157 @@
+name: iOS Grok architecture parity
+
+on:
+  pull_request:
+
+concurrency:
+  group: ios-grok-architecture-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: python3 scripts/check-grok-ios-architecture.py
+      - name: Verify App Store readiness gate script
+        run: python3 .github/scripts/wait-app-store-build.py --self-test
+      - name: Test protected-session login preparation
+        run: node --test .github/scripts/prepare-ios-ci-session.test.mjs
+
+  rust-host:
+    needs: architecture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Install Linux dependencies for Rust Host graph
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libclang-dev libxcb1-dev libxrandr-dev libdbus-1-dev libpipewire-0.3-dev libwayland-dev libegl-dev libgbm-dev libxkbcommon-dev
+      - name: Test iOS-owned Rust Host modules
+        run: cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-app-host-mobile --lib --profile ci
+
+  build-and-test:
+    needs:
+      - architecture
+      - rust-host
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Detect iOS-owned Rust source
+        id: source
+        shell: bash
+        run: |
+          if [[ -f source/packages/mahayana-rs/Cargo.toml ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Rust source import has not landed yet; native build is deferred."
+          fi
+      - name: Install tools
+        if: steps.source.outputs.available == 'true'
+        run: |
+          brew install xcodegen
+          rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+      - name: Verify strict architecture
+        if: steps.source.outputs.available == 'true'
+        run: python3 scripts/check-grok-ios-architecture.py --strict
+      - name: Test iOS-owned Rust internal/runtime modules
+        if: steps.source.outputs.available == 'true'
+        run: cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-app-host-mobile --lib --profile ci
+
+      - name: Build native runtime for simulator
+        if: steps.source.outputs.available == 'true'
+        run: scripts/build-mahayana-ios.sh iphonesimulator arm64
+      - name: Generate Xcode project
+        if: steps.source.outputs.available == 'true'
+        working-directory: mobile/ios
+        run: xcodegen generate
+      - name: Select simulator
+        if: steps.source.outputs.available == 'true'
+        id: sim
+        shell: bash
+        run: |
+          set -euo pipefail
+          UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for xs in d.values() for x in xs if x["name"].startswith("iPhone")))')"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+      - name: Unit tests
+        if: steps.source.outputs.available == 'true'
+        working-directory: mobile/ios
+        env:
+          FABUSHI_UNIT_TEST_HOST: '1'
+        run: |
+          xcodebuild test \
+            -project Fabushi.xcodeproj \
+            -scheme Fabushi \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:FabushiTests \
+            CODE_SIGNING_ALLOWED=NO
+      - name: UI tests
+        if: steps.source.outputs.available == 'true'
+        working-directory: mobile/ios
+        run: |
+          xcodebuild test \
+            -project Fabushi.xcodeproj \
+            -scheme Fabushi \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:FabushiUITests \
+            CODE_SIGNING_ALLOWED=NO
+
+  device-archive:
+    needs:
+      - architecture
+      - rust-host
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Install device build tools
+        run: |
+          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          rustup target add aarch64-apple-ios
+      - name: Build iOS-owned Rust runtime for physical devices
+        run: scripts/build-mahayana-ios.sh iphoneos arm64
+      - name: Generate Xcode project
+        working-directory: mobile/ios
+        run: xcodegen generate
+      - name: Archive generic iOS device build without signing
+        working-directory: mobile/ios
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/Fabushi-unsigned.xcarchive"
+          xcodebuild archive \
+            -project Fabushi.xcodeproj \
+            -scheme Fabushi \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Fabushi-unsigned.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=''
+          test -d "$RUNNER_TEMP/Fabushi-unsigned.xcarchive"
+      - name: Package unsigned archive evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p device-archive-evidence
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$RUNNER_TEMP/Fabushi-unsigned.xcarchive" \
+            device-archive-evidence/Fabushi-unsigned-${GITHUB_SHA}.xcarchive.zip
+          shasum -a 256 device-archive-evidence/*.zip > device-archive-evidence/SHA256SUMS.txt
+      - name: Upload device archive evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: fabushi-ios-device-archive-${{ github.event.pull_request.head.sha }}
+          path: device-archive-evidence/
+          if-no-files-found: error
+          retention-days: 14

@@ -24,6 +24,15 @@ final class GlobalDharmaJourneyUITests: XCTestCase {
 
     @MainActor
     func testGlobalDharmaMarketplaceBotWebMcpCommerceJourney() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let protectedSession = environment["FABUSHI_CI_ACCOUNT_SESSION_BASE64"],
+              !protectedSession.isEmpty
+        else {
+            throw XCTSkip(
+                "Requires the protected, bounded Fabushi CI account session injected into the UI test runner"
+            )
+        }
+
         let app = XCUIApplication()
         configureRealCIEnvironment(for: app)
         app.launch()
@@ -198,20 +207,24 @@ final class GlobalDharmaJourneyUITests: XCTestCase {
     @MainActor
     private func configureRealCIEnvironment(for app: XCUIApplication) {
         let environment = ProcessInfo.processInfo.environment
-        if let session = environment["FABUSHI_CI_APP_SESSION_IN_SIMULATOR"], !session.isEmpty {
-            app.launchEnvironment["FABUSHI_CI_ACCOUNT_SESSION_FILE"] = session
+        if let session = environment["FABUSHI_CI_ACCOUNT_SESSION_BASE64"], !session.isEmpty {
+            app.launchEnvironment["FABUSHI_CI_ACCOUNT_SESSION_BASE64"] = session
         }
-        if let sourceSHA = environment["FABUSHI_E2E_SOURCE_SHA"], !sourceSHA.isEmpty {
-            app.launchEnvironment["GITHUB_SHA"] = sourceSHA
+        if let apiBaseURL = environment["FABUSHI_API_BASE_URL"], !apiBaseURL.isEmpty {
+            app.launchEnvironment["FABUSHI_API_BASE_URL"] = apiBaseURL
+            app.launchEnvironment["MAHAYANA_API_BASE_URL"] = apiBaseURL
         }
         for key in [
             "GITHUB_ACTIONS", "GITHUB_REPOSITORY", "GITHUB_WORKFLOW", "GITHUB_JOB",
             "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "RUNNER_NAME", "RUNNER_OS", "RUNNER_ARCH",
-            "FABUSHI_API_BASE_URL", "FABUSHI_DEVICE_NAME"
+            "FABUSHI_DEVICE_NAME"
         ] {
             if let value = environment[key], !value.isEmpty {
                 app.launchEnvironment[key] = value
             }
+        }
+        if let sourceSHA = environment["FABUSHI_E2E_SOURCE_SHA"], sourceSHA.count == 40 {
+            app.launchEnvironment["GITHUB_SHA"] = sourceSHA
         }
     }
 
@@ -287,6 +300,7 @@ final class GlobalDharmaJourneyUITests: XCTestCase {
         persistState()
     }
 
+    @MainActor
     private func checkpoint(_ name: String) {
         let screenshot = XCUIScreen.main.screenshot()
         let attachment = XCTAttachment(screenshot: screenshot)
@@ -303,12 +317,20 @@ final class GlobalDharmaJourneyUITests: XCTestCase {
     }
 
     private func persistState() {
-        guard let path = ProcessInfo.processInfo.environment["FABUSHI_E2E_STATE_FILE"], !path.isEmpty,
-              JSONSerialization.isValidJSONObject(state),
-              let data = try? JSONSerialization.data(withJSONObject: state, options: [.prettyPrinted, .sortedKeys])
+        guard JSONSerialization.isValidJSONObject(state),
+              let data = try? JSONSerialization.data(
+                withJSONObject: state,
+                options: [.prettyPrinted, .sortedKeys]
+              )
         else { return }
-        let url = URL(fileURLWithPath: path)
-        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? data.write(to: url, options: .atomic)
+
+        // UI tests execute inside the Simulator test-runner sandbox, so a
+        // GitHub-runner workspace path is not a valid evidence transport.
+        // Emit only this non-sensitive boolean/revision state to stdout; the
+        // workflow decodes the final marker back into state.json on the host.
+        let marker = "FABUSHI_E2E_STATE_BASE64=\(data.base64EncodedString())\n"
+        if let markerData = marker.data(using: .utf8) {
+            FileHandle.standardOutput.write(markerData)
+        }
     }
 }
