@@ -62,7 +62,16 @@ jobs:
           set -euo pipefail
           version="$INPUT_VERSION"
           if [ -z "$version" ]; then
-            version="$(awk -F': ' '/^[[:space:]]*MARKETING_VERSION:/ {gsub(/['"'"'"]/,"",$2); print $2; exit}' mobile/ios/project.yml)"
+            version="$(python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path("mobile/ios/project.yml").read_text()
+          match = re.search(r"^\\s*MARKETING_VERSION:\\s*['\\\"]?([^'\\\"\\s]+)", text, re.MULTILINE)
+          if match is None:
+              raise SystemExit("MARKETING_VERSION is missing from mobile/ios/project.yml")
+          print(match.group(1))
+          PY
+          )"
           fi
           build="$INPUT_BUILD"
           if [ -z "$build" ]; then
