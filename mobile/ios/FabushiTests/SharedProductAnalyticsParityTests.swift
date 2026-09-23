@@ -41,13 +41,15 @@ final class SharedProductAnalyticsParityTests: XCTestCase {
         let recorder = ProductAnalyticsRecorder()
 
         await analytics.trackEvent("before", props: ["feature": .string("chat")])
-        let bufferedBefore = await analytics.bufferedEventCount()\n        XCTAssertEqual(bufferedBefore, 1)
+        let bufferedBefore = await analytics.bufferedEventCount()
+        XCTAssertEqual(bufferedBefore, 1)
 
         await analytics.activate(
             gate: FixedProductAnalyticsGate(enabled: true, shouldThrow: false),
             client: recorder
         )
-        let activeState = await analytics.state\n        XCTAssertEqual(activeState, .active)
+        let activeState = await analytics.state
+        XCTAssertEqual(activeState, .active)
         await analytics.flush()
 
         let events = await recorder.allEvents()
@@ -56,7 +58,8 @@ final class SharedProductAnalyticsParityTests: XCTestCase {
         XCTAssertEqual(events.first?.props["client"], .string("sand"))
         XCTAssertEqual(events.first?.props["os"], .string("ios"))
         XCTAssertEqual(events.first?.props["feature"], .string("chat"))
-        let bufferedAfter = await analytics.bufferedEventCount()\n        XCTAssertEqual(bufferedAfter, 0)
+        let bufferedAfter = await analytics.bufferedEventCount()
+        XCTAssertEqual(bufferedAfter, 0)
     }
 
     func testGateFailureLeavesDeferredBufferIntact() async {
@@ -68,8 +71,10 @@ final class SharedProductAnalyticsParityTests: XCTestCase {
             gate: FixedProductAnalyticsGate(enabled: false, shouldThrow: false),
             client: recorder
         )
-        let deferredState = await analytics.state\n        XCTAssertEqual(deferredState, .deferred)
-        let bufferedDeferred = await analytics.bufferedEventCount()\n        XCTAssertEqual(bufferedDeferred, 1)
+        let deferredState = await analytics.state
+        XCTAssertEqual(deferredState, .deferred)
+        let bufferedDeferred = await analytics.bufferedEventCount()
+        XCTAssertEqual(bufferedDeferred, 1)
     }
 
     func testDeferredBufferIsBounded() async {
@@ -77,7 +82,8 @@ final class SharedProductAnalyticsParityTests: XCTestCase {
         for index in 0..<(MAX_DEFERRED_PRODUCT_ANALYTICS_EVENTS + 20) {
             await analytics.trackEvent("event", props: ["index": .int(index)])
         }
-        let cappedCount = await analytics.bufferedEventCount()\n        XCTAssertEqual(cappedCount, MAX_DEFERRED_PRODUCT_ANALYTICS_EVENTS)
+        let cappedCount = await analytics.bufferedEventCount()
+        XCTAssertEqual(cappedCount, MAX_DEFERRED_PRODUCT_ANALYTICS_EVENTS)
     }
 
     func testMarkActiveDeduplicatesReasonPerUtcDay() async {
@@ -103,18 +109,23 @@ final class SharedProductAnalyticsParityTests: XCTestCase {
         await analytics.trackEvent("retry-me")
         await recorder.setFail(true)
         await analytics.flush()
-        let retained = await analytics.bufferedEventCount()\n        XCTAssertEqual(retained, 1)
+        let retained = await analytics.bufferedEventCount()
+        XCTAssertEqual(retained, 1)
 
         await recorder.setFail(false)
         await analytics.flush()
-        let drained = await analytics.bufferedEventCount()\n        XCTAssertEqual(drained, 0)
+        let drained = await analytics.bufferedEventCount()
+        XCTAssertEqual(drained, 0)
     }
 
     func testOptOutStartsDisabledAndDropsEvents() async {
         let analytics = SandProductAnalytics(hostInBox: false, telemetryOptedOut: true)
         await analytics.trackEvent("drop-me")
-        let disabledState = await analytics.state\n        XCTAssertEqual(disabledState, .disabled)
-        let canRecord = await analytics.canRecordEvents()\n        XCTAssertFalse(canRecord)
-        let disabledCount = await analytics.bufferedEventCount()\n        XCTAssertEqual(disabledCount, 0)
+        let disabledState = await analytics.state
+        XCTAssertEqual(disabledState, .disabled)
+        let canRecord = await analytics.canRecordEvents()
+        XCTAssertFalse(canRecord)
+        let disabledCount = await analytics.bufferedEventCount()
+        XCTAssertEqual(disabledCount, 0)
     }
 }
