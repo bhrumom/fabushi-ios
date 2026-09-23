@@ -27,6 +27,39 @@ final class IOSLifecycleParityTests: XCTestCase {
         XCTAssertFalse(IOSUnitTestHostPolicy.shouldBypassProductRuntime(environment: [:]))
     }
 
+    func testAuthCallbackRegistrationRequiresTheShippingScheme() throws {
+        let valid: [String: Any] = [
+            "CFBundleURLTypes": [
+                [
+                    "CFBundleURLName": "com.ombhrum.fabushi",
+                    "CFBundleURLSchemes": ["FABUSHI"],
+                ],
+            ],
+        ]
+
+        let registration = try IOSAuthCallbackRegistrar.requireShippingRegistration(
+            infoDictionary: valid
+        )
+        XCTAssertEqual(registration.redirectTarget, FabushiDeepLinkParser.customScheme)
+        XCTAssertEqual(registration.protocolScheme, FabushiDeepLinkParser.customScheme)
+        XCTAssertTrue(registration.registered)
+
+        XCTAssertThrowsError(
+            try IOSAuthCallbackRegistrar.requireShippingRegistration(
+                infoDictionary: [
+                    "CFBundleURLTypes": [
+                        ["CFBundleURLSchemes": ["other-app"]],
+                    ],
+                ]
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? IOSAuthCallbackRegistrationError,
+                .missingURLScheme(FabushiDeepLinkParser.customScheme)
+            )
+        }
+    }
+
     func testDeepLinkParserCanonicalizesAuthAndRejectsUnsafeInputs() throws {
         let parsed = try XCTUnwrap(FabushiDeepLinkParser.parse(
             "fabushi://auth/complete?attemptId=abcdefgh&status=completed"
