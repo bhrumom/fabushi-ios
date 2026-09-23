@@ -139,8 +139,7 @@ extension ContentView {
                             }
                         }
                         Button("退出登录", role: .destructive) {
-                            profileMenuPresented = false
-                            Task { await model.logout() }
+                            signOutConfirmationPresented = true
                         }
                         .accessibilityIdentifier("mobile-logout")
                     }
@@ -177,6 +176,16 @@ extension ContentView {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("取消") { profileMenuPresented = false }
                     }
+                }
+                .sheet(isPresented: $signOutConfirmationPresented) {
+                    AccountSignOutDialogView(
+                        model: model,
+                        onCancel: { signOutConfirmationPresented = false },
+                        onSignedOut: {
+                            signOutConfirmationPresented = false
+                            profileMenuPresented = false
+                        }
+                    )
                 }
             }
         }
@@ -276,41 +285,7 @@ extension ContentView {
                 .padding(.bottom, 74)
                 Spacer()
 
-                if model.loginError != nil {
-                    Text("登录暂时不可用，请稍后重试。")
-                        .font(.footnote)
-                        .foregroundStyle(Color.red.opacity(0.82))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 12)
-                }
-
-                if model.browserLoginAttemptId != nil {
-                    Button("继续登录") { Task { await model.reopenBrowserLogin() } }
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 58)
-                        .background(.black, in: Capsule())
-                        .accessibilityIdentifier("mobile-login-reopen")
-                    Button("取消登录") { Task { await model.cancelBrowserLogin() } }
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Color.black.opacity(0.46))
-                        .padding(.top, 10)
-                        .accessibilityIdentifier("mobile-login-cancel")
-                } else {
-                    Button { Task { await model.beginBrowserLogin() } } label: {
-                        HStack(spacing: 10) {
-                            if model.loginBusy { ProgressView().tint(.white) }
-                            Text(model.loginBusy ? "正在准备…" : "登录")
-                        }
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 58)
-                        .background(.black, in: Capsule())
-                    }
-                    .disabled(model.loginBusy)
-                    .accessibilityIdentifier("mobile-login-browser")
-                }
+                AccountSignInStatusView(model: model)
 
                 if let featureHostSmokeStatus = model.featureHostSmokeStatus {
                     Text(featureHostSmokeStatus).font(.caption2).foregroundStyle(.clear).accessibilityIdentifier("feature-host-smoke")

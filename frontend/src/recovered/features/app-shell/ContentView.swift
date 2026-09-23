@@ -113,6 +113,7 @@ struct ContentView: View {
     @State var pollOption3 = ""
     @State var composeMenuPresented = false
     @State var profileMenuPresented = false
+    @State var signOutConfirmationPresented = false
     @State var composeKind: ConversationKind?
     @State var composeName = ""
     @State var composeDescription = ""

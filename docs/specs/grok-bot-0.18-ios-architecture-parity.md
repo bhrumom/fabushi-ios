@@ -1113,7 +1113,7 @@ This table is an evidence register, not a migration progress counter. `pending` 
 
 | Requirement / AC | Status | Evidence / reason |
 | --- | --- | --- |
-| R1 | pending | The pinned inventory is present at 2,046/2,046 rows, but ledger closure is incomplete: 1,518 mapped, 508 implemented, 20 reviewed N/A, 0 verified at the audited snapshot; `replaces_ios_path` is still unfilled and some implemented/N/A rows still lack test evidence. |
+| R1 | pending | The pinned inventory is present at 2,046/2,046 rows, but ledger closure is incomplete: 1,516 mapped, 510 implemented, 20 reviewed N/A, 0 verified at the audited snapshot; `replaces_ios_path` is still unfilled and some implemented/N/A rows still lack test evidence. |
 | R2 | pending | Grok-corresponding roots and strict architecture checking exist; recursive physical cutover remains incomplete. |
 | R3 | pending | Shipping renderer → ios-preload → ios-main → Coordinator → Host paths exist, including auth; full no-bypass boundary audit remains incomplete. |
 | R4 | pending | First-class Mahayana Coordinator, renderer port, Host supervision and production assembly exist; remaining mapped Coordinator responsibilities and exact-HEAD acceptance are not closed. |
@@ -1121,7 +1121,7 @@ This table is an evidence register, not a migration progress counter. `pending` 
 | R6 | pending | iOS-safe local capability and remote/box adaptations exist; full Runner behavior/evidence closure remains incomplete. |
 | R7 | pending | Shipping IOSPreloadBridge/Coordinator port boundary exists; UI-facing free-form payload cleanup and complete parity evidence remain open. |
 | R8 | pending | IOSMainRuntime now owns production main composition with account, lifecycle and update wiring; remaining electron-main → ios-main rows are not fully implemented/verified. |
-| R9 | pending | All 322 frontend reference rows are mapped, but renderer migration remains the largest unresolved implementation domain. |
+| R9 | pending | Frontend now has 2 implemented account-session rows and 320 mapped rows; renderer migration remains the largest unresolved implementation domain. |
 | R10 | pending | All 165 source/shared rows are implemented in the ledger snapshot, but exact behavior verification is still required before final closure. |
 | R11 | pending | source/packages has 164 implemented, 680 mapped and 8 reviewed N/A rows at the audited snapshot; package parity is incomplete. |
 | R12 | pending | Cross-feature effect-parity acceptance is incomplete. |
