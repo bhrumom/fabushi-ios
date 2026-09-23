@@ -20,6 +20,8 @@ jobs:
       - run: python3 scripts/check-grok-ios-architecture.py
       - name: Verify App Store readiness gate script
         run: python3 .github/scripts/wait-app-store-build.py --self-test
+      - name: Test protected-session login preparation
+        run: node --test .github/scripts/prepare-ios-ci-session.test.mjs
 
   rust-host:
     needs: architecture
