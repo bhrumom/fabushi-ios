@@ -630,9 +630,9 @@ The architecture must preserve deployability:
 - StoreKit flows remain Apple-compliant;
 - final release acceptance includes archive/export/TestFlight-quality packaging.
 
-## 6. Current state
+## 6. Migration baseline (historical)
 
-Observed current state:
+The observations below describe the repository at the migration kickoff. They are retained as historical migration input only; they are **not** the current implementation state and must not be used as completion evidence. Current truth comes from the parity ledger, shipping production wiring, and exact-HEAD CI/release artifacts:
 
 - production source is concentrated in `mobile/ios/Fabushi`;
 - `ContentView.swift` is a large multi-feature SwiftUI surface holding substantial navigation/composer/attachment/agent-surface state;
@@ -643,7 +643,7 @@ Observed current state:
 - `FabushiRemoteDeviceGateway.swift` directly holds Host plus URLSession WebSocket transport;
 - `project.yml` is a single app-centric XcodeGen project rooted under `mobile/ios`.
 
-This code is migration input, not the target architecture.
+This baseline code was migration input, not the target architecture. As migration progresses, the compliance record in Section 17 must cite current evidence rather than restating this historical snapshot.
 
 ## 7. Target repository state
 
@@ -1109,51 +1109,53 @@ Fabushi iOS discovery baseline:
 
 ## 17. Spec compliance record
 
+This table is an evidence register, not a migration progress counter. `pending` is allowed while Work is in progress; final release status is limited to `passed`, `blocked`, or `not-applicable`. A row may move to `passed` only when its requirement is independently satisfied and evidenced.
+
 | Requirement / AC | Status | Evidence / reason |
 | --- | --- | --- |
-| R1 | pending | complete file-level ledger not yet generated |
-| R2 | pending | target folder mapping specified; physical migration pending |
-| R3 | pending | boundary implementation pending |
-| R4 | pending | Coordinator implementation pending |
-| R5 | pending | Host implementation pending |
-| R6 | pending | Runner implementation pending |
-| R7 | pending | iOS trusted bridge pending |
-| R8 | pending | iOS-main decomposition pending |
-| R9 | pending | frontend migration pending |
-| R10 | pending | iOS-local shared tree pending |
-| R11 | pending | iOS-local packages tree pending |
-| R12 | pending | effect-parity acceptance pending |
-| R13 | pending | canonical state audit pending |
-| R14 | pending | lifecycle restoration acceptance pending |
-| R15 | pending | security review pending |
-| R16 | pending | rights/provenance review pending |
-| R17 | pending | legacy removal pending |
-| R18 | pending | standalone/native-runtime build proof pending |
-| R19 | pending | App Store/TestFlight constraint review pending |
-| AC-1 | pending | ledger pending |
-| AC-2 | pending | implementation mapping pending |
-| AC-3 | pending | physical root migration pending |
-| AC-4 | pending | ios-main parity pending |
-| AC-5 | pending | ios-preload parity pending |
-| AC-6 | pending | Coordinator parity pending |
-| AC-7 | pending | boundary enforcement pending |
-| AC-8 | pending | local shared/packages parity pending |
-| AC-9 | pending | standalone clean-checkout proof pending |
-| AC-10 | pending | native runtime source/build ownership pending |
-| AC-11 | pending | FabushiApp currently orchestrates runtime |
-| AC-12 | pending | ContentView/GrokMobileShell remain mixed/large |
-| AC-13 | pending | presentation still has direct Host paths |
-| AC-14 | pending | behavioral acceptance pending |
-| AC-15 | pending | lifecycle termination/relaunch acceptance pending |
-| AC-16 | pending | MCP/connector parity pending |
-| AC-17 | pending | native platform adapter parity pending |
-| AC-18 | pending | state ownership audit pending |
-| AC-19 | pending | legacy architecture still exists |
-| AC-20 | pending | folder/architecture checker pending |
-| AC-21 | pending | exact-HEAD CI pending |
-| AC-22 | pending | packaged archive/install acceptance pending |
-| AC-23 | pending | rights review pending |
-| AC-24 | pending | App Store/TestFlight review pending |
-| AC-25 | pending | final compliance review pending |
+| R1 | pending | The pinned inventory is present at 2,046/2,046 rows, but ledger closure is incomplete: 1,519 mapped, 507 implemented, 20 reviewed N/A, 0 verified at the audited snapshot; `replaces_ios_path` is still unfilled and some implemented/N/A rows still lack test evidence. |
+| R2 | pending | Grok-corresponding roots and strict architecture checking exist; recursive physical cutover remains incomplete. |
+| R3 | pending | Shipping renderer → ios-preload → ios-main → Coordinator → Host paths exist, including auth; full no-bypass boundary audit remains incomplete. |
+| R4 | pending | First-class Mahayana Coordinator, renderer port, Host supervision and production assembly exist; remaining mapped Coordinator responsibilities and exact-HEAD acceptance are not closed. |
+| R5 | pending | iOS-owned Host/Rust source is present and built in-repo; substantial Host ledger work remains mapped rather than verified. |
+| R6 | pending | iOS-safe local capability and remote/box adaptations exist; full Runner behavior/evidence closure remains incomplete. |
+| R7 | pending | Shipping IOSPreloadBridge/Coordinator port boundary exists; UI-facing free-form payload cleanup and complete parity evidence remain open. |
+| R8 | pending | IOSMainRuntime now owns production main composition with account, lifecycle and update wiring; remaining electron-main → ios-main rows are not fully implemented/verified. |
+| R9 | pending | All 322 frontend reference rows are mapped, but renderer migration remains the largest unresolved implementation domain. |
+| R10 | pending | All 165 source/shared rows are implemented in the ledger snapshot, but exact behavior verification is still required before final closure. |
+| R11 | pending | source/packages has 164 implemented, 680 mapped and 8 reviewed N/A rows at the audited snapshot; package parity is incomplete. |
+| R12 | pending | Cross-feature effect-parity acceptance is incomplete. |
+| R13 | pending | Rust Host is authoritative for account identity and Coordinator account settings now follow settled Host auth replies; the wider canonical-truth audit remains open. |
+| R14 | pending | Scene/background/protected-data/relaunch recovery code and tests exist; protected-session packaged E2E and termination/relaunch acceptance still need successful exact-SHA evidence. |
+| R15 | pending | CI-session provenance, URL/deep-link, Keychain and trusted-boundary controls exist; full security/entitlement/privacy review remains open. |
+| R16 | pending | Rights/provenance review remains release-blocking; no completion may be claimed without reviewed provenance evidence. |
+| R17 | pending | FabushiApp has been reduced to thin Scene/App composition, but legacy renderer/fallback paths are still referenced by shipping/UI acceptance code. |
+| R18 | pending | iOS-owned Rust Cargo source, headers/build script, simulator build and physical-device archive lane exist; final clean-checkout/archive proof on one accepted SHA is still required. |
+| R19 | pending | Exact-SHA signed archive/export/App Store Connect upload workflow exists and fails closed on missing credentials; credential-backed TestFlight/App Store success evidence is still required. |
+| AC-1 | passed | The ledger contains all 2,046 pinned Grok source/frontend paths. |
+| AC-2 | pending | Mapping exists for all rows, but relevant counterparts/N/A dispositions are not all implemented and verified. |
+| AC-3 | pending | Target roots exist; recursive physical cutover and legacy removal remain incomplete. |
+| AC-4 | pending | ios-main mapping/implementation is partial and not fully verified. |
+| AC-5 | pending | ios-preload exists and ships, but full responsibility parity/verification remains open. |
+| AC-6 | pending | Mahayana Coordinator is first-class and shipping; remaining Coordinator ledger rows and behavior acceptance are open. |
+| AC-7 | pending | Auth and primary renderer traffic follow the required boundary; repository-wide no-bypass proof is not yet final. |
+| AC-8 | pending | source/shared is implemented at ledger level; source/packages remains substantially mapped. |
+| AC-9 | pending | Exact clean-checkout build/test/archive success on the final accepted SHA is pending. |
+| AC-10 | pending | Native runtime source/build recipe is repository-owned, but final exact-SHA standalone proof must still pass. |
+| AC-11 | passed | FabushiApp.swift only installs FabushiSceneRoot in WindowGroup; product orchestration lives below the App entry point. |
+| AC-12 | pending | Legacy GrokMobileShell/ContentView responsibilities remain present/referenced and require final split/removal proof. |
+| AC-13 | pending | Primary models use IOSPreloadBridge, but a repository-wide direct-Host audit remains to be closed. |
+| AC-14 | pending | Behavioral acceptance remains incomplete. |
+| AC-15 | pending | Lifecycle unit coverage exists; packaged background/termination/relaunch acceptance remains incomplete. |
+| AC-16 | pending | MCP/connector contracts and tests exist; complete discovery/auth/call/result/error E2E evidence remains open. |
+| AC-17 | pending | Native adapter work exists across auth/deep-link/passkey/background-transfer/remote-computer; complete cross-feature acceptance remains open. |
+| AC-18 | pending | Account canonical ownership has been narrowed; full canonical-state ownership audit remains open. |
+| AC-19 | pending | Old production fallback/legacy paths are not yet fully removed. |
+| AC-20 | passed | PR workflow runs the architecture checker and strict checker on the exact pull-request head SHA, preventing unmapped/forbidden-root regressions. |
+| AC-21 | pending | Exact-HEAD architecture/Rust/build/unit/UI/lifecycle jobs must all succeed on the final accepted SHA. |
+| AC-22 | pending | Unsigned physical-device archive lane exists; fresh-install/upgrade/export/install acceptance remains pending. |
+| AC-23 | pending | Rights/provenance review is unresolved. |
+| AC-24 | pending | Signed App Store/TestFlight lane exists; no successful final credential-backed delivery evidence yet. |
+| AC-25 | pending | Final compliance review remains pending; mandatory completion requires all mandatory rows to be passed. |
 
-Allowed final statuses: `passed`, `blocked`, `not-applicable`.
+Allowed migration status: `pending`. Allowed final statuses: `passed`, `blocked`, `not-applicable`.
