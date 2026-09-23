@@ -64,12 +64,15 @@ jobs:
           if [ -z "$version" ]; then
             version="$(python3 - <<'PY'
           from pathlib import Path
-          import re
-          text = Path("mobile/ios/project.yml").read_text()
-          match = re.search(r"^\\s*MARKETING_VERSION:\\s*['\\\"]?([^'\\\"\\s]+)", text, re.MULTILINE)
-          if match is None:
+          for line in Path("mobile/ios/project.yml").read_text().splitlines():
+              stripped = line.strip()
+              if stripped.startswith("MARKETING_VERSION:"):
+                  value = stripped.split(":", 1)[1].strip().strip("'\"")
+                  if value:
+                      print(value)
+                      break
+          else:
               raise SystemExit("MARKETING_VERSION is missing from mobile/ios/project.yml")
-          print(match.group(1))
           PY
           )"
           fi
