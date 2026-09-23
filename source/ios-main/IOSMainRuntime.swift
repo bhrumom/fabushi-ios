@@ -55,17 +55,27 @@ final class IOSMainRuntime {
                 }
             )
         )
+        let accountAuthorizer = IOSAccountAuthorizer(
+            applyAccountScope: { slot in
+                coordinator.updateAccountSettingsScope(slot)
+            }
+        )
         accountRuntime = CoordinatorAccountRuntime(
             cleanup: cleanup,
-            authorize: { slot, _ in
-                coordinator.updateAccountSettingsScope(slot)
-                reporter.report(
-                    .coordinatorHandoff,
-                    metadata: [
-                        "account_scope": slot == nil ? "logged-out" : "adopted",
-                    ]
+            authorize: { slot, previousSlot in
+                let authorization = accountAuthorizer.authorizeSettledHostSlot(
+                    slot,
+                    previousSlot: previousSlot
                 )
-                return .ready(slot: slot)
+                if case .ready(let adoptedSlot) = authorization {
+                    reporter.report(
+                        .coordinatorHandoff,
+                        metadata: [
+                            "account_scope": adoptedSlot == nil ? "logged-out" : "adopted",
+                        ]
+                    )
+                }
+                return authorization
             }
         )
         updateWiring = IOSUpdateServiceWiring()

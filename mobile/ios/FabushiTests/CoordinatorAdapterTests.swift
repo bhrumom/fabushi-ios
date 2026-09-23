@@ -179,6 +179,26 @@ final class CoordinatorAdapterTests: XCTestCase {
 
 
     @MainActor
+    func testIOSAccountAuthorizerAdoptsOnlySettledHostScope() {
+        var adopted: [String?] = []
+        let authorizer = IOSAccountAuthorizer(
+            applyAccountScope: { adopted.append($0) }
+        )
+
+        XCTAssertEqual(
+            authorizer.authorizeSettledHostSlot("account-1", previousSlot: nil),
+            .ready(slot: "account-1")
+        )
+        XCTAssertEqual(
+            authorizer.authorizeSettledHostSlot(nil, previousSlot: "account-1"),
+            .ready(slot: nil)
+        )
+        XCTAssertEqual(adopted.count, 2)
+        XCTAssertEqual(adopted[0], "account-1")
+        XCTAssertNil(adopted[1])
+    }
+
+    @MainActor
     func testIOSMainRuntimeProjectsRealRustAuthSessionIntoCoordinatorSettingsScope() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

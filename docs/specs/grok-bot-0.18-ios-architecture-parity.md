@@ -1113,7 +1113,7 @@ This table is an evidence register, not a migration progress counter. `pending` 
 
 | Requirement / AC | Status | Evidence / reason |
 | --- | --- | --- |
-| R1 | pending | The pinned inventory is present at 2,046/2,046 rows, but ledger closure is incomplete: 1,519 mapped, 507 implemented, 20 reviewed N/A, 0 verified at the audited snapshot; `replaces_ios_path` is still unfilled and some implemented/N/A rows still lack test evidence. |
+| R1 | pending | The pinned inventory is present at 2,046/2,046 rows, but ledger closure is incomplete: 1,518 mapped, 508 implemented, 20 reviewed N/A, 0 verified at the audited snapshot; `replaces_ios_path` is still unfilled and some implemented/N/A rows still lack test evidence. |
 | R2 | pending | Grok-corresponding roots and strict architecture checking exist; recursive physical cutover remains incomplete. |
 | R3 | pending | Shipping renderer → ios-preload → ios-main → Coordinator → Host paths exist, including auth; full no-bypass boundary audit remains incomplete. |
 | R4 | pending | First-class Mahayana Coordinator, renderer port, Host supervision and production assembly exist; remaining mapped Coordinator responsibilities and exact-HEAD acceptance are not closed. |
