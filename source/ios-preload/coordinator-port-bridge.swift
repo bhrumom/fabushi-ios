@@ -72,8 +72,12 @@ final class IOSCoordinatorPortClient {
 
     func shutdown() {
         guard settlement == nil else { return }
+        // Pin the local settlement before notifying the peer. In-process
+        // transports can synchronously close the peer during post(), and that
+        // close must not overwrite an intentional shutdown as portClosed.
+        settlement = .shutdownRequested
         port.post(.shutdown(reason: .requested, detail: nil))
-        settle(.shutdownRequested)
+        finishSettlement()
     }
 
     private func cancel(_ requestID: String) {
@@ -134,6 +138,10 @@ final class IOSCoordinatorPortClient {
     private func settle(_ value: Settlement) {
         guard settlement == nil else { return }
         settlement = value
+        finishSettlement()
+    }
+
+    private func finishSettlement() {
         let error = PortError(code: "port-settled", message: "coordinator port settled before reply")
         for continuation in pending.values {
             continuation.resume(throwing: error)

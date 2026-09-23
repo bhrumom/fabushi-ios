@@ -21,7 +21,10 @@ final class SharedPermissionsAndNotificationsParityTests: XCTestCase {
             generationToken: "g-1"
         ))
         XCTAssertFalse(commandCarriesLocalExecGeneration(
-            command + "-suffix",
+            command.replacingOccurrences(
+                of: "--sand-local-exec-generation=g-1",
+                with: "--sand-local-exec-generation=g-1-suffix"
+            ),
             entryRealpath: "/opt/fabushi/local-exec",
             generationToken: "g-1"
         ))

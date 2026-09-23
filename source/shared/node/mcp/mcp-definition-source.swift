@@ -121,7 +121,10 @@ actor SandMcpDefinitionSource {
             guard builtins[identifier] == nil, config.transport != .stdio else { return nil }
             return .init(identifier: identifier, serverConfig: config, source: .account)
         })
-        return result.sorted { $0.identifier < $1.identifier }
+        // Grok preserves category order: built-ins are projected first, then
+        // account definitions. Do not globally sort the combined list because
+        // that can move account rows ahead of built-in product surfaces.
+        return result
     }
 
     @discardableResult

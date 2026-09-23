@@ -187,11 +187,9 @@ final class SharedMcpOAuthLifecycleParityTests: XCTestCase {
     func testCoordinatorRegistryUsesSameTTLAndSingleUseCallbackIdentity() async throws {
         let registry = MCPOAuthCallbackRegistry()
         let listener = MCPOAuthCallbackListener(registry: registry)
-        let created = Date(timeIntervalSince1970: 100)
         await registry.register(
             state: "coordinator-state",
-            providerIdentifier: "server-7",
-            now: created
+            providerIdentifier: "server-7"
         )
         let callback = try XCTUnwrap(URL(string:
             "fabushi://auth/callback?state=coordinator-state&code=abc"
@@ -206,6 +204,7 @@ final class SharedMcpOAuthLifecycleParityTests: XCTestCase {
             XCTAssertEqual(error, .stateMismatch)
         }
 
+        let created = Date(timeIntervalSince1970: 100)
         await registry.register(
             state: "expired-state",
             providerIdentifier: "server-8",

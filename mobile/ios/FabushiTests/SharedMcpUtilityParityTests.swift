@@ -60,7 +60,7 @@ final class SharedMcpUtilityParityTests: XCTestCase {
             ],
         ])
         XCTAssertEqual(fields.first(where: {$0.key=="API_TOKEN"})?.isSecret, true)
-        XCTAssertEqual(fields.first(where: {$0.key=="BASE_URL"})?.label, "BASE URL")
+        XCTAssertEqual(fields.first(where: {$0.key=="BASE_URL"})?.label, "Base URL")
         XCTAssertEqual(fields.first(where: {$0.key=="user_id"})?.isSecret, true)
         let missing = findMissingRequiredCatalogFields(fields, values: ["API_TOKEN":"   "])
         XCTAssertEqual(missing.map(\.key), ["API_TOKEN"])

@@ -107,7 +107,7 @@ final class SharedCursorInferenceParityTests: XCTestCase {
             randomUUID: { "unused" },
             env: [
                 "SAND_CLIENT_APP_VERSION": "1.2.3",
-                "SAND_BOX_OWNER_NAMESPACE": "prod",
+                "SAND_PACKAGED": "1",
             ]
         )
 
