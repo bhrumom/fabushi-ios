@@ -35,7 +35,8 @@ final class IOSPlatformMainParityTests: XCTestCase {
         let controller = IOSDockBadgeController(applier: recorder)
         let total = await controller.update(agents: agents)
         XCTAssertEqual(total, 5)
-        XCTAssertEqual(await recorder.recordedCounts(), [5])
+        let recordedCounts = await recorder.recordedCounts()
+        XCTAssertEqual(recordedCounts, [5])
     }
 
 
