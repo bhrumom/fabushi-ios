@@ -36,6 +36,7 @@ private actor FakeRunnerMcpPort: RunnerMcpExecuting {
         )))
     }
 
+    func setServers(_ value: [RunnerMcpToolServer]) { servers = value }
     func loadedCount() -> Int { loadedConfigs.count }
     func executionCount() -> Int { executions.count }
 }
@@ -80,7 +81,7 @@ final class SharedMcpToolsDiscoveryParityTests: XCTestCase {
         )
     }
 
-    private func success(_ text: String) -> SandMcpResult {
+    private static func success(_ text: String) -> SandMcpResult {
         .init(result: .success(.init(
             content: [.init(content: .text(.init(text: text)))],
             isError: false,
@@ -98,7 +99,7 @@ final class SharedMcpToolsDiscoveryParityTests: XCTestCase {
         ]))
 
         let runner = FakeRunnerMcpPort()
-        await runner.servers = [
+        await runner.setServers([
             .init(
                 serverIdentifier: "local",
                 status: "connected",
@@ -110,7 +111,7 @@ final class SharedMcpToolsDiscoveryParityTests: XCTestCase {
                     ),
                 ]
             ),
-        ]
+        ])
         let backend = BackendDiscoveryRecorder()
         let discovery = SandMcpToolsDiscovery(deps: .init(
             definitionSource: source,
@@ -139,7 +140,7 @@ final class SharedMcpToolsDiscoveryParityTests: XCTestCase {
             },
             backendExecuteTool: { _, _, _, _, _ in
                 backend.executeCalled()
-                return self.success("backend-ok")
+                return Self.success("backend-ok")
             },
             runnerMcpExec: runner
         ))
@@ -207,7 +208,7 @@ final class SharedMcpToolsDiscoveryParityTests: XCTestCase {
             },
             backendExecuteTool: { _, _, _, _, _ in
                 backend.executeCalled()
-                return self.success("wrong")
+                return Self.success("wrong")
             }
         ))
 
@@ -273,7 +274,7 @@ final class SharedMcpToolsDiscoveryParityTests: XCTestCase {
                     ),
                 ]
             },
-            backendExecuteTool: { _, _, _, _, _ in self.success("tool-result") }
+            backendExecuteTool: { _, _, _, _, _ in Self.success("tool-result") }
         ))
         await discovery.setAccountDisplay(.init(servers: [
             .init(
@@ -326,7 +327,7 @@ final class SharedMcpToolsDiscoveryParityTests: XCTestCase {
             "stdio": .stdio(command: "tool", args: ["--serve"]),
         ]))
         let runner = FakeRunnerMcpPort()
-        await runner.servers = []
+        await runner.setServers([])
         let backend = BackendDiscoveryRecorder()
         let discovery = SandMcpToolsDiscovery(deps: .init(
             definitionSource: source,
@@ -335,7 +336,7 @@ final class SharedMcpToolsDiscoveryParityTests: XCTestCase {
                 backend.listCalled()
                 return []
             },
-            backendExecuteTool: { _, _, _, _, _ in self.success("ok") },
+            backendExecuteTool: { _, _, _, _, _ in Self.success("ok") },
             runnerMcpExec: runner,
             nowMs: { 100 }
         ))
