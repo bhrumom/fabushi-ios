@@ -13,6 +13,7 @@ final class FabushiRuntime {
     let remoteDeviceGateway: FabushiRemoteDeviceGateway
     let marketplace: MarketplaceModel
     let messaging: MessagingModel
+    let authCallbackRegistration: IOSAuthCallbackRegistration
 
     @ObservationIgnored private var deepLinkController: IOSDeepLinkController?
     @ObservationIgnored private var wasBackgrounded = false
@@ -32,11 +33,13 @@ final class FabushiRuntime {
         #endif
 
         do {
+            let authCallbackRegistration = try IOSAuthCallbackRegistrar.requireShippingRegistration()
             let main = try IOSMainRuntime(appDataDirectory: base, featureHostTest: featureHostTest)
             let bridge = IOSPrimaryPreloadEntrypoint.install(main: main)
             let surface = FabushiAppAgentSurface()
             self.main = main
             self.bridge = bridge
+            self.authCallbackRegistration = authCallbackRegistration
             #if DEBUG
             devControlsPreload = IOSDevControlsPreloadEntrypoint.installIfEnabled(
                 bridge: bridge,
