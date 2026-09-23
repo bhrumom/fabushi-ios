@@ -138,6 +138,72 @@ jobs:
           chmod 600 "$session_path"
           test -s "$session_path"
           echo "FABUSHI_CI_APP_SESSION_IN_SIMULATOR=$session_path" >> "$GITHUB_ENV"
+
+          xctestrun="$(find "$RUNNER_TEMP/FabushiProtectedDerivedData/Build/Products" -name '*.xctestrun' -type f -print -quit)"
+          test -n "$xctestrun"
+          test -f "$xctestrun"
+          python3 - "$xctestrun" "$session_path" <<'PY'
+          import os
+          import plistlib
+          import sys
+
+          path = sys.argv[1]
+          session_path = sys.argv[2]
+          with open(path, "rb") as handle:
+              payload = plistlib.load(handle)
+
+          forwarded = {
+              "FABUSHI_CI_APP_SESSION_IN_SIMULATOR": session_path,
+              "FABUSHI_API_BASE_URL": os.environ["FABUSHI_API_BASE_URL"],
+              "FABUSHI_E2E_SOURCE_SHA": os.environ["SOURCE_SHA"],
+              "FABUSHI_DEVICE_NAME": "Fabushi Protected iOS Simulator",
+          }
+          for key in (
+              "GITHUB_ACTIONS",
+              "GITHUB_REPOSITORY",
+              "GITHUB_WORKFLOW",
+              "GITHUB_JOB",
+              "GITHUB_RUN_ID",
+              "GITHUB_RUN_ATTEMPT",
+              "RUNNER_NAME",
+              "RUNNER_OS",
+              "RUNNER_ARCH",
+          ):
+              value = os.environ.get(key)
+              if value:
+                  forwarded[key] = value
+
+          patched = 0
+
+          def visit(value):
+              global patched
+              if isinstance(value, dict):
+                  marker = " ".join(
+                      str(value.get(key, ""))
+                      for key in ("BlueprintName", "TestBundlePath", "TestHostBundleIdentifier")
+                  )
+                  if "FabushiUITests" in marker:
+                      environment = value.setdefault("EnvironmentVariables", {})
+                      environment.update(forwarded)
+                      testing_environment = value.setdefault("TestingEnvironmentVariables", {})
+                      testing_environment.update(forwarded)
+                      patched += 1
+                  for child in value.values():
+                      visit(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      visit(child)
+
+          visit(payload)
+          if patched == 0:
+              raise SystemExit("FabushiUITests xctestrun target was not found")
+
+          with open(path, "wb") as handle:
+              plistlib.dump(payload, handle)
+          print(f"Injected protected-session runner context into {patched} xctestrun target(s).")
+          PY
+          echo "PROTECTED_XCTESTRUN=$xctestrun" >> "$GITHUB_ENV"
+
           xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/screenshots/010-session-staged.png"
 
       - name: Run real protected-session Global Dharma journey
@@ -150,14 +216,12 @@ jobs:
           set -euo pipefail
           rm -rf "$EVIDENCE_DIR/FabushiProtectedSession.xcresult"
           set -o pipefail
+          test -f "$PROTECTED_XCTESTRUN"
           xcodebuild test-without-building \
-            -project Fabushi.xcodeproj \
-            -scheme Fabushi \
+            -xctestrun "$PROTECTED_XCTESTRUN" \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
-            -derivedDataPath "$RUNNER_TEMP/FabushiProtectedDerivedData" \
             -resultBundlePath "$EVIDENCE_DIR/FabushiProtectedSession.xcresult" \
             -only-testing:FabushiUITests/GlobalDharmaJourneyUITests/testGlobalDharmaMarketplaceBotWebMcpCommerceJourney \
-            CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee "$EVIDENCE_DIR/protected-xcodebuild.log"
           python3 - "$EVIDENCE_DIR/protected-xcodebuild.log" "$EVIDENCE_DIR/state.json" <<'PY'
           import base64
