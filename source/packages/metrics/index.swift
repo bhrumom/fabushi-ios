@@ -42,7 +42,7 @@ protocol PackageMetricsBackend: AnyObject {
     )
 }
 
-final class PackageNoopMetricsBackend: PackageMetricsBackend {
+final class PackageNoopMetricsBackend: PackageMetricsBackend, @unchecked Sendable {
     static let shared = PackageNoopMetricsBackend()
     private init() {}
 

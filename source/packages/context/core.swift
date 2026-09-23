@@ -2,7 +2,7 @@ import Foundation
 
 private final class PackageContextKeyToken {}
 
-struct PackageContextKey<Value> {
+struct PackageContextKey<Value>: @unchecked Sendable {
     fileprivate let token: PackageContextKeyToken
     let defaultValue: Value
 

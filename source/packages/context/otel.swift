@@ -85,7 +85,7 @@ private final class PackageRemoteSpan: PackageSpanHandle {
     func end(at _: Date?) {}
 }
 
-private final class PackageLocalTracerBackend: PackageTracerBackend {
+private final class PackageLocalTracerBackend: PackageTracerBackend, @unchecked Sendable {
     static let shared = PackageLocalTracerBackend()
     private init() {}
 

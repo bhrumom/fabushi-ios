@@ -74,7 +74,7 @@ protocol PackageContextLoggerBackend: AnyObject {
     func log(context: PackageContext, entry: PackageContextLogEntry)
 }
 
-private final class PackageConsoleLoggerBackend: PackageContextLoggerBackend {
+private final class PackageConsoleLoggerBackend: PackageContextLoggerBackend, @unchecked Sendable {
     static let shared = PackageConsoleLoggerBackend()
     private init() {}
 
