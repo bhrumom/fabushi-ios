@@ -37,6 +37,9 @@ targets:
       - path: ../../source/local-exec-daemon
       - path: ../../source/box-exec-daemon
       - path: ../../source/packages/agent-client/errors.swift
+      - path: ../../source/packages/context/core.swift
+      - path: ../../source/packages/context/abort-reason.swift
+      - path: ../../source/packages/metrics/index.swift
       - path: ../../source/packages/shell-exec/event-loop-pressure.swift
       - path: ../../source/packages/shell-exec/types.swift
       - path: ../../source/packages/shell-exec/output-suppression.swift

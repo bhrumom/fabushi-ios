@@ -1140,7 +1140,7 @@ This table is an evidence register, not a migration progress counter. `pending` 
 
 | Requirement / AC | Status | Evidence / reason |
 | --- | --- | --- |
-| R1 | pending | The pinned inventory is present at 2,046/2,046 rows, but ledger closure is incomplete: 1,515 mapped, 511 implemented, 20 reviewed N/A, 0 verified at the audited snapshot; `replaces_ios_path` is still unfilled and some implemented/N/A rows still lack test evidence. |
+| R1 | pending | The pinned inventory is present at 2,046/2,046 rows, but ledger closure is incomplete: 1,512 mapped, 514 implemented, 20 reviewed N/A, 0 verified at the audited snapshot; `replaces_ios_path` is still unfilled and some implemented/N/A rows still lack test evidence. |
 | R2 | pending | Grok-corresponding roots and strict architecture checking exist; recursive physical cutover remains incomplete. |
 | R3 | pending | Shipping renderer → ios-preload → ios-main → Coordinator → Host paths exist, including auth; full no-bypass boundary audit remains incomplete. |
 | R4 | pending | First-class Mahayana Coordinator, renderer port, Host supervision and production assembly exist; remaining mapped Coordinator responsibilities and exact-HEAD acceptance are not closed. |
@@ -1150,7 +1150,7 @@ This table is an evidence register, not a migration progress counter. `pending` 
 | R8 | pending | IOSMainRuntime now owns production main composition with account, lifecycle and update wiring; remaining electron-main → ios-main rows are not fully implemented/verified. |
 | R9 | pending | Frontend has 2 implemented account-session rows and 320 mapped rows. The mapped account menu now has native production wiring for identity navigation sign-out and server-authoritative usage; mutable profile and remaining desktop menu affordances are still open, so the row is not promoted yet. Renderer migration remains the largest unresolved implementation domain. |
 | R10 | pending | All 165 source/shared rows are implemented and now have explicit test-evidence anchors, including the four RPC registry/wire/VNC contracts; exact-HEAD unit success and final verification review are still required before promoting them to verified. |
-| R11 | pending | source/packages now has 165 implemented, 679 mapped and 8 reviewed N/A rows; `agent-client/errors` is a shipping Swift package file with exact behavior tests, while the remaining package responsibilities still require implementation/evidence. |
+| R11 | pending | source/packages now has 168 implemented, 676 mapped and 8 reviewed N/A rows. Shipping Swift now covers `agent-client/errors`, typed context/abort semantics, and context-injected counter/gauge/histogram metrics with FabushiTests evidence; remaining package responsibilities still require implementation/evidence. |
 | R12 | pending | Cross-feature effect-parity acceptance is incomplete. |
 | R13 | pending | Rust Host is authoritative for account identity and Coordinator account settings now follow settled Host auth replies; the wider canonical-truth audit remains open. |
 | R14 | pending | Scene/background/protected-data/relaunch recovery code and tests exist; protected-session packaged E2E and termination/relaunch acceptance still need successful exact-SHA evidence. |
