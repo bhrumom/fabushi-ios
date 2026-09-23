@@ -87,24 +87,53 @@ final class CoordinatorAccountRuntime {
         guard let loggedIn = auth["loggedIn"] as? Bool else { return nil }
         guard loggedIn else { return .loggedOut }
 
-        guard let user = auth["user"] as? [String: Any] else {
-            return .invalidLoggedIn(reason: "logged-in auth reply has no UI-safe user identity")
-        }
-
-        let candidates: [(String, Bool)] = [
-            ("id", false),
-            ("sub", false),
-            ("email", true),
-            ("username", false),
-        ]
-        for (key, lowercase) in candidates {
-            guard let raw = user[key] as? String else { continue }
-            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { continue }
-            let value = lowercase ? trimmed.lowercased() : trimmed
-            return .loggedIn(slot: "\(key):\(value)")
+        if let slot = stableAccountSlot(auth: auth) {
+            return .loggedIn(slot: slot)
         }
 
         return .invalidLoggedIn(reason: "logged-in auth reply has no stable account slot")
+    }
+
+    /// Keep this extractor identical to Rust FeatureHostController's
+    /// stable_authenticated_account_id(): same key order, same user-first/root
+    /// fallback, and the same String/Number value acceptance. Coordinator-side
+    /// settings must never invent a different account identity (for example by
+    /// falling back to email when the Host would refuse the account boundary).
+    private static func stableAccountSlot(auth: [String: Any]) -> String? {
+        let keys = [
+            "principalId",
+            "principal_id",
+            "id",
+            "userId",
+            "user_id",
+            "userNo",
+            "user_no",
+            "username",
+        ]
+
+        if let user = auth["user"] as? [String: Any],
+           let slot = stableIdentityComponent(in: user, keys: keys) {
+            return slot
+        }
+        return stableIdentityComponent(in: auth, keys: keys)
+    }
+
+    private static func stableIdentityComponent(
+        in object: [String: Any],
+        keys: [String]
+    ) -> String? {
+        for key in keys {
+            guard let raw = object[key] else { continue }
+            if let value = raw as? String {
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty { return trimmed }
+                continue
+            }
+            if let number = raw as? NSNumber,
+               CFGetTypeID(number) != CFBooleanGetTypeID() {
+                return number.stringValue
+            }
+        }
+        return nil
     }
 }
