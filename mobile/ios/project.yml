@@ -39,6 +39,8 @@ targets:
       - path: ../../source/packages/agent-client/errors.swift
       - path: ../../source/packages/context/core.swift
       - path: ../../source/packages/context/abort-reason.swift
+      - path: ../../source/packages/context/logger.swift
+      - path: ../../source/packages/context/otel.swift
       - path: ../../source/packages/metrics/index.swift
       - path: ../../source/packages/prompt-jsx/prompt-runtime.swift
       - path: ../../source/packages/shell-exec/event-loop-pressure.swift
