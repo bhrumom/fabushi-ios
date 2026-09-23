@@ -24,6 +24,15 @@ final class GlobalDharmaJourneyUITests: XCTestCase {
 
     @MainActor
     func testGlobalDharmaMarketplaceBotWebMcpCommerceJourney() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let protectedSession = environment["FABUSHI_CI_APP_SESSION_IN_SIMULATOR"],
+              !protectedSession.isEmpty
+        else {
+            throw XCTSkip(
+                "Requires the protected, bounded Fabushi CI account session staged inside the Simulator app container"
+            )
+        }
+
         let app = XCUIApplication()
         configureRealCIEnvironment(for: app)
         app.launch()
