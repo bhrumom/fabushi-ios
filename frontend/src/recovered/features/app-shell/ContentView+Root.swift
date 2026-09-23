@@ -73,6 +73,7 @@ extension ContentView {
     String(isSearching),
     homeQuery,
     String(profileMenuPresented),
+    String(signOutConfirmationPresented),
     String(composeMenuPresented),
     composeKind?.rawValue ?? "",
     composeName,
@@ -577,10 +578,49 @@ return fingerprintParts.joined(separator: "|")
             return
         }
 
+        if signOutConfirmationPresented {
+            add("mobile-logout-dialog", role: "alertdialog", name: "退出登录")
+            add(
+                "mobile-logout-cancel",
+                role: "button",
+                name: "取消退出登录",
+                action: .init(allowed: ["invoke"]) { _ in
+                    signOutConfirmationPresented = false
+                }
+            )
+            add(
+                "mobile-logout-confirm",
+                role: "button",
+                name: "确认退出登录",
+                enabled: !model.loginBusy,
+                action: .init(allowed: ["invoke"]) { _ in
+                    Task { @MainActor in
+                        await model.logout()
+                        if !model.loggedIn {
+                            signOutConfirmationPresented = false
+                            profileMenuPresented = false
+                        }
+                    }
+                }
+            )
+            if model.loggedIn, model.message.hasPrefix("退出登录失败") {
+                add("mobile-logout-error", role: "status", name: String(model.message.prefix(200)))
+            }
+            publish("account-sign-out")
+            return
+        }
+
         if profileMenuPresented {
             add("profile-menu", role: "dialog", name: "导航")
             add("profile-account", role: "status", name: model.accountName)
-            add("mobile-logout", role: "button", name: "退出登录", action: .init(allowed: ["invoke"]) { _ in profileMenuPresented = false; Task { await model.logout() } })
+            add(
+                "mobile-logout",
+                role: "button",
+                name: "退出登录",
+                action: .init(allowed: ["invoke"]) { _ in
+                    signOutConfirmationPresented = true
+                }
+            )
             add("remote-computer-entry", role: "button", name: "我的电脑", action: .init(allowed: ["invoke"]) { _ in profileMenuPresented = false; destination = .remoteComputer })
             add("marketplace-entry", role: "button", name: "插件市场", action: .init(allowed: ["invoke"]) { _ in profileMenuPresented = false; destination = .marketplace })
             for section in MobileSection.allCases {
