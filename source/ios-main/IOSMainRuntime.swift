@@ -7,9 +7,10 @@ import SwiftUI
 @MainActor
 final class IOSMainRuntime {
     let coordinator: MahayanaCoordinator
-    let lifecycleReporter = IOSLifecycleReporter()
+    let lifecycleReporter: IOSLifecycleReporter
     private let lifecycleRecovery: IOSLifecycleRecoveryStore
     private let passkeyProvider: IOSAuthenticationServicesPasskeyProvider
+    private let accountRuntime: CoordinatorAccountRuntime
     let devCapability: IOSDevCapability
     private let devControlAdapter: IOSNativeDevControlAdapter
 
@@ -22,14 +23,51 @@ final class IOSMainRuntime {
         self.devCapability = devCapability
         devControlAdapter = IOSNativeDevControlAdapter(gate: devControlsGate)
         lifecycleRecovery = try IOSLifecycleRecoveryStore(appDataDirectory: appDataDirectory)
+
+        let reporter = IOSLifecycleReporter()
+        lifecycleReporter = reporter
+
         let passkeyProvider = IOSAuthenticationServicesPasskeyProvider()
         self.passkeyProvider = passkeyProvider
-        coordinator = try MahayanaCoordinator.make(
+
+        let coordinator = try MahayanaCoordinator.make(
             appDataDirectory: appDataDirectory,
             featureHostTest: featureHostTest,
             passkeyProvider: passkeyProvider,
             devControlAdapter: devControlAdapter
         )
+        self.coordinator = coordinator
+
+        let cleanup = ProductionAccountTransitionCleanup(
+            dependencies: .init(
+                clearAccountScope: {
+                    coordinator.updateAccountSettingsScope(nil)
+                },
+                didClearAccountScope: { _, nextSlot in
+                    reporter.report(
+                        .coordinatorHandoff,
+                        metadata: [
+                            "account_scope": "cleared",
+                            "next_scope": nextSlot == nil ? "logged-out" : "replacement",
+                        ]
+                    )
+                }
+            )
+        )
+        accountRuntime = CoordinatorAccountRuntime(
+            cleanup: cleanup,
+            authorize: { slot, _ in
+                coordinator.updateAccountSettingsScope(slot)
+                reporter.report(
+                    .coordinatorHandoff,
+                    metadata: [
+                        "account_scope": slot == nil ? "logged-out" : "adopted",
+                    ]
+                )
+                return .ready(slot: slot)
+            }
+        )
+
         lifecycleReporter.report(
             .startup,
             metadata: [
@@ -83,7 +121,14 @@ final class IOSMainRuntime {
     /// Compatibility entry for platform-only callers. Renderer-facing code uses
     /// IOSPreloadBridge and never receives a Coordinator or Host reference.
     func dispatch(method: String, params: [String: Any] = [:]) async throws -> MahayanaCoordinator.JSONResult {
-        try await coordinator.request(method: method, params: params)
+        let args = try CoordinatorPayload.fromFoundation(params)
+        let outcome = await dispatchTransport(method: method, args: args)
+        switch outcome {
+        case .ok(let payload):
+            return .init(value: payload.foundationValue)
+        case .failed(let failure):
+            throw MahayanaCoordinator.CoordinatorError.requestFailed(failure.message)
+        }
     }
 
     func makeRendererPortServer(port: CoordinatorPort) -> RendererPortServer {
@@ -91,8 +136,27 @@ final class IOSMainRuntime {
             guard let self else {
                 return .failed(.init(code: "coordinator-unavailable", message: "iOS main runtime was released"))
             }
-            return await self.coordinator.dispatchTransport(method: method, args: args)
+            return await self.dispatchTransport(method: method, args: args)
         }
+    }
+
+    private func dispatchTransport(
+        method: String,
+        args: CoordinatorPayload
+    ) async -> CoordinatorReplyOutcome {
+        let outcome = await coordinator.dispatchTransport(method: method, args: args)
+        if let accountAuthorization = await accountRuntime.observeAuthReply(method: method, outcome: outcome),
+           case .refused(_, let reason) = accountAuthorization {
+            lifecycleReporter.report(
+                .coordinatorHandoff,
+                level: .warn,
+                metadata: [
+                    "account_scope": "refused",
+                    "reason": reason,
+                ]
+            )
+        }
+        return outcome
     }
 
     func scenePhaseChanged(_ phase: ScenePhase) {
@@ -126,6 +190,8 @@ final class IOSMainRuntime {
             .rendererLifecycle,
             metadata: ["phase": "shutting-down"]
         )
+        accountRuntime.reset()
+        coordinator.updateAccountSettingsScope(nil)
         coordinator.beginShutdown()
     }
 }
