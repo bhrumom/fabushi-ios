@@ -110,8 +110,8 @@ final class CoordinatorAdapterTests: XCTestCase {
                 "user": .object(["id": .string("account-1")]),
             ]))
         )
-        XCTAssertEqual(first, .ready(slot: "id:account-1"))
-        XCTAssertEqual(runtime.activeSlot, "id:account-1")
+        XCTAssertEqual(first, .ready(slot: "account-1"))
+        XCTAssertEqual(runtime.activeSlot, "account-1")
         XCTAssertEqual(clearCount, 0)
 
         _ = await runtime.observeAuthReply(
@@ -120,15 +120,15 @@ final class CoordinatorAdapterTests: XCTestCase {
                 "status": .string("completed"),
                 "auth": .object([
                     "loggedIn": .bool(true),
-                    "user": .object(["email": .string("Second@Example.COM")]),
+                    "user": .object(["principalId": .string("account-2")]),
                 ]),
             ]))
         )
-        XCTAssertEqual(runtime.activeSlot, "email:second@example.com")
+        XCTAssertEqual(runtime.activeSlot, "account-2")
         XCTAssertEqual(clearCount, 1)
         XCTAssertEqual(transitions.count, 1)
-        XCTAssertEqual(transitions.first?.0, "id:account-1")
-        XCTAssertEqual(transitions.first?.1, "email:second@example.com")
+        XCTAssertEqual(transitions.first?.0, "account-1")
+        XCTAssertEqual(transitions.first?.1, "account-2")
 
         _ = await runtime.observeAuthReply(
             method: "feature.auth.logout",
@@ -136,7 +136,7 @@ final class CoordinatorAdapterTests: XCTestCase {
         )
         XCTAssertNil(runtime.activeSlot)
         XCTAssertEqual(clearCount, 2)
-        XCTAssertEqual(adopted, ["id:account-1", "email:second@example.com", nil])
+        XCTAssertEqual(adopted, ["account-1", "account-2", nil])
     }
 
     @MainActor
@@ -150,7 +150,7 @@ final class CoordinatorAdapterTests: XCTestCase {
             )
         )
         let runtime = CoordinatorAccountRuntime(
-            activeSlot: "id:prior",
+            activeSlot: "prior",
             cleanup: cleanup,
             authorize: { slot, _ in
                 adopted.append(slot)
@@ -162,7 +162,7 @@ final class CoordinatorAdapterTests: XCTestCase {
             method: "feature.auth.status",
             outcome: .ok(.object([
                 "loggedIn": .bool(true),
-                "user": .object(["nickname": .string("Display only")]),
+                "user": .object(["email": .string("display-only@example.test")]),
             ]))
         )
 
@@ -177,6 +177,45 @@ final class CoordinatorAdapterTests: XCTestCase {
         XCTAssertNil(adopted[0])
     }
 
+
+    @MainActor
+    func testIOSMainRuntimeProjectsRealRustAuthSessionIntoCoordinatorSettingsScope() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let main = try IOSMainRuntime(
+            appDataDirectory: directory,
+            featureHostTest: true
+        )
+
+        let initial = try await main.dispatch(method: "feature.auth.status")
+        XCTAssertEqual(
+            (initial.value as? [String: Any])?["loggedIn"] as? Bool,
+            false
+        )
+        XCTAssertNil(main.coordinator.sharedSettingsSnapshot().mcpCustomInstructionsAccountScope)
+
+        let started = try await main.dispatch(method: "feature.auth.browserStart")
+        let attemptID = try XCTUnwrap(
+            (started.value as? [String: Any])?["attemptId"] as? String
+        )
+        let completed = try await main.dispatch(
+            method: "feature.auth.browserPoll",
+            params: ["attemptId": attemptID]
+        )
+        let auth = try XCTUnwrap(
+            (completed.value as? [String: Any])?["auth"] as? [String: Any]
+        )
+        XCTAssertEqual(auth["loggedIn"] as? Bool, true)
+        XCTAssertEqual(
+            main.coordinator.sharedSettingsSnapshot().mcpCustomInstructionsAccountScope,
+            "fast-e2e-browser-user"
+        )
+
+        _ = try await main.dispatch(method: "feature.auth.logout")
+        XCTAssertNil(main.coordinator.sharedSettingsSnapshot().mcpCustomInstructionsAccountScope)
+    }
 
     func testGatewayDNSDiagnosticsClassifyLoopbackWithoutResolvingIt() throws {
         let report = GatewayDNSDiagnostics.inspect(try XCTUnwrap(URL(string: "http://127.0.0.1:9999/health")))
