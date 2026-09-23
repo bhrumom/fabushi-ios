@@ -162,6 +162,8 @@ mod package_local_exec_pi_truncate;
 mod package_hooks_carriers_limits;
 #[path = "../../../hooks-carriers/errors.rs"]
 mod package_hooks_carriers_errors;
+#[path = "../../../hooks-exec/hook-error-handling.rs"]
+mod package_hooks_exec_hook_error_handling;
 #[path = "../../../mcp-core/config/mcp-focus-retry-cooldown.rs"]
 mod package_mcp_core_focus_retry_cooldown;
 #[path = "../../../mcp-core/config/mcp-fsm-timing-config.rs"]
