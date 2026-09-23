@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: ios-protected-session-${{ github.event.pull_request.number || inputs.source_sha }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   protected-account-ui:
@@ -145,12 +145,11 @@ jobs:
         shell: bash
         env:
           FABUSHI_E2E_SOURCE_SHA: ${{ github.event.pull_request.head.sha || inputs.source_sha }}
-          FABUSHI_E2E_SCREENSHOT_DIR: ${{ github.workspace }}/ios-protected-session-evidence/screenshots
-          FABUSHI_E2E_STATE_FILE: ${{ github.workspace }}/ios-protected-session-evidence/state.json
           FABUSHI_DEVICE_NAME: Fabushi Protected iOS Simulator
         run: |
           set -euo pipefail
           rm -rf "$EVIDENCE_DIR/FabushiProtectedSession.xcresult"
+          set -o pipefail
           xcodebuild test-without-building \
             -project Fabushi.xcodeproj \
             -scheme Fabushi \
@@ -158,7 +157,21 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/FabushiProtectedDerivedData" \
             -resultBundlePath "$EVIDENCE_DIR/FabushiProtectedSession.xcresult" \
             -only-testing:FabushiUITests/GlobalDharmaJourneyUITests/testGlobalDharmaMarketplaceBotWebMcpCommerceJourney \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee "$EVIDENCE_DIR/protected-xcodebuild.log"
+          python3 - "$EVIDENCE_DIR/protected-xcodebuild.log" "$EVIDENCE_DIR/state.json" <<'PY'
+          import base64
+          import pathlib
+          import re
+          import sys
+
+          log = pathlib.Path(sys.argv[1]).read_text(errors="replace")
+          matches = re.findall(r"FABUSHI_E2E_STATE_BASE64=([A-Za-z0-9+/=]+)", log)
+          if not matches:
+              raise SystemExit("protected UI test produced no state marker")
+          payload = base64.b64decode(matches[-1], validate=True)
+          pathlib.Path(sys.argv[2]).write_bytes(payload)
+          PY
 
       - name: Require complete protected journey state
         shell: bash

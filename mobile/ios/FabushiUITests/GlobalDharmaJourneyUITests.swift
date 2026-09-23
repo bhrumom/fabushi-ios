@@ -317,12 +317,20 @@ final class GlobalDharmaJourneyUITests: XCTestCase {
     }
 
     private func persistState() {
-        guard let path = ProcessInfo.processInfo.environment["FABUSHI_E2E_STATE_FILE"], !path.isEmpty,
-              JSONSerialization.isValidJSONObject(state),
-              let data = try? JSONSerialization.data(withJSONObject: state, options: [.prettyPrinted, .sortedKeys])
+        guard JSONSerialization.isValidJSONObject(state),
+              let data = try? JSONSerialization.data(
+                withJSONObject: state,
+                options: [.prettyPrinted, .sortedKeys]
+              )
         else { return }
-        let url = URL(fileURLWithPath: path)
-        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? data.write(to: url, options: .atomic)
+
+        // UI tests execute inside the Simulator test-runner sandbox, so a
+        // GitHub-runner workspace path is not a valid evidence transport.
+        // Emit only this non-sensitive boolean/revision state to stdout; the
+        // workflow decodes the final marker back into state.json on the host.
+        let marker = "FABUSHI_E2E_STATE_BASE64=\(data.base64EncodedString())\n"
+        if let markerData = marker.data(using: .utf8) {
+            FileHandle.standardOutput.write(markerData)
+        }
     }
 }
