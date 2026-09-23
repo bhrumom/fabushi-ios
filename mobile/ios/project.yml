@@ -40,6 +40,7 @@ targets:
       - path: ../../source/packages/context/core.swift
       - path: ../../source/packages/context/abort-reason.swift
       - path: ../../source/packages/metrics/index.swift
+      - path: ../../source/packages/prompt-jsx/prompt-runtime.swift
       - path: ../../source/packages/shell-exec/event-loop-pressure.swift
       - path: ../../source/packages/shell-exec/types.swift
       - path: ../../source/packages/shell-exec/output-suppression.swift
