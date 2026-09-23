@@ -281,7 +281,8 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(resolved, real.join("missing/file.txt"));
+        let canonical_real = real.canonicalize().unwrap();
+        assert_eq!(resolved, canonical_real.join("missing/file.txt"));
 
         let _ = std::fs::remove_dir_all(&root);
     }
