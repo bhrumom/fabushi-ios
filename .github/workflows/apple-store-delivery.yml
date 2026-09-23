@@ -88,7 +88,10 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           test -f PROVENANCE.md
+          test -f docs/release/ios-rights-review.json
           python3 scripts/check-grok-ios-architecture.py --strict --complete
+          jq -e '.status == "approved" and .releaseBlocking == false and ([.blockers[]? | select(.status != "resolved")] | length == 0)' \
+            docs/release/ios-rights-review.json >/dev/null
 
       - name: Require iOS App Store configuration
         shell: bash
