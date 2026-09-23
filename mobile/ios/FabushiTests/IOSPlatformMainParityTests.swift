@@ -83,6 +83,62 @@ final class IOSPlatformMainParityTests: XCTestCase {
         )
     }
 
+
+    func testIOSUpdateVersionMatchesRecoveredSemverOrdering() {
+        XCTAssertEqual(IOSUpdateVersion.compare("1.2.65", "1.2.64"), 1)
+        XCTAssertEqual(IOSUpdateVersion.compare("1.2.65-beta.2", "1.2.65-beta.10"), -1)
+        XCTAssertEqual(IOSUpdateVersion.compare("1.2.65", "1.2.65-beta.10"), 1)
+        XCTAssertNil(IOSUpdateVersion.compare("1.2", "1.2.65"))
+        XCTAssertTrue(IOSUpdateVersion.isNewer("1.2.66", than: "1.2.65"))
+    }
+
+    func testIOSReleaseMetadataReadsSignedBundleFieldsWithoutDesktopFeedState() {
+        let metadata = IOSReleaseMetadataReader.read(infoDictionary: [
+            "CFBundleShortVersionString": "1.2.65",
+            "CFBundleVersion": "34",
+            "CFBundleIdentifier": "com.ombhrum.fabushi",
+        ])
+        XCTAssertEqual(metadata?.version, "1.2.65")
+        XCTAssertEqual(metadata?.buildNumber, "34")
+        XCTAssertEqual(metadata?.bundleIdentifier, "com.ombhrum.fabushi")
+        XCTAssertEqual(metadata?.updateMechanism, "app-store-connect")
+    }
+
+    @MainActor
+    func testIOSUpdateWiringReportsStoreManagedStateAndRejectsSelfUpdateActions() {
+        let service = IOSAppStoreUpdateService(metadataProvider: {
+            .init(
+                version: "1.2.65",
+                buildNumber: "34",
+                bundleIdentifier: "com.ombhrum.fabushi",
+                updateMechanism: "app-store-connect"
+            )
+        })
+        let wiring = IOSUpdateServiceWiring(service: service)
+
+        XCTAssertEqual(
+            wiring.route(method: "getUpdateStatus", args: .object([:])),
+            .ok(.object([
+                "type": .string("managed-by-app-store"),
+                "version": .string("1.2.65"),
+                "buildNumber": .string("34"),
+                "bundleIdentifier": .string("com.ombhrum.fabushi"),
+                "mechanism": .string("app-store-connect"),
+                "selfUpdateSupported": .bool(false),
+            ]))
+        )
+        XCTAssertEqual(
+            wiring.route(method: "quitAndInstallUpdate", args: .object([:])),
+            .ok(.object([
+                "accepted": .bool(false),
+                "action": .string("quitAndInstallUpdate"),
+                "reason": .string("managed-by-app-store"),
+                "selfUpdateSupported": .bool(false),
+            ]))
+        )
+        XCTAssertNil(wiring.route(method: "feature.auth.status", args: .object([:])))
+    }
+
     func testUnavailableOnePasswordProvisioningSinkFailsClosed() async {
         let sink = UnavailableOnePasswordProvisioningSink<String>()
         XCTAssertEqual(sink.availability, .unavailable)
