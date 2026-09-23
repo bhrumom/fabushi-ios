@@ -901,6 +901,33 @@ impl FeatureHostController {
         }
     }
 
+    /// UI-safe, server-authoritative account model-usage projection.
+    ///
+    /// Production data is fetched only through the Rust-owned product session;
+    /// no bearer/refresh credential crosses the Host boundary.
+    pub fn usage_status(&self) -> Result<Value, FeatureHostError> {
+        match self.config.mode {
+            HostMode::Test => Ok(json!({
+                "windowStart": 1_725_235_200_i64,
+                "windowEnd": 1_725_840_000_i64,
+                "tokenLimit": 100_000_i64,
+                "usedTokens": 25_000_i64,
+                "reservedTokens": 5_000_i64,
+                "remainingTokens": 70_000_i64,
+                "unlimited": false,
+            })),
+            HostMode::Production => {
+                #[cfg(feature = "production")]
+                return self
+                    .runtime()?
+                    .product_execute("mahayana.usage.status", &json!({}))
+                    .map_err(FeatureHostError::from);
+                #[cfg(not(feature = "production"))]
+                return Err(FeatureHostError::ProductionUnavailable);
+            }
+        }
+    }
+
     pub fn execute(&self, command: FeatureCommand) -> Result<CommandAccepted, FeatureHostError> {
         if let FeatureCommand::MessagingExecute {
             request_id,
@@ -11606,6 +11633,21 @@ mod tests {
         assert_eq!(browser_login_platform(SurfacePlatform::Android), "mobile");
         assert_eq!(browser_login_platform(SurfacePlatform::Wasm), "web");
         assert_eq!(browser_login_platform(SurfacePlatform::Electron), "desktop");
+    }
+
+    #[test]
+    fn deterministic_usage_status_is_ui_safe_and_server_shaped() {
+        let controller = controller();
+        let usage = controller.usage_status().expect("usage status");
+        assert_eq!(usage["tokenLimit"], 100_000);
+        assert_eq!(usage["usedTokens"], 25_000);
+        assert_eq!(usage["reservedTokens"], 5_000);
+        assert_eq!(usage["remainingTokens"], 70_000);
+        assert_eq!(usage["unlimited"], false);
+        let raw = serde_json::to_string(&usage).expect("serialize usage");
+        assert!(!raw.contains("accessToken"));
+        assert!(!raw.contains("refreshToken"));
+        assert!(!raw.contains("sessionToken"));
     }
 
     #[test]

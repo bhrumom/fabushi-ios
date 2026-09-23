@@ -1720,6 +1720,8 @@ impl MahayanaProductClient {
             "mahayana.auth.apple.complete" => self.apple_complete(request),
             "mahayana.auth.firebase.phone.complete" => self.firebase_phone_complete(request),
             "mahayana.auth.logout" => self.logout(),
+            "mahayana.usage.status" => serde_json::to_value(self.model_usage())
+                .map_err(|error| ProductError::Response(error.to_string()))?,
             "mahayana.platform.request" => self.platform_request(request),
             "mahayana.contacts.list" => self.authorized_get(request, "/api/social/friends", &[]),
             "mahayana.contacts.search" => {

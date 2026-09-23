@@ -219,6 +219,10 @@ impl AppHost {
                 .feature
                 .logout()
                 .map_err(|error| AppHostError::Operation(error.to_string())),
+            "feature.usage.status" => self
+                .feature
+                .usage_status()
+                .map_err(|error| AppHostError::Operation(error.to_string())),
             "feature.marketplace.browse" => self.marketplace_browse(params),
             "feature.marketplace.release" => self.marketplace_release(params),
             "feature.marketplace.add" => self.marketplace_add(params),
