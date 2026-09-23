@@ -81,6 +81,103 @@ final class CoordinatorAdapterTests: XCTestCase {
         XCTAssertEqual(probeCount, 1)
     }
 
+    @MainActor
+    func testCoordinatorAccountRuntimeFollowsSettledRustAuthReplies() async {
+        var clearCount = 0
+        var transitions: [(String, String?)] = []
+        var adopted: [String?] = []
+
+        let cleanup = ProductionAccountTransitionCleanup(
+            dependencies: .init(
+                clearAccountScope: { clearCount += 1 },
+                didClearAccountScope: { previous, next in
+                    transitions.append((previous, next))
+                }
+            )
+        )
+        let runtime = CoordinatorAccountRuntime(
+            cleanup: cleanup,
+            authorize: { slot, _ in
+                adopted.append(slot)
+                return .ready(slot: slot)
+            }
+        )
+
+        let first = await runtime.observeAuthReply(
+            method: "feature.auth.status",
+            outcome: .ok(.object([
+                "loggedIn": .bool(true),
+                "user": .object(["id": .string("account-1")]),
+            ]))
+        )
+        XCTAssertEqual(first, .ready(slot: "id:account-1"))
+        XCTAssertEqual(runtime.activeSlot, "id:account-1")
+        XCTAssertEqual(clearCount, 0)
+
+        _ = await runtime.observeAuthReply(
+            method: "feature.auth.browserPoll",
+            outcome: .ok(.object([
+                "status": .string("completed"),
+                "auth": .object([
+                    "loggedIn": .bool(true),
+                    "user": .object(["email": .string("Second@Example.COM")]),
+                ]),
+            ]))
+        )
+        XCTAssertEqual(runtime.activeSlot, "email:second@example.com")
+        XCTAssertEqual(clearCount, 1)
+        XCTAssertEqual(transitions.count, 1)
+        XCTAssertEqual(transitions.first?.0, "id:account-1")
+        XCTAssertEqual(transitions.first?.1, "email:second@example.com")
+
+        _ = await runtime.observeAuthReply(
+            method: "feature.auth.logout",
+            outcome: .ok(.object(["loggedIn": .bool(false)]))
+        )
+        XCTAssertNil(runtime.activeSlot)
+        XCTAssertEqual(clearCount, 2)
+        XCTAssertEqual(adopted, ["id:account-1", "email:second@example.com", nil])
+    }
+
+    @MainActor
+    func testCoordinatorAccountRuntimeFailsClosedOnLoggedInReplyWithoutStableIdentity() async {
+        var clearCount = 0
+        var adopted: [String?] = []
+        let cleanup = ProductionAccountTransitionCleanup(
+            dependencies: .init(
+                clearAccountScope: { clearCount += 1 },
+                didClearAccountScope: { _, _ in }
+            )
+        )
+        let runtime = CoordinatorAccountRuntime(
+            activeSlot: "id:prior",
+            cleanup: cleanup,
+            authorize: { slot, _ in
+                adopted.append(slot)
+                return .ready(slot: slot)
+            }
+        )
+
+        let result = await runtime.observeAuthReply(
+            method: "feature.auth.status",
+            outcome: .ok(.object([
+                "loggedIn": .bool(true),
+                "user": .object(["nickname": .string("Display only")]),
+            ]))
+        )
+
+        guard case .refused(let slot, let reason)? = result else {
+            return XCTFail("missing stable account identity must be refused")
+        }
+        XCTAssertNil(slot)
+        XCTAssertTrue(reason.contains("stable account slot"))
+        XCTAssertNil(runtime.activeSlot)
+        XCTAssertEqual(clearCount, 1)
+        XCTAssertEqual(adopted.count, 1)
+        XCTAssertNil(adopted[0])
+    }
+
+
     func testGatewayDNSDiagnosticsClassifyLoopbackWithoutResolvingIt() throws {
         let report = GatewayDNSDiagnostics.inspect(try XCTUnwrap(URL(string: "http://127.0.0.1:9999/health")))
         XCTAssertEqual(report.kind, .loopback)
