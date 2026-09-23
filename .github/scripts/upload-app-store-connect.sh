@@ -66,8 +66,9 @@ run_altool() {
     return 0
   fi
   if is_duplicate_upload "$log_file"; then
-    write_status uploaded already_uploaded_to_app_store_connect "$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-    exit 0
+    write_status failed "duplicate_upload_cannot_prove_exact_source"
+    echo "App Store Connect reports a duplicate/already-used build; that does not prove this exact source SHA was uploaded." >&2
+    return "$code"
   fi
   write_status failed "app_store_connect_${phase}_failed"
   return "$code"

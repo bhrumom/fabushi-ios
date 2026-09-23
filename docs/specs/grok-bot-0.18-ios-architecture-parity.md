@@ -1128,7 +1128,7 @@ This table is an evidence register, not a migration progress counter. `pending` 
 | R13 | pending | Rust Host is authoritative for account identity and Coordinator account settings now follow settled Host auth replies; the wider canonical-truth audit remains open. |
 | R14 | pending | Scene/background/protected-data/relaunch recovery code and tests exist; protected-session packaged E2E and termination/relaunch acceptance still need successful exact-SHA evidence. |
 | R15 | pending | CI-session provenance, URL/deep-link, Keychain and trusted-boundary controls exist; full security/entitlement/privacy review remains open. |
-| R16 | pending | Rights/provenance review remains release-blocking; no completion may be claimed without reviewed provenance evidence. |
+| R16 | blocked | `docs/provenance/grok-bot-0.18-rights-review.md` explicitly records an open release-blocking independent rights review; technical CI cannot clear it. |
 | R17 | pending | FabushiApp has been reduced to thin Scene/App composition, but legacy renderer/fallback paths are still referenced by shipping/UI acceptance code. |
 | R18 | pending | iOS-owned Rust Cargo source, headers/build script, simulator build and physical-device archive lane exist; final clean-checkout/archive proof on one accepted SHA is still required. |
 | R19 | pending | Exact-SHA signed archive/export/App Store Connect upload workflow exists and fails closed on missing credentials; credential-backed TestFlight/App Store success evidence is still required. |
@@ -1154,7 +1154,7 @@ This table is an evidence register, not a migration progress counter. `pending` 
 | AC-20 | passed | PR workflow runs the architecture checker and strict checker on the exact pull-request head SHA, preventing unmapped/forbidden-root regressions. |
 | AC-21 | pending | Exact-HEAD architecture/Rust/build/unit/UI/lifecycle jobs must all succeed on the final accepted SHA. |
 | AC-22 | pending | Unsigned physical-device archive lane exists; fresh-install/upgrade/export/install acceptance remains pending. |
-| AC-23 | pending | Rights/provenance review is unresolved. |
+| AC-23 | blocked | The independent rights/provenance checklist is still open; release remains blocked until it is reviewed and recorded against the final SHA/IPA. |
 | AC-24 | pending | Signed App Store/TestFlight lane exists; no successful final credential-backed delivery evidence yet. |
 | AC-25 | pending | Final compliance review remains pending; mandatory completion requires all mandatory rows to be passed. |
 

@@ -210,10 +210,14 @@ final class GlobalDharmaJourneyUITests: XCTestCase {
         if let session = environment["FABUSHI_CI_APP_SESSION_IN_SIMULATOR"], !session.isEmpty {
             app.launchEnvironment["FABUSHI_CI_ACCOUNT_SESSION_FILE"] = session
         }
+        if let apiBaseURL = environment["FABUSHI_API_BASE_URL"], !apiBaseURL.isEmpty {
+            app.launchEnvironment["FABUSHI_API_BASE_URL"] = apiBaseURL
+            app.launchEnvironment["MAHAYANA_API_BASE_URL"] = apiBaseURL
+        }
         for key in [
             "GITHUB_ACTIONS", "GITHUB_REPOSITORY", "GITHUB_WORKFLOW", "GITHUB_JOB",
             "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "RUNNER_NAME", "RUNNER_OS", "RUNNER_ARCH",
-            "FABUSHI_API_BASE_URL", "FABUSHI_DEVICE_NAME"
+            "FABUSHI_DEVICE_NAME"
         ] {
             if let value = environment[key], !value.isEmpty {
                 app.launchEnvironment[key] = value
