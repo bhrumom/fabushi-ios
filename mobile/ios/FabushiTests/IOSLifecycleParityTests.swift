@@ -2,6 +2,31 @@ import XCTest
 @testable import Fabushi
 
 final class IOSLifecycleParityTests: XCTestCase {
+    func testUnitTestHostPolicyIsNarrowAndFailClosed() {
+        XCTAssertTrue(IOSUnitTestHostPolicy.shouldBypassProductRuntime(
+            environment: ["FABUSHI_UNIT_TEST_HOST": "1"]
+        ))
+        XCTAssertTrue(IOSUnitTestHostPolicy.shouldBypassProductRuntime(
+            environment: [
+                "XCTestBundlePath": "/tmp/FabushiTests.xctest",
+                "XCInjectBundleInto": "/tmp/Fabushi.app/Fabushi",
+            ]
+        ))
+        XCTAssertFalse(IOSUnitTestHostPolicy.shouldBypassProductRuntime(
+            environment: ["FABUSHI_UNIT_TEST_HOST": "true"]
+        ))
+        XCTAssertFalse(IOSUnitTestHostPolicy.shouldBypassProductRuntime(
+            environment: [
+                "XCTestBundlePath": "/tmp/FabushiUITests.xctest",
+                "XCInjectBundleInto": "/tmp/FabushiUITests-Runner.app/FabushiUITests-Runner",
+            ]
+        ))
+        XCTAssertFalse(IOSUnitTestHostPolicy.shouldBypassProductRuntime(
+            environment: ["XCTestBundlePath": "/tmp/FabushiTests.xctest"]
+        ))
+        XCTAssertFalse(IOSUnitTestHostPolicy.shouldBypassProductRuntime(environment: [:]))
+    }
+
     func testDeepLinkParserCanonicalizesAuthAndRejectsUnsafeInputs() throws {
         let parsed = try XCTUnwrap(FabushiDeepLinkParser.parse(
             "fabushi://auth/complete?attemptId=abcdefgh&status=completed"

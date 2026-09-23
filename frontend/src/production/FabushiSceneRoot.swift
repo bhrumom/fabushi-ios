@@ -1,14 +1,49 @@
+import Foundation
 import SwiftUI
 import Combine
 import UIKit
 
 /// Scene-facing adapter for the iOS product runtime.
 ///
-/// This view owns only the SwiftUI-to-platform lifecycle forwarding needed by
-/// the application scene. Product orchestration remains in FabushiRuntime and
-/// lower layers; FabushiApp stays a thin App/Scene entry point.
+/// This wrapper keeps XCTest's unsigned unit-test host from constructing the
+/// production runtime before the test bundle is injected. Normal app launches
+/// and UI-test launches still construct the full product runtime.
 @MainActor
 internal struct FabushiSceneRoot: View {
+    private let bypassProductRuntime: Bool
+
+    init(environment: [String: String] = ProcessInfo.processInfo.environment) {
+        #if DEBUG
+        bypassProductRuntime = IOSUnitTestHostPolicy.shouldBypassProductRuntime(
+            environment: environment
+        )
+        #else
+        bypassProductRuntime = false
+        #endif
+    }
+
+    @ViewBuilder
+    var body: some View {
+        if bypassProductRuntime {
+            FabushiUnitTestHostRoot()
+        } else {
+            FabushiProductionSceneRoot()
+        }
+    }
+}
+
+@MainActor
+private struct FabushiUnitTestHostRoot: View {
+    var body: some View {
+        Color.clear
+            .accessibilityIdentifier("fabushi-unit-test-host")
+    }
+}
+
+/// Production scene adapter. Product orchestration remains in FabushiRuntime
+/// and lower layers; FabushiApp stays a thin App/Scene entry point.
+@MainActor
+private struct FabushiProductionSceneRoot: View {
     @State private var runtime = FabushiRuntime()
     @Environment(\.scenePhase) private var scenePhase
 

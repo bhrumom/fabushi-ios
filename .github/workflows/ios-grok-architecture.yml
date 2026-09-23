@@ -79,8 +79,25 @@ jobs:
           set -euo pipefail
           UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for xs in d.values() for x in xs if x["name"].startswith("iPhone")))')"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
-      - name: Unit and UI tests
+      - name: Unit tests
+        if: steps.source.outputs.available == 'true'
+        working-directory: mobile/ios
+        env:
+          FABUSHI_UNIT_TEST_HOST: '1'
+        run: |
+          xcodebuild test \
+            -project Fabushi.xcodeproj \
+            -scheme Fabushi \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:FabushiTests \
+            CODE_SIGNING_ALLOWED=NO
+      - name: UI tests
         if: steps.source.outputs.available == 'true'
         working-directory: mobile/ios
         run: |
-          xcodebuild test             -project Fabushi.xcodeproj             -scheme Fabushi             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}"             CODE_SIGNING_ALLOWED=NO
+          xcodebuild test \
+            -project Fabushi.xcodeproj \
+            -scheme Fabushi \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:FabushiUITests \
+            CODE_SIGNING_ALLOWED=NO
