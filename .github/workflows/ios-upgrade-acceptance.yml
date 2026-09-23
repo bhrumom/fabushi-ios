@@ -1,0 +1,210 @@
+name: iOS fresh-install and upgrade acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: Previously accepted iOS source SHA/tag to install first.
+        required: true
+        type: string
+      candidate_ref:
+        description: Candidate iOS source SHA/tag to validate.
+        required: true
+        default: main
+        type: string
+
+concurrency:
+  group: ios-upgrade-acceptance
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  upgrade:
+    name: Preserve app data across exact-source upgrade
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      EVIDENCE_DIR: ${{ github.workspace }}/ios-upgrade-evidence
+    steps:
+      - name: Checkout baseline source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.baseline_ref }}
+          path: baseline
+          fetch-depth: 1
+
+      - name: Checkout candidate source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.candidate_ref }}
+          path: candidate
+          fetch-depth: 1
+
+      - id: identity
+        name: Resolve distinct exact source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline_sha="$(git -C baseline rev-parse HEAD)"
+          candidate_sha="$(git -C candidate rev-parse HEAD)"
+          if [ "$baseline_sha" = "$candidate_sha" ]; then
+            echo 'Upgrade acceptance requires distinct baseline and candidate SHAs.' >&2
+            exit 2
+          fi
+          mkdir -p "$EVIDENCE_DIR/steps"
+          {
+            echo "baseline_sha=$baseline_sha"
+            echo "candidate_sha=$candidate_sha"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "run_attempt=$GITHUB_RUN_ATTEMPT"
+          } > "$EVIDENCE_DIR/source.env"
+          echo "baseline_sha=$baseline_sha" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=$candidate_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Install native build tools
+        shell: bash
+        run: |
+          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          rustup target add aarch64-apple-ios-sim
+
+      - id: simulator
+        name: Select, erase, and boot isolated Simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          devices="$RUNNER_TEMP/ios-devices.json"
+          xcrun simctl list devices available -j > "$devices"
+          udid="$(jq -r '[.devices[]?[] | select(.isAvailable == true and (.name | startswith("iPhone")))] | first | .udid // empty' "$devices")"
+          if [ -z "$udid" ]; then
+            echo 'No available iPhone Simulator exists.' >&2
+            exit 1
+          fi
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+          xcrun simctl shutdown "$udid" 2>/dev/null || true
+          xcrun simctl erase "$udid"
+          xcrun simctl rename "$udid" "Fabushi-Upgrade-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl io "$udid" screenshot "$EVIDENCE_DIR/steps/000-fresh-simulator.png"
+
+      - name: Build baseline Simulator app
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set -euo pipefail
+          (
+            cd baseline
+            scripts/build-mahayana-ios.sh iphonesimulator arm64
+            cd mobile/ios
+            xcodegen generate
+            xcodebuild build \
+              -project Fabushi.xcodeproj \
+              -scheme Fabushi \
+              -configuration Debug \
+              -destination "platform=iOS Simulator,id=$UDID" \
+              -derivedDataPath "$RUNNER_TEMP/baseline-derived" \
+              CODE_SIGNING_ALLOWED=NO
+          )
+
+      - name: Install and launch baseline
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/baseline-derived/Build/Products/Debug-iphonesimulator/Fabushi.app"
+          test -d "$app"
+          xcrun simctl install "$UDID" "$app"
+          xcrun simctl spawn "$UDID" defaults write com.ombhrum.fabushi fabushi.mobile.onboarding-complete.v1 -bool YES
+          xcrun simctl launch --terminate-running-process "$UDID" com.ombhrum.fabushi > "$EVIDENCE_DIR/baseline-launch.txt"
+          sleep 3
+          container="$(xcrun simctl get_app_container "$UDID" com.ombhrum.fabushi data)"
+          test -d "$container"
+          sentinel="$container/Documents/fabushi-upgrade-sentinel.json"
+          printf '{"schema":"fabushi.ios.upgrade-sentinel.v1","baselineSha":"%s"}\n' \
+            "${{ steps.identity.outputs.baseline_sha }}" > "$sentinel"
+          chmod 600 "$sentinel"
+          echo "$sentinel" > "$EVIDENCE_DIR/sentinel-path.txt"
+          xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/steps/010-baseline-running.png"
+
+      - name: Build candidate Simulator app
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set -euo pipefail
+          (
+            cd candidate
+            scripts/build-mahayana-ios.sh iphonesimulator arm64
+            cd mobile/ios
+            xcodegen generate
+            xcodebuild build \
+              -project Fabushi.xcodeproj \
+              -scheme Fabushi \
+              -configuration Debug \
+              -destination "platform=iOS Simulator,id=$UDID" \
+              -derivedDataPath "$RUNNER_TEMP/candidate-derived" \
+              CODE_SIGNING_ALLOWED=NO
+          )
+
+      - name: Upgrade in place without uninstalling baseline
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set -euo pipefail
+          candidate_app="$RUNNER_TEMP/candidate-derived/Build/Products/Debug-iphonesimulator/Fabushi.app"
+          test -d "$candidate_app"
+          xcrun simctl install "$UDID" "$candidate_app"
+          container="$(xcrun simctl get_app_container "$UDID" com.ombhrum.fabushi data)"
+          sentinel="$container/Documents/fabushi-upgrade-sentinel.json"
+          test -f "$sentinel"
+          jq -e --arg sha "${{ steps.identity.outputs.baseline_sha }}" '.schema == "fabushi.ios.upgrade-sentinel.v1" and .baselineSha == $sha' "$sentinel" >/dev/null
+          xcrun simctl launch --terminate-running-process "$UDID" com.ombhrum.fabushi > "$EVIDENCE_DIR/candidate-launch.txt"
+          sleep 5
+          test -f "$sentinel"
+          jq -e --arg sha "${{ steps.identity.outputs.baseline_sha }}" '.baselineSha == $sha' "$sentinel" >/dev/null
+          xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/steps/020-candidate-upgraded.png"
+          xcrun simctl spawn "$UDID" log show --style compact --last 10m --predicate 'process == "Fabushi"' \
+            > "$EVIDENCE_DIR/fabushi-system.log"
+
+      - name: Verify candidate installed identity
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set -euo pipefail
+          app_container="$(xcrun simctl get_app_container "$UDID" com.ombhrum.fabushi app)"
+          test -d "$app_container"
+          executable="$app_container/Fabushi"
+          test -f "$executable"
+          archs="$(lipo -archs "$executable")"
+          printf '%s\n' "$archs" | tr ' ' '\n' | grep -qx arm64
+          {
+            echo "candidate_app_container=$app_container"
+            echo "binary_archs=$archs"
+          } > "$EVIDENCE_DIR/installed-candidate.env"
+
+      - name: Upload upgrade acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fabushi-ios-upgrade-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ios-upgrade-evidence
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Erase Simulator
+        if: always()
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set +e
+          if [ -n "${UDID:-}" ]; then
+            xcrun simctl shutdown "$UDID" 2>/dev/null || true
+            xcrun simctl erase "$UDID" 2>/dev/null || true
+          fi
