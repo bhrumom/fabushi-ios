@@ -1,16 +1,19 @@
 import Foundation
 
+/// iOS-side account departure cleanup.
+///
+/// The Rust Feature Host settles its own account boundary before an auth reply is
+/// returned (session reset, account-scoped bots/groups/messages/remote-device
+/// state, connector state, and provider warmup). This adapter therefore owns
+/// only Coordinator-side state that lives outside that Rust boundary. Keeping
+/// this responsibility narrow prevents a second account truth from forming in
+/// Swift while still fencing account-scoped settings before the next slot is
+/// adopted.
 @MainActor
 final class ProductionAccountTransitionCleanup {
     struct Dependencies {
-        let setAccountDeparting: @MainActor () -> Void
-        let onAccountDeparted: @MainActor () -> Void
-        let noteAccountDeparted: @MainActor () -> Void
-        let clearRemoteHostSettings: @MainActor () async throws -> Void
         let clearAccountScope: @MainActor () -> Void
-        let clearGatewayDescriptor: @MainActor () async -> Void
-        let resetMCPManager: @MainActor () async -> Void
-        let reportHostSettingsClearFailure: @MainActor (Error) -> Void
+        let didClearAccountScope: @MainActor (_ previousSlot: String, _ nextSlot: String?) -> Void
     }
 
     private let dependencies: Dependencies
@@ -20,17 +23,8 @@ final class ProductionAccountTransitionCleanup {
     }
 
     func prepare(previousSlot: String?, nextSlot: String?) async {
-        guard previousSlot != nil else { return }
-        dependencies.setAccountDeparting()
-        dependencies.onAccountDeparted()
-        dependencies.noteAccountDeparted()
-        do {
-            try await dependencies.clearRemoteHostSettings()
-        } catch {
-            dependencies.reportHostSettingsClearFailure(error)
-        }
+        guard let previousSlot else { return }
         dependencies.clearAccountScope()
-        await dependencies.clearGatewayDescriptor()
-        await dependencies.resetMCPManager()
+        dependencies.didClearAccountScope(previousSlot, nextSlot)
     }
 }
