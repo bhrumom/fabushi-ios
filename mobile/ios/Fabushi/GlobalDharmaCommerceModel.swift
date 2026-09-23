@@ -318,8 +318,13 @@ final class GlobalDharmaCommerceModel {
     nonisolated static func detectCanonicalLedgerTestMode(
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> Bool {
+        let trustedRepositories: Set<String> = [
+            "bhrumom/fabushi",
+            "bhrumom/fabushi-ios",
+        ]
         guard environment["GITHUB_ACTIONS"] == "true",
-              environment["GITHUB_REPOSITORY"] == "bhrumom/fabushi",
+              let repository = environment["GITHUB_REPOSITORY"],
+              trustedRepositories.contains(repository),
               let sessionFile = environment["FABUSHI_CI_ACCOUNT_SESSION_FILE"],
               !sessionFile.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               let sha = environment["GITHUB_SHA"],
