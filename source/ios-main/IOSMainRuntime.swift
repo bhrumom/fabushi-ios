@@ -11,6 +11,7 @@ final class IOSMainRuntime {
     private let lifecycleRecovery: IOSLifecycleRecoveryStore
     private let passkeyProvider: IOSAuthenticationServicesPasskeyProvider
     private let accountRuntime: CoordinatorAccountRuntime
+    private let updateWiring: IOSUpdateServiceWiring
     let devCapability: IOSDevCapability
     private let devControlAdapter: IOSNativeDevControlAdapter
 
@@ -67,6 +68,7 @@ final class IOSMainRuntime {
                 return .ready(slot: slot)
             }
         )
+        updateWiring = IOSUpdateServiceWiring()
 
         lifecycleReporter.report(
             .startup,
@@ -144,6 +146,9 @@ final class IOSMainRuntime {
         method: String,
         args: CoordinatorPayload
     ) async -> CoordinatorReplyOutcome {
+        if let updateOutcome = updateWiring.route(method: method, args: args) {
+            return updateOutcome
+        }
         let outcome = await coordinator.dispatchTransport(method: method, args: args)
         if let accountAuthorization = await accountRuntime.observeAuthReply(method: method, outcome: outcome),
            case .refused(_, let reason) = accountAuthorization {
