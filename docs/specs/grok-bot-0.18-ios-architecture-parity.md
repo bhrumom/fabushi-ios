@@ -18,7 +18,9 @@ At the discovery baseline:
 - `FabushiRemoteDeviceGateway.swift` directly owns account-scoped WebSocket transport and depends on `MahayanaHost`;
 - the XcodeGen project is app-centric under `mobile/ios`, rather than expressing Grok-equivalent renderer/main/preload/coordinator/host/runner boundaries.
 
-The requested target is not a Grok-inspired iOS skin and not a thin iOS client around shared cross-platform source. The target is a **standalone iOS implementation** whose architecture, module boundaries, contracts, lifecycle behavior, and observable product effects correspond module-by-module to the pinned Grok Bot 0.18 reconstructed reference, while using the best iOS-native implementation technique for each responsibility.
+The requested target is not a Grok-inspired iOS skin and not a thin iOS client around shared cross-platform source. The target is a **standalone iOS implementation** whose architecture, module boundaries, contracts, lifecycle behavior, and observable product effects correspond to the pinned Grok Bot 0.18 reconstructed reference, while using the best iOS-native implementation technique for each responsibility.
+
+The canonical migration rule is **per-source-file audit/disposition + per-product-responsibility iOS implementation**. Every pinned Grok source file must be accounted for in the ledger, but Fabushi iOS does not need one physical target file for every Grok file. One reference file may split across multiple Swift/Rust modules; multiple reference files may converge into one iOS-native implementation when that does not collapse a Grok architectural boundary or product responsibility.
 
 Reference baselines:
 
@@ -118,10 +120,10 @@ exec-daemon/   exec-daemon/
 
 The migration must:
 
-1. enumerate every relevant Grok file under `source/**` and `frontend/**`;
-2. map every item to an iOS-local counterpart;
-3. preserve equivalent responsibility and contract behavior;
-4. make the physical repository structure correspond to Grok's module tree;
+1. audit every relevant Grok file under `source/**` and `frontend/**`;
+2. record each source responsibility, iOS-visible effect, platform delta, target path(s)/existing equivalent, or reviewed platform disposition;
+3. implement every product-relevant responsibility with equivalent contract behavior and iOS-native effect;
+4. preserve Grok's major domain/boundary ownership in the physical repository without requiring one-to-one file granularity;
 5. preserve Coordinator / Host / Runner / trusted-bridge boundaries;
 6. make SwiftUI consume coordinator projections and emit typed intents rather than own runtime orchestration;
 7. reproduce supported Grok interactions and runtime effects with iOS-native behavior;
@@ -129,7 +131,7 @@ The migration must:
 9. prove the result using exact-HEAD CI and a packaged iOS app/TestFlight-quality build;
 10. verify lifecycle restoration across scene recreation, background suspension, memory pressure, termination/relaunch, and deep-link/OAuth return.
 
-The final product must feel like the iOS edition of the same Grok architecture, not a separate mobile product that only resembles Grok visually.
+The final product must feel and behave like the **iOS edition of Grok Bot**, not a separate mobile product that only resembles Grok visually. Except where iOS sandbox/background/App Store rules genuinely prohibit a desktop mechanism, the user must receive the same core Agent capability and lifecycle effect through an iOS-native implementation.
 
 ## 4. Non-goals / out of scope
 
@@ -137,7 +139,9 @@ The final product must feel like the iOS edition of the same Grok architecture, 
 - Do not add Node.js solely to match Grok's implementation language.
 - Do not preserve another Fabushi source repository as a required runtime dependency.
 - Do not keep the current `mobile/ios` layout as the final architecture merely because it already exists.
-- Do not flatten Grok modules into a handful of giant Swift files.
+- Do not require one iOS target file for every Grok source file merely to match file counts.
+- Do not create empty/no-op Swift/Rust counterparts solely to satisfy a source-tree mapping.
+- Do not flatten Grok architectural boundaries or product responsibilities into unrelated giant Swift files.
 - Do not emulate desktop-only operating-system capabilities that iOS explicitly prohibits.
 - Do not introduce arbitrary shell/process execution on iOS.
 - Do not require pixel-identical desktop geometry on iPhone/iPad; preserve interaction semantics, information architecture, state behavior, visual language, and animation intent responsively.
@@ -160,20 +164,23 @@ Each row must include:
 - Grok path;
 - Grok responsibility;
 - evidence/contract anchor;
-- iOS target path;
+- iOS-visible effect;
+- platform delta;
+- iOS target path(s), existing equivalent, or reviewed disposition;
 - target language/runtime;
 - parity class: `direct-equivalent`, `ios-adapted`, or `not-applicable`;
+- replacement behavior when the source mechanism itself is not applicable;
 - implementation status;
 - test/evidence;
 - current iOS path replaced/removed.
 
 There is no `shared-core` disposition. iOS implementation belongs to this repository.
 
-No Grok module may silently disappear. `not-applicable` requires an iOS-specific platform reason and reviewer acceptance.
+No Grok module may silently disappear. `not-applicable` applies to a source implementation mechanism only when there is a real iOS-specific platform reason and reviewer acceptance. It may not be used to remove a user-facing/core Agent effect that can be delivered through an iOS-native or remote adapter; when the effect still matters, replacement behavior and evidence are mandatory.
 
-### R2 — Physical directory structure parity
+### R2 — Major domain / boundary structure parity
 
-The final repository must mirror Grok's major source organization, with explicit iOS substitutions only where platform naming requires them.
+The final repository must preserve Grok's major source organization and ownership boundaries, with explicit iOS substitutions where platform naming requires them. This is a domain/boundary requirement, not a requirement for identical nested filenames or equal file counts.
 
 | Grok Bot 0.18 | Fabushi iOS target |
 | --- | --- |
@@ -193,7 +200,7 @@ The final repository must mirror Grok's major source organization, with explicit
 | `manifests/` | `manifests/` |
 | `docs/` | `docs/` |
 
-The same rule applies recursively.
+The same ownership principle applies recursively, but iOS-native splitting/merging of files is allowed when the ledger records the mapping and no reference boundary/responsibility is collapsed.
 
 Example:
 
@@ -509,7 +516,7 @@ When a desktop package assumes shell/process/filesystem capability prohibited by
 
 ### R12 — Feature-effect parity
 
-For supported features, parity is measured by observable behavior and state transitions:
+For product-relevant features, parity is measured by observable behavior and state transitions, not by file naming or desktop implementation mechanics:
 
 - request lifecycle;
 - first-state/first-token responsiveness;
@@ -533,6 +540,23 @@ For supported features, parity is measured by observable behavior and state tran
 - foreground/background;
 - scene recreation;
 - termination/relaunch.
+
+A representative iOS Agent turn must demonstrate the same core effect chain:
+
+```text
+send
+ -> accepted
+ -> preparing/thinking
+ -> Host inference
+ -> tool/MCP/Runner request when needed
+ -> live tool state
+ -> result
+ -> continued inference
+ -> incremental transcript streaming
+ -> completed/failed
+```
+
+If the app backgrounds, its scene is recreated, or the process is terminated/relaunched while a durable run is still owned by the surviving server/remote/runtime boundary, Fabushi iOS must reattach/resync to that **same run** without silently losing it or starting a duplicate. When iOS legitimately terminates local-only execution that cannot survive, the recovery/terminal behavior must be deterministic and explicitly mapped to the closest Grok product effect.
 
 ### R13 — One iOS-local canonical truth
 
@@ -876,13 +900,13 @@ Every path must end in deterministic recoverable or terminal state.
 
 1. pin Grok and iOS SHAs;
 2. generate complete Grok `source/**` + `frontend/**` tree;
-3. generate an iOS target path for every Grok file;
-4. create root scaffolding matching Section 7;
+3. record target path(s), existing equivalent, or reviewed platform disposition for every Grok file; do not require one-to-one physical files;
+4. create root domain/boundary scaffolding matching Section 7;
 5. inventory every existing `mobile/ios` and `mobile/native` file and planned target/removal;
 6. record provenance/rights classification;
 7. define critical behavior fixtures.
 
-Exit gate: 100% file mapping and zero unexplained folder divergence.
+Exit gate: 100% source-file audit/disposition, zero unclassified responsibilities, and zero unexplained domain/boundary divergence. Equal source/target file counts are not required.
 
 ### Phase 1 — iOS-local contracts/packages/runtime source
 
@@ -939,14 +963,16 @@ Run compile, unit, contract, architecture, UI, lifecycle, packaged archive/expor
 
 ### 12.1 Folder parity checker
 
-CI compares pinned Grok inventory to parity ledger and iOS target tree.
+CI compares the pinned Grok inventory to the parity ledger and iOS target architecture.
 
 Fail if:
 
 - any Grok file/module is unclassified;
-- required target counterpart is absent;
-- target path diverges without ledger rationale;
-- old monolithic path regains migrated responsibility.
+- any required product responsibility lacks a real target implementation/equivalent;
+- a `not-applicable` row lacks iOS platform rationale or required replacement behavior;
+- target ownership/domain diverges without ledger rationale;
+- a checker incorrectly requires equal source/target file counts;
+- an old monolithic path regains migrated responsibility.
 
 ### 12.2 Architecture checker
 
@@ -1011,7 +1037,7 @@ Use an exact-HEAD archived/exported app. Validate fresh install, upgrade, launch
 ## 13. Acceptance criteria / Definition of Done
 
 - **AC-1**: 100% of pinned Grok `source/**` and `frontend/**` files exist in the parity ledger.
-- **AC-2**: Every relevant Grok module has an iOS-local counterpart or reviewed N/A.
+- **AC-2**: Every Grok source item has a reviewed disposition, and every product-relevant Grok responsibility has an iOS-local production implementation or evidenced equivalent. Reviewed N/A applies only to genuinely inapplicable source mechanisms and cannot silently remove a required product effect.
 - **AC-3**: Repository root physically follows the Grok-corresponding `frontend/source/tests/scripts/manifests/docs` structure.
 - **AC-4**: `source/electron-main` responsibilities correspond to `source/ios-main`.
 - **AC-5**: `source/electron-preload` responsibilities correspond to `source/ios-preload`.
@@ -1035,6 +1061,7 @@ Use an exact-HEAD archived/exported app. Validate fresh install, upgrade, launch
 - **AC-23**: Rights/provenance review has no unresolved release-blocking item.
 - **AC-24**: App Store/TestFlight constraints have no unresolved release-blocking violation.
 - **AC-25**: Final compliance table records every requirement/AC as `passed`, `blocked`, or `not-applicable`; mandatory completion requires all mandatory items `passed`.
+- **AC-26 — Grok Bot iOS effect**: Exact-HEAD packaged acceptance proves Fabushi iOS delivers the same core Grok Bot Agent effect through native iOS UI/lifecycle adapters: accepted → preparing/thinking → real tool/MCP/Runner activity when invoked → live tool state → continued inference → streaming transcript → terminal state, with scene/background/relaunch recovery resynchronizing the same durable run where that run survives outside the UI process and with no silent task loss or duplicate execution.
 
 ## 14. Release / migration / rollback
 
@@ -1157,5 +1184,6 @@ This table is an evidence register, not a migration progress counter. `pending` 
 | AC-23 | blocked | The independent rights/provenance checklist is still open; release remains blocked until it is reviewed and recorded against the final SHA/IPA. |
 | AC-24 | pending | Signed App Store/TestFlight lane now validates upload plus exact-build processing/internal-beta readiness; no successful final credential-backed delivery evidence exists yet. |
 | AC-25 | pending | Final compliance review remains pending; mandatory completion requires all mandatory rows to be passed. |
+| AC-26 | pending | Exact-HEAD packaged iOS evidence has not yet proven the complete Grok Bot iOS effect and same-run recovery semantics. |
 
 Allowed migration status: `pending`. Allowed final statuses: `passed`, `blocked`, `not-applicable`.
