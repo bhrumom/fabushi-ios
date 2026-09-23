@@ -35,6 +35,8 @@ mod package_utils_ttl_cache;
 mod package_utils_admin_command_denylist;
 #[path = "../../../utils/path-matchers.rs"]
 mod package_utils_path_matchers;
+#[path = "../../../utils/path-utils.rs"]
+mod package_utils_path_utils;
 #[path = "../../../utils/git-provider-url.rs"]
 mod package_utils_git_provider_url;
 #[path = "../../../utils/local-pr-creation-forge.rs"]

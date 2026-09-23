@@ -1,5 +1,8 @@
+use crate::package_utils_path_utils::{
+    canonicalize_nearest_existing, is_path_within_path, normalize_lexically,
+};
 use std::io;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub enum ProtectedPathError {
@@ -25,49 +28,6 @@ pub fn refusal_message(path: &Path) -> String {
     )
 }
 
-fn normalize_lexically(path: &Path) -> PathBuf {
-    let mut result = PathBuf::new();
-    for component in path.components() {
-        match component {
-            Component::CurDir => {}
-            Component::ParentDir => {
-                result.pop();
-            }
-            other => result.push(other.as_os_str()),
-        }
-    }
-    result
-}
-
-fn is_path_within(root: &Path, candidate: &Path) -> bool {
-    candidate == root || candidate.starts_with(root)
-}
-
-fn canonicalize_nearest_existing(path: &Path) -> io::Result<PathBuf> {
-    let mut probe = path.to_path_buf();
-    let mut tail = Vec::new();
-
-    while !probe.exists() {
-        let Some(name) = probe.file_name().map(|value| value.to_os_string()) else {
-            break;
-        };
-        tail.push(name);
-        if !probe.pop() {
-            break;
-        }
-    }
-
-    let mut resolved = if probe.exists() {
-        probe.canonicalize()?
-    } else {
-        normalize_lexically(path)
-    };
-    for component in tail.into_iter().rev() {
-        resolved.push(component);
-    }
-    Ok(normalize_lexically(&resolved))
-}
-
 pub fn assert_path_outside_protected_roots(
     protected_roots: &[PathBuf],
     candidate_path: &Path,
@@ -86,7 +46,7 @@ pub fn assert_path_outside_protected_roots(
 
     for root in protected_roots {
         let root = normalize_lexically(root);
-        if is_path_within(&root, &resolved) {
+        if is_path_within_path(&root, &resolved) {
             return Err(ProtectedPathError::Protected(refusal_message(
                 candidate_path,
             )));
@@ -98,7 +58,7 @@ pub fn assert_path_outside_protected_roots(
     for root in protected_roots {
         let real_root =
             canonicalize_nearest_existing(root).map_err(ProtectedPathError::Io)?;
-        if is_path_within(&real_root, &real_resolved) {
+        if is_path_within_path(&real_root, &real_resolved) {
             return Err(ProtectedPathError::Protected(refusal_message(
                 candidate_path,
             )));
