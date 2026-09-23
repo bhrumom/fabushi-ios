@@ -3,8 +3,9 @@ import XCTest
 
 final class SharedMessagingCoreParityTests: XCTestCase {
     func testMessageAddressAndReplicaOrdering() {
-        XCTAssertTrue(MessageReference.isMessageAddress("t12u3a4"))
+        XCTAssertTrue(MessageReference.isMessageAddress("t12ua4"))
         XCTAssertTrue(MessageReference.isMessageAddress("tbs7"))
+        XCTAssertFalse(MessageReference.isMessageAddress("t12u3a4"))
         XCTAssertFalse(MessageReference.isMessageAddress("tbad"))
         XCTAssertEqual(ReplicaOrdering.transcriptReplicaKey(agentID: "a1"), "transcript:a1")
         XCTAssertEqual(ReplicaOrdering.rosterReplicaKey, "roster")
