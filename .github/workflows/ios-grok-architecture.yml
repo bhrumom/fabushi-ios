@@ -2,9 +2,12 @@ name: iOS Grok architecture parity
 
 on:
   pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 concurrency:
-  group: ios-grok-architecture-pr-${{ github.event.pull_request.number }}
+  group: ios-grok-architecture-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -16,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - run: python3 scripts/check-grok-ios-architecture.py
 
   rust-host:
@@ -25,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Install Linux dependencies for Rust Host graph
         run: |
           sudo apt-get update
@@ -41,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Detect iOS-owned Rust source
         id: source
         shell: bash
@@ -101,3 +104,62 @@ jobs:
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -only-testing:FabushiUITests \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Build native runtime for physical iOS device
+        if: steps.source.outputs.available == 'true'
+        run: scripts/build-mahayana-ios.sh iphoneos arm64
+      - name: Build unsigned application for physical iOS device
+        if: steps.source.outputs.available == 'true'
+        working-directory: mobile/ios
+        run: |
+          xcodebuild build \
+            -project Fabushi.xcodeproj \
+            -scheme Fabushi \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/fabushi-ios-device-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+      - name: Archive unsigned physical-device application
+        if: steps.source.outputs.available == 'true'
+        working-directory: mobile/ios
+        run: |
+          rm -rf "$RUNNER_TEMP/Fabushi-unsigned.xcarchive"
+          xcodebuild archive \
+            -project Fabushi.xcodeproj \
+            -scheme Fabushi \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/fabushi-ios-device-derived" \
+            -archivePath "$RUNNER_TEMP/Fabushi-unsigned.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=''
+      - name: Verify unsigned device archive
+        if: steps.source.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/Fabushi-unsigned.xcarchive/Products/Applications/Fabushi.app"
+          binary="$app/Fabushi"
+          test -d "$app"
+          test -f "$binary"
+          archs="$(lipo -archs "$binary")"
+          printf '%s\n' "$archs" | tr ' ' '\n' | grep -qx arm64
+          mkdir -p "$RUNNER_TEMP/fabushi-ios-device-evidence"
+          {
+            echo "source_sha=${{ github.event.pull_request.head.sha || github.sha }}"
+            echo "archive=$RUNNER_TEMP/Fabushi-unsigned.xcarchive"
+            echo "binary_archs=$archs"
+            shasum -a 256 "$binary"
+          } > "$RUNNER_TEMP/fabushi-ios-device-evidence/device-archive.txt"
+      - name: Upload unsigned device archive evidence
+        if: steps.source.outputs.available == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: fabushi-ios-unsigned-device-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/Fabushi-unsigned.xcarchive
+            ${{ runner.temp }}/fabushi-ios-device-evidence/device-archive.txt
+          if-no-files-found: error
+          retention-days: 14
