@@ -80,7 +80,8 @@ final class IOSMainPolicyParityTests: XCTestCase {
             createID: { XCTFail("must not generate after storage settles"); return "unexpected" }
         )
 
-        XCTAssertEqual(try await resolver.getOrCreate(), "settled-id")
+        let settledID = try await resolver.getOrCreate()
+        XCTAssertEqual(settledID, "settled-id")
         XCTAssertEqual(store.waitCount, 1)
         XCTAssertTrue(store.writes.isEmpty)
     }
@@ -90,7 +91,8 @@ final class IOSMainPolicyParityTests: XCTestCase {
         let store = IOSMachineIDSecretStoreStub(reads: [nil, nil])
         let resolver = IOSMachineIDResolver(secrets: store, createID: { "generated-id" })
 
-        XCTAssertEqual(try await resolver.getOrCreate(), "generated-id")
+        let generatedID = try await resolver.getOrCreate()
+        XCTAssertEqual(generatedID, "generated-id")
         XCTAssertEqual(store.waitCount, 1)
         XCTAssertEqual(store.writes.count, 1)
         XCTAssertEqual(store.writes.first?.0, iosMachineIDSecretKey)
