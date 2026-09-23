@@ -2,8 +2,8 @@
 
 Status: active  
 Owner: Fabushi iOS  
-Last updated: 2026-09-22  
-Related issue/task/PR: user-requested iOS architecture parity migration; implementation PRs TBD
+Last updated: 2026-09-23  
+Related issue/task/PR: user-requested iOS architecture parity migration; `bhrumom/fabushi-ios#3`
 
 ## 1. Context / problem
 
@@ -1131,7 +1131,7 @@ This table is an evidence register, not a migration progress counter. `pending` 
 | R16 | blocked | `docs/provenance/grok-bot-0.18-rights-review.md` explicitly records an open release-blocking independent rights review; technical CI cannot clear it. |
 | R17 | pending | FabushiApp has been reduced to thin Scene/App composition, but legacy renderer/fallback paths are still referenced by shipping/UI acceptance code. |
 | R18 | pending | iOS-owned Rust Cargo source, headers/build script, simulator build and physical-device archive lane exist; final clean-checkout/archive proof on one accepted SHA is still required. |
-| R19 | pending | Exact-SHA signed archive/export/App Store Connect upload workflow exists and fails closed on missing credentials; credential-backed TestFlight/App Store success evidence is still required. |
+| R19 | pending | Exact-SHA signed archive/export/App Store Connect upload workflow exists, fails closed on missing credentials, and now waits for the exact app/version/build to reach App Store processing `VALID` plus internal TestFlight `READY_FOR_BETA_TESTING`/`IN_BETA_TESTING`; a credential-backed success run is still required. |
 | AC-1 | passed | The ledger contains all 2,046 pinned Grok source/frontend paths. |
 | AC-2 | pending | Mapping exists for all rows, but relevant counterparts/N/A dispositions are not all implemented and verified. |
 | AC-3 | pending | Target roots exist; recursive physical cutover and legacy removal remain incomplete. |
@@ -1155,7 +1155,7 @@ This table is an evidence register, not a migration progress counter. `pending` 
 | AC-21 | pending | Exact-HEAD architecture/Rust/build/unit/UI/lifecycle jobs must all succeed on the final accepted SHA. |
 | AC-22 | pending | Unsigned physical-device archive lane exists; fresh-install/upgrade/export/install acceptance remains pending. |
 | AC-23 | blocked | The independent rights/provenance checklist is still open; release remains blocked until it is reviewed and recorded against the final SHA/IPA. |
-| AC-24 | pending | Signed App Store/TestFlight lane exists; no successful final credential-backed delivery evidence yet. |
+| AC-24 | pending | Signed App Store/TestFlight lane now validates upload plus exact-build processing/internal-beta readiness; no successful final credential-backed delivery evidence exists yet. |
 | AC-25 | pending | Final compliance review remains pending; mandatory completion requires all mandatory rows to be passed. |
 
 Allowed migration status: `pending`. Allowed final statuses: `passed`, `blocked`, `not-applicable`.

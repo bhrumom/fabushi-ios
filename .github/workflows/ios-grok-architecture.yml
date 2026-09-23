@@ -18,6 +18,8 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - run: python3 scripts/check-grok-ios-architecture.py
+      - name: Verify App Store readiness gate script
+        run: python3 .github/scripts/wait-app-store-build.py --self-test
 
   rust-host:
     needs: architecture

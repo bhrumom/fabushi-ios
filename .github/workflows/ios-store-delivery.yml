@@ -236,6 +236,14 @@ jobs:
           APP_STORE_STATUS_FILE: store-evidence/IOS_TESTFLIGHT_UPLOAD_STATUS.txt
         run: bash .github/scripts/upload-app-store-connect.sh
 
+      - name: Wait for exact TestFlight build readiness
+        shell: bash
+        env:
+          APP_STORE_STATUS_FILE: store-evidence/IOS_TESTFLIGHT_PROCESSING_STATUS.txt
+          APP_STORE_WAIT_SECONDS: '2700'
+          APP_STORE_POLL_SECONDS: '30'
+        run: python3 .github/scripts/wait-app-store-build.py
+
       - name: Upload delivery evidence
         if: always()
         uses: actions/upload-artifact@v7
