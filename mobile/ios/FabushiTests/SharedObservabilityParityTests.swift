@@ -217,9 +217,11 @@ final class SharedObservabilityParityTests: XCTestCase {
         )
 
         await transport.enqueue(.error, message: "boom", metadata: ["feature": "chat"], timestampMs: 1_000)
-        let heldFlush = await transport.flushNow(nowMs: 1_000)\n        XCTAssertFalse(heldFlush)
+        let heldFlush = await transport.flushNow(nowMs: 1_000)
+        XCTAssertFalse(heldFlush)
         await transport.setIdentityTags(["account": "account-1"])
-        let deliveredFlush = await transport.flushNow(nowMs: 1_000)\n        XCTAssertTrue(deliveredFlush)
+        let deliveredFlush = await transport.flushNow(nowMs: 1_000)
+        XCTAssertTrue(deliveredFlush)
 
         let batch = await recorder.firstBatch()
         XCTAssertEqual(batch.count, 1)
@@ -240,7 +242,8 @@ final class SharedObservabilityParityTests: XCTestCase {
         )
 
         await transport.enqueue(.info, message: "expired", timestampMs: 1)
-        let expiredFlush = await transport.flushNow(nowMs: Int64(STRUCTURED_LOG_REPLAY_MAX_AGE_MS) + 2)\n        XCTAssertTrue(expiredFlush)
+        let expiredFlush = await transport.flushNow(nowMs: Int64(STRUCTURED_LOG_REPLAY_MAX_AGE_MS) + 2)
+        XCTAssertTrue(expiredFlush)
         var checkpoint = await transport.captureCheckpoint()
         XCTAssertEqual(checkpoint.records.count, 0)
         XCTAssertEqual(checkpoint.counters["replay_expired"]?.observed, 1)
