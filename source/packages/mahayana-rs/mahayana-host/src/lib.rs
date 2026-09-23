@@ -327,12 +327,22 @@ fn build_runtime(
     let session_token = product_client.session_token().ok();
 
     let data_dir = runtime_config.data_dir.clone();
-    let cwd = create
-        .cwd
-        .clone()
-        .or_else(|| runtime_config.workspace_roots.first().cloned())
-        .or_else(|| data_dir.as_ref().map(|path| path.join("workspace")))
-        .or_else(|| std::env::current_dir().ok());
+    let cwd = if let Some(cwd) = create.cwd.clone() {
+        Some(cwd)
+    } else if let Some(workspace_root) = runtime_config.workspace_roots.first().cloned() {
+        Some(workspace_root)
+    } else if let Some(data_dir) = data_dir.as_ref() {
+        let generated = data_dir.join("workspace");
+        std::fs::create_dir_all(&generated).map_err(|error| {
+            HostError::new(format!(
+                "create application workspace {}: {error}",
+                generated.display()
+            ))
+        })?;
+        Some(generated)
+    } else {
+        std::env::current_dir().ok()
+    };
     if runtime_config.workspace_roots.is_empty()
         && let Some(cwd) = cwd.as_ref()
     {
@@ -702,6 +712,25 @@ mod tests {
             inherit_installed_plugins: Some(false),
             ..HostCreateConfig::default()
         }
+    }
+
+    #[test]
+    fn fresh_app_data_creates_generated_workspace_before_provider_warmup() {
+        let config = test_config();
+        let generated_workspace = config
+            .runtime
+            .data_dir
+            .as_ref()
+            .expect("runtime data dir")
+            .join("workspace");
+        assert!(!generated_workspace.exists());
+
+        let host = MahayanaHost::create(config).expect("create host");
+        assert!(generated_workspace.is_dir());
+        host.warmup_conversation(ConversationId(
+            mahayana_core::MAHAYANA_AI_CONVERSATION_ID.to_string(),
+        ))
+        .expect("warm up provider against generated workspace");
     }
 
     #[test]
