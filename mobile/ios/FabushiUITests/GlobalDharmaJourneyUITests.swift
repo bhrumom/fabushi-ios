@@ -210,9 +210,6 @@ final class GlobalDharmaJourneyUITests: XCTestCase {
         if let session = environment["FABUSHI_CI_APP_SESSION_IN_SIMULATOR"], !session.isEmpty {
             app.launchEnvironment["FABUSHI_CI_ACCOUNT_SESSION_FILE"] = session
         }
-        if let sourceSHA = environment["FABUSHI_E2E_SOURCE_SHA"], !sourceSHA.isEmpty {
-            app.launchEnvironment["GITHUB_SHA"] = sourceSHA
-        }
         for key in [
             "GITHUB_ACTIONS", "GITHUB_REPOSITORY", "GITHUB_WORKFLOW", "GITHUB_JOB",
             "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "RUNNER_NAME", "RUNNER_OS", "RUNNER_ARCH",
@@ -221,6 +218,9 @@ final class GlobalDharmaJourneyUITests: XCTestCase {
             if let value = environment[key], !value.isEmpty {
                 app.launchEnvironment[key] = value
             }
+        }
+        if let sourceSHA = environment["FABUSHI_E2E_SOURCE_SHA"], sourceSHA.count == 40 {
+            app.launchEnvironment["GITHUB_SHA"] = sourceSHA
         }
     }
 
