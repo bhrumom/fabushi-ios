@@ -1,0 +1,273 @@
+name: iOS protected Global Dharma journey
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Exact branch, tag, or SHA to validate.
+        required: true
+        default: main
+        type: string
+
+concurrency:
+  group: ios-protected-global-dharma
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  journey:
+    name: Fresh-install protected account journey
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      DEVICE_ID: gha-${{ github.run_id }}-${{ github.run_attempt }}-ios-app
+      FABUSHI_API_BASE_URL: ${{ vars.FABUSHI_API_BASE_URL || 'https://api.ombhrum.com' }}
+      FABUSHI_CI_ACCOUNT_SESSION_FILE: ${{ runner.temp }}/fabushi-ci-app/session.json
+      DERIVED_DATA: ${{ runner.temp }}/fabushi-ios-protected-derived
+      EVIDENCE_DIR: ${{ github.workspace }}/ios-protected-journey-evidence
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 1
+
+      - id: source
+        name: Record exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha="$(git rev-parse HEAD)"
+          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
+          echo "SOURCE_SHA=$source_sha" >> "$GITHUB_ENV"
+          mkdir -p "$EVIDENCE_DIR/steps"
+          {
+            echo "source_sha=$source_sha"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "run_attempt=$GITHUB_RUN_ATTEMPT"
+            echo "device_id=$DEVICE_ID"
+          } > "$EVIDENCE_DIR/source.env"
+
+      - name: Require protected test-account secrets
+        shell: bash
+        env:
+          FABUSHI_CI_TEST_USERNAME: ${{ secrets.FABUSHI_CI_TEST_USERNAME }}
+          FABUSHI_CI_TEST_PASSWORD: ${{ secrets.FABUSHI_CI_TEST_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$FABUSHI_CI_TEST_USERNAME"
+          test -n "$FABUSHI_CI_TEST_PASSWORD"
+
+      - name: Install native build tools
+        shell: bash
+        run: |
+          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          rustup target add aarch64-apple-ios-sim
+
+      - id: simulator
+        name: Select, erase, and boot isolated iOS Simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtimes="$RUNNER_TEMP/ios-runtimes.json"
+          devices="$RUNNER_TEMP/ios-devices.json"
+          xcrun simctl list runtimes available -j > "$runtimes"
+          xcrun simctl list devices available -j > "$devices"
+          pair="$({
+            jq -r '
+              [.runtimes[] | select(.isAvailable == true and (.identifier | contains("SimRuntime.iOS-")))]
+              | sort_by(.version | split(".") | map(tonumber))
+              | reverse
+              | .[].identifier
+            ' "$runtimes" | while IFS= read -r runtime; do
+              udid="$(jq -r --arg runtime "$runtime" '.devices[$runtime] // [] | map(select(.isAvailable == true)) | first | .udid // empty' "$devices")"
+              if [ -n "$udid" ]; then
+                printf '%s|%s\n' "$runtime" "$udid"
+                break
+              fi
+            done
+          } || true)"
+          runtime="${pair%%|*}"
+          udid="${pair#*|}"
+          if [ -z "$runtime" ] || [ -z "$udid" ] || [ "$runtime" = "$udid" ]; then
+            echo 'No compatible iOS Simulator is available.' >&2
+            exit 1
+          fi
+          echo "runtime=$runtime" >> "$GITHUB_OUTPUT"
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+          xcrun simctl shutdown "$udid" 2>/dev/null || true
+          xcrun simctl erase "$udid"
+          xcrun simctl rename "$udid" "Fabushi-Protected-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl io "$udid" screenshot "$EVIDENCE_DIR/steps/000-fresh-simulator.png"
+
+      - name: Build iOS-owned runtime for Simulator
+        env:
+          IPHONEOS_DEPLOYMENT_TARGET: '17.0'
+        run: scripts/build-mahayana-ios.sh iphonesimulator arm64
+
+      - name: Generate native Xcode project
+        working-directory: mobile/ios
+        run: xcodegen generate
+
+      - name: Build app and UI tests once
+        working-directory: mobile/ios
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Fabushi.xcodeproj \
+            -scheme Fabushi \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -derivedDataPath "$DERIVED_DATA" \
+            CODE_SIGNING_ALLOWED=NO \
+            build-for-testing \
+            | tee "$EVIDENCE_DIR/xcode-build-for-testing.log"
+
+      - id: install
+        name: Install exact fresh test build
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set -euo pipefail
+          app="$DERIVED_DATA/Build/Products/Debug-iphonesimulator/Fabushi.app"
+          test -d "$app"
+          xcrun simctl install "$UDID" "$app"
+          app_container="$(xcrun simctl get_app_container "$UDID" com.ombhrum.fabushi data)"
+          test -d "$app_container"
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+          echo "app_container=$app_container" >> "$GITHUB_OUTPUT"
+          xcrun simctl spawn "$UDID" defaults write com.ombhrum.fabushi fabushi.mobile.onboarding-complete.v1 -bool YES
+          xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/steps/010-app-installed.png"
+
+      - name: Prepare bounded refresh-token-free account session
+        shell: bash
+        env:
+          FABUSHI_CI_TEST_USERNAME: ${{ secrets.FABUSHI_CI_TEST_USERNAME }}
+          FABUSHI_CI_TEST_PASSWORD: ${{ secrets.FABUSHI_CI_TEST_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$FABUSHI_CI_ACCOUNT_SESSION_FILE")"
+          chmod 700 "$(dirname "$FABUSHI_CI_ACCOUNT_SESSION_FILE")"
+          node .github/scripts/prepare-ios-ci-app-session.mjs
+          chmod 600 "$FABUSHI_CI_ACCOUNT_SESSION_FILE"
+
+      - id: stage
+        name: Stage bounded session inside installed app container
+        shell: bash
+        env:
+          APP_CONTAINER: ${{ steps.install.outputs.app_container }}
+        run: |
+          set -euo pipefail
+          app_session="$APP_CONTAINER/Documents/fabushi-ci-session.json"
+          mkdir -p "$(dirname "$app_session")"
+          cp "$FABUSHI_CI_ACCOUNT_SESSION_FILE" "$app_session"
+          chmod 600 "$app_session"
+          echo "app_session=$app_session" >> "$GITHUB_OUTPUT"
+
+      - name: Start full journey video
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set -euo pipefail
+          xcrun simctl io "$UDID" recordVideo --codec=h264 "$EVIDENCE_DIR/global-dharma-journey.mp4" \
+            > "$EVIDENCE_DIR/video-recorder.log" 2>&1 &
+          echo $! > "$EVIDENCE_DIR/video-recorder.pid"
+
+      - name: Run protected marketplace bot WebMCP commerce journey
+        working-directory: mobile/ios
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+          FABUSHI_CI_APP_SESSION_IN_SIMULATOR: ${{ steps.stage.outputs.app_session }}
+          FABUSHI_E2E_SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+          FABUSHI_E2E_SCREENSHOT_DIR: ${{ github.workspace }}/ios-protected-journey-evidence/steps
+          FABUSHI_E2E_STATE_FILE: ${{ github.workspace }}/ios-protected-journey-evidence/journey-state.json
+        run: |
+          set -o pipefail
+          rm -rf "$EVIDENCE_DIR/GlobalDharmaJourney.xcresult"
+          xcodebuild \
+            -project Fabushi.xcodeproj \
+            -scheme Fabushi \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -derivedDataPath "$DERIVED_DATA" \
+            -resultBundlePath "$EVIDENCE_DIR/GlobalDharmaJourney.xcresult" \
+            -only-testing:FabushiUITests/GlobalDharmaJourneyUITests/testGlobalDharmaMarketplaceBotWebMcpCommerceJourney \
+            CODE_SIGNING_ALLOWED=NO \
+            test-without-building \
+            | tee "$EVIDENCE_DIR/global-dharma-journey.log"
+
+      - name: Verify journey state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$EVIDENCE_DIR/journey-state.json"
+          jq -e '
+            .autoLogin == true and
+            .searchedMiniApps == true and
+            .globalDharmaVisible == true and
+            .installedOrAlreadyInstalled == true and
+            .botVisible == true and
+            .naturalLanguageSent == true and
+            .webMcpReady == true and
+            .sharedRuntimeSynced == true and
+            .entitlementAllowed == true and
+            .restoreTapped == true and
+            (.sharedRuntimeRevision | tonumber) > 0
+          ' "$EVIDENCE_DIR/journey-state.json" >/dev/null
+          cp "$FABUSHI_CI_ACCOUNT_SESSION_FILE" "$RUNNER_TEMP/session-audit.json"
+          if jq -e 'has("refreshToken")' "$RUNNER_TEMP/session-audit.json" >/dev/null; then
+            echo 'Bounded application session unexpectedly contains a refresh token.' >&2
+            exit 1
+          fi
+
+      - name: Collect protected journey evidence
+        if: always()
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set +e
+          if [ -f "$EVIDENCE_DIR/video-recorder.pid" ]; then
+            pid="$(cat "$EVIDENCE_DIR/video-recorder.pid")"
+            kill -INT "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+          fi
+          xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/steps/999-final.png" 2>/dev/null || true
+          xcrun simctl spawn "$UDID" log show --style compact --last 20m --predicate 'process == "Fabushi"' \
+            > "$EVIDENCE_DIR/fabushi-system.log" 2>&1 || true
+          {
+            echo "source_sha=${SOURCE_SHA:-unknown}"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "run_attempt=$GITHUB_RUN_ATTEMPT"
+          } > "$EVIDENCE_DIR/result.env"
+
+      - name: Upload complete protected journey evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fabushi-ios-protected-journey-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ios-protected-journey-evidence
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Erase Simulator after protected session use
+        if: always()
+        shell: bash
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set +e
+          if [ -n "${UDID:-}" ]; then
+            xcrun simctl shutdown "$UDID" 2>/dev/null || true
+            xcrun simctl erase "$UDID" 2>/dev/null || true
+          fi
