@@ -201,4 +201,49 @@ final class SharedPlatformContractsParityTests: XCTestCase {
         XCTAssertEqual(LOCAL_EXEC_DAEMON_DISCOVERY_FILENAME, "local-exec-daemon.json")
         XCTAssertEqual(SAND_LOCAL_EXEC_SUPERVISED_WINDOW_MS, 90_000)
     }
+
+    func testSharedRPCRegistriesAndWireVersionsRemainPinned() {
+        XCTAssertTrue(CoordinatorMainMethodRegistry.contains("getHostSettings"))
+        XCTAssertTrue(CoordinatorMainMethodRegistry.contains("setGatewayPaused"))
+        XCTAssertFalse(CoordinatorMainMethodRegistry.contains("unknownMethod"))
+
+        XCTAssertTrue(CoordinatorMethodRegistry.contains("sendPrompt"))
+        XCTAssertTrue(CoordinatorMethodRegistry.contains("executeRoutedMcpTool"))
+        XCTAssertTrue(CoordinatorMethodRegistry.contains("runAgentWorkflowNow"))
+        XCTAssertFalse(CoordinatorMethodRegistry.contains("unknownMethod"))
+
+        XCTAssertEqual(SharedRPCContracts.coordinatorProtocolVersion, 1)
+        XCTAssertEqual(SharedRPCContracts.clientSideToolV2WireVersion, 1)
+        XCTAssertEqual(CoordinatorProtocol.unknownMethod, "unknown-method")
+        XCTAssertEqual(CoordinatorProtocol.cancelled, "cancelled")
+        XCTAssertEqual(CoordinatorProtocol.transportStateFamily, "coordinator-transport-state")
+        XCTAssertEqual(ClientSideToolV2Transport.family, "client-side-tool-v2")
+        XCTAssertEqual(ClientSideToolV2Transport.accountSlot, "host")
+    }
+
+    func testRemoteComputerRPCPayloadsPreserveTypedWireShape() throws {
+        XCTAssertEqual(
+            RemoteComputerMethod.allCases.map(\.rawValue),
+            ["readClipboard", "writeClipboard", "reportUserPresence"]
+        )
+
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+
+        let clipboard = RemoteClipboardWriteRequest(text: "hello\nclipboard")
+        XCTAssertEqual(
+            try decoder.decode(RemoteClipboardWriteRequest.self, from: encoder.encode(clipboard)),
+            clipboard
+        )
+
+        let presence = RemoteUserPresenceRequest(active: true, timestampMilliseconds: 1_725_840_000_123)
+        XCTAssertEqual(
+            try decoder.decode(RemoteUserPresenceRequest.self, from: encoder.encode(presence)),
+            presence
+        )
+
+        let wire = ClientSideToolV2WireMessage(messageType: "tool.result", bytes: Data([0, 1, 2, 255]))
+        XCTAssertEqual(wire.encoding, "protobuf-base64")
+        XCTAssertEqual(wire.decodedBytes, Data([0, 1, 2, 255]))
+    }
 }
