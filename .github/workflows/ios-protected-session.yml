@@ -119,40 +119,35 @@ jobs:
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath "$RUNNER_TEMP/FabushiProtectedDerivedData"
 
-      - name: Stage bounded session inside Fabushi simulator container
+      - name: Inject bounded session into protected UI runner
         shell: bash
         env:
           UDID: ${{ steps.sim.outputs.udid }}
         run: |
           set -euo pipefail
-          app="$RUNNER_TEMP/FabushiProtectedDerivedData/Build/Products/Debug-iphonesimulator/Fabushi.app"
-          test -d "$app"
-          xcrun simctl install "$UDID" "$app"
-          container="$(xcrun simctl get_app_container "$UDID" com.ombhrum.fabushi data)"
-          session_dir="$container/Library/Application Support/FabushiCI"
-          session_path="$session_dir/account-session.json"
-          mkdir -p "$session_dir"
-          chmod 700 "$session_dir"
-          cp "$HOST_CI_SESSION" "$session_path"
-          chmod 600 "$session_path"
-          test -s "$session_path"
-          echo "FABUSHI_CI_APP_SESSION_IN_SIMULATOR=$session_path" >> "$GITHUB_ENV"
+          test -s "$HOST_CI_SESSION"
 
           xctestrun="$(find "$RUNNER_TEMP/FabushiProtectedDerivedData/Build/Products" -name '*.xctestrun' -type f -print -quit)"
           test -n "$xctestrun"
           test -f "$xctestrun"
-          python3 - "$xctestrun" "$session_path" <<'PY'
+          python3 - "$xctestrun" "$HOST_CI_SESSION" <<'PY'
+          import base64
           import os
           import plistlib
           import sys
 
           path = sys.argv[1]
           session_path = sys.argv[2]
+          session = open(session_path, "rb").read()
+          if not session or len(session) > 64 * 1024:
+              raise SystemExit("Protected Fabushi CI session has an invalid size")
+          encoded_session = base64.b64encode(session).decode("ascii")
+
           with open(path, "rb") as handle:
               payload = plistlib.load(handle)
 
           forwarded = {
-              "FABUSHI_CI_APP_SESSION_IN_SIMULATOR": session_path,
+              "FABUSHI_CI_ACCOUNT_SESSION_BASE64": encoded_session,
               "FABUSHI_API_BASE_URL": os.environ["FABUSHI_API_BASE_URL"],
               "FABUSHI_E2E_SOURCE_SHA": os.environ["SOURCE_SHA"],
               "FABUSHI_DEVICE_NAME": "Fabushi Protected iOS Simulator",
@@ -203,7 +198,7 @@ jobs:
           PY
           echo "PROTECTED_XCTESTRUN=$xctestrun" >> "$GITHUB_ENV"
 
-          xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/screenshots/010-session-staged.png"
+          xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/screenshots/010-session-ready.png"
 
       - name: Run real protected-session Global Dharma journey
         working-directory: mobile/ios
@@ -269,9 +264,6 @@ jobs:
           if [ -n "${UDID:-}" ]; then
             xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/screenshots/999-final.png" || true
             xcrun simctl spawn "$UDID" log show --style compact --last 20m --predicate 'process == "Fabushi"' > "$EVIDENCE_DIR/fabushi-system.log" 2>&1 || true
-          fi
-          if [ -n "${FABUSHI_CI_APP_SESSION_IN_SIMULATOR:-}" ]; then
-            rm -f "$FABUSHI_CI_APP_SESSION_IN_SIMULATOR"
           fi
           rm -f "${HOST_CI_SESSION:-}"
 

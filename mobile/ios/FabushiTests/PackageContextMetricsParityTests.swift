@@ -47,6 +47,18 @@ final class PackageContextMetricsParityTests: XCTestCase {
         XCTAssertNotNil(child.getParent())
     }
 
+    func testOptionalContextKeyInheritsAndCanExplicitlyShadowWithNil() {
+        let key = PackageContextKey<String?>(defaultValue: "default")
+        let parent = PackageContext.root().with(key, value: "parent")
+
+        XCTAssertEqual(parent.withName("named").get(key), "parent")
+
+        let cleared = parent
+            .with(key, value: Optional<String>.none)
+            .withName("named-cleared")
+        XCTAssertNil(cleared.get(key))
+    }
+
     func testCancellationPropagatesButDetachedContextStaysLive() {
         let root = PackageContext.root()
         let (child, cancel) = root.withCancel()

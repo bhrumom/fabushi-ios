@@ -1,5 +1,59 @@
+import Darwin
 import Foundation
 import Security
+
+
+private enum MobileCIAccountSessionBootstrap {
+    private static let encodedEnvironment = "FABUSHI_CI_ACCOUNT_SESSION_BASE64"
+    private static let fileEnvironment = "FABUSHI_CI_ACCOUNT_SESSION_FILE"
+    private static let maximumSessionBytes = 64 * 1024
+
+    static func prepareIfPresent(appDataDirectory: URL) throws {
+        #if DEBUG
+        let environment = ProcessInfo.processInfo.environment
+        guard environment["GITHUB_ACTIONS"] == "true",
+              let encoded = environment[encodedEnvironment],
+              !encoded.isEmpty
+        else {
+            return
+        }
+        guard encoded.utf8.count <= maximumSessionBytes * 2,
+              let data = Data(base64Encoded: encoded),
+              !data.isEmpty,
+              data.count <= maximumSessionBytes
+        else {
+            throw MahayanaHostRuntime.HostError.requestFailed(
+                "受保护 CI 登录会话编码无效或超过大小限制"
+            )
+        }
+
+        let directory = appDataDirectory.appendingPathComponent("FabushiCI", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o700],
+            ofItemAtPath: directory.path
+        )
+
+        let sessionURL = directory.appendingPathComponent("account-session.json")
+        try data.write(to: sessionURL, options: .atomic)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o600],
+            ofItemAtPath: sessionURL.path
+        )
+
+        guard setenv(fileEnvironment, sessionURL.path, 1) == 0 else {
+            throw MahayanaHostRuntime.HostError.requestFailed(
+                "无法为受保护 CI 登录会话建立应用内私有文件路径"
+            )
+        }
+        unsetenv(encodedEnvironment)
+        #endif
+    }
+}
 
 
 private enum MobileAuthStoragePassphrase {
@@ -86,6 +140,7 @@ final class MahayanaHostRuntime: MahayanaHostRequesting, @unchecked Sendable {
 
     init(appDataDirectory: URL, featureHostTest: Bool = false) throws {
         try FileManager.default.createDirectory(at: appDataDirectory, withIntermediateDirectories: true)
+        try MobileCIAccountSessionBootstrap.prepareIfPresent(appDataDirectory: appDataDirectory)
         if featureHostTest {
             handle = appDataDirectory.path.withCString { mahayana_app_host_create_test($0) }
         } else {
@@ -96,7 +151,15 @@ final class MahayanaHostRuntime: MahayanaHostRequesting, @unchecked Sendable {
                 }
             }
         }
-        guard handle != nil else { throw HostError.initializationFailed }
+        guard handle != nil else {
+            if let pointer = mahayana_app_host_last_error() {
+                let detail = String(cString: pointer)
+                if !detail.isEmpty {
+                    throw HostError.requestFailed("Mahayana Rust Host 初始化失败：\(detail)")
+                }
+            }
+            throw HostError.initializationFailed
+        }
     }
 
     deinit {

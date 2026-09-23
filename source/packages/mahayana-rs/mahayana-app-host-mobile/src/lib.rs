@@ -1,5 +1,6 @@
 use mahayana_app_host::{AppHostFeatureMode, HostResponse, default_app_data_dir};
 use mahayana_unified_app_host::{UnifiedAppHost, dispatch_json as dispatch_unified_json};
+use std::cell::RefCell;
 use std::ffi::{CStr, CString, c_char};
 use std::future::Future;
 use std::path::PathBuf;
@@ -795,6 +796,37 @@ fn host_fault_response(fault: process_crash_guard::HostFault) -> String {
     .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"host fault\"}".to_owned())
 }
 
+thread_local! {
+    static LAST_INIT_ERROR: RefCell<Option<CString>> = const { RefCell::new(None) };
+}
+
+fn set_last_init_error(error: Option<String>) {
+    LAST_INIT_ERROR.with(|slot| {
+        *slot.borrow_mut() = error.and_then(|message| {
+            CString::new(message.replace('\0', "�")).ok()
+        });
+    });
+}
+
+fn failed_host_init(error: impl Into<String>) -> *mut MobileAppHost {
+    set_last_init_error(Some(error.into()));
+    std::ptr::null_mut()
+}
+
+/// Returns the most recent native app-host initialization failure on this thread.
+///
+/// The pointer remains valid until another create call updates the thread-local
+/// error slot. Callers must copy the string immediately and must not free it.
+#[unsafe(no_mangle)]
+pub extern "C" fn mahayana_app_host_last_error() -> *const c_char {
+    LAST_INIT_ERROR.with(|slot| {
+        slot.borrow()
+            .as_ref()
+            .map(|message| message.as_ptr())
+            .unwrap_or(std::ptr::null())
+    })
+}
+
 /// Creates a native app-host handle.
 ///
 /// # Safety
@@ -813,9 +845,10 @@ pub unsafe extern "C" fn mahayana_app_host_create(
                 .into_owned(),
         )
     };
+    set_last_init_error(None);
     match MobileAppHost::new(path) {
         Ok(host) => Box::into_raw(Box::new(host)),
-        Err(_) => std::ptr::null_mut(),
+        Err(error) => failed_host_init(error),
     }
 }
 
@@ -830,8 +863,9 @@ pub unsafe extern "C" fn mahayana_app_host_create_with_storage_passphrase(
     app_data_dir: *const c_char,
     storage_passphrase: *const c_char,
 ) -> *mut MobileAppHost {
+    set_last_init_error(None);
     if storage_passphrase.is_null() {
-        return std::ptr::null_mut();
+        return failed_host_init("storage passphrase pointer is null");
     }
     let path = if app_data_dir.is_null() {
         default_app_data_dir()
@@ -846,7 +880,7 @@ pub unsafe extern "C" fn mahayana_app_host_create_with_storage_passphrase(
         .to_string_lossy()
         .into_owned();
     if passphrase.is_empty() {
-        return std::ptr::null_mut();
+        return failed_host_init("storage passphrase is empty");
     }
     match MobileAppHost::new_with_feature_mode_and_storage_passphrase(
         path,
@@ -854,7 +888,7 @@ pub unsafe extern "C" fn mahayana_app_host_create_with_storage_passphrase(
         passphrase,
     ) {
         Ok(host) => Box::into_raw(Box::new(host)),
-        Err(_) => std::ptr::null_mut(),
+        Err(error) => failed_host_init(error),
     }
 }
 
@@ -877,9 +911,10 @@ pub unsafe extern "C" fn mahayana_app_host_create_test(
                 .into_owned(),
         )
     };
+    set_last_init_error(None);
     match MobileAppHost::new_with_feature_mode(path, AppHostFeatureMode::Test) {
         Ok(host) => Box::into_raw(Box::new(host)),
-        Err(_) => std::ptr::null_mut(),
+        Err(error) => failed_host_init(error),
     }
 }
 
@@ -993,6 +1028,23 @@ mod mobile_turn_execution_composition_tests {
 
     fn value<T: Any + Send + Sync>(value: T) -> turn_execution_service::TurnExecutionValue {
         Arc::new(value)
+    }
+
+    #[test]
+    fn ffi_reports_rejected_empty_storage_passphrase() {
+        let root = temp_dir();
+        let root = CString::new(root.to_string_lossy().as_bytes()).unwrap();
+        let empty = CString::new("").unwrap();
+
+        let host = unsafe {
+            mahayana_app_host_create_with_storage_passphrase(root.as_ptr(), empty.as_ptr())
+        };
+        assert!(host.is_null());
+
+        let error = mahayana_app_host_last_error();
+        assert!(!error.is_null());
+        let message = unsafe { CStr::from_ptr(error) }.to_string_lossy();
+        assert_eq!(message, "storage passphrase is empty");
     }
 
     #[test]

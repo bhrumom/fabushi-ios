@@ -2,6 +2,14 @@ import Foundation
 
 private final class PackageContextKeyToken {}
 
+private final class PackageContextStoredValue {
+    let value: Any
+
+    init<Value>(_ value: Value) {
+        self.value = value as Any
+    }
+}
+
 struct PackageContextKey<Value>: @unchecked Sendable {
     fileprivate let token: PackageContextKeyToken
     let defaultValue: Value
@@ -73,13 +81,13 @@ final class PackageContextCancellation: @unchecked Sendable {
 final class PackageContext {
     private let parent: PackageContext?
     private let cancellation: PackageContextCancellation
-    private let values: [ObjectIdentifier: Any]
+    private let values: [ObjectIdentifier: PackageContextStoredValue]
     let name: String?
 
     private init(
         parent: PackageContext?,
         cancellation: PackageContextCancellation,
-        values: [ObjectIdentifier: Any],
+        values: [ObjectIdentifier: PackageContextStoredValue],
         name: String?
     ) {
         self.parent = parent
@@ -101,7 +109,11 @@ final class PackageContext {
     var reason: String? { cancellation.reason }
 
     func get<Value>(_ key: PackageContextKey<Value>) -> Value {
-        if let value = values[ObjectIdentifier(key.token)] as? Value {
+        let identifier = ObjectIdentifier(key.token)
+        if let stored = values[identifier] {
+            guard let value = stored.value as? Value else {
+                preconditionFailure("PackageContext key was read with a mismatched value type")
+            }
             return value
         }
         return parent?.get(key) ?? key.defaultValue
@@ -109,7 +121,7 @@ final class PackageContext {
 
     func with<Value>(_ key: PackageContextKey<Value>, value: Value) -> PackageContext {
         var nextValues = values
-        nextValues[ObjectIdentifier(key.token)] = value
+        nextValues[ObjectIdentifier(key.token)] = PackageContextStoredValue(value)
         return PackageContext(
             parent: self,
             cancellation: cancellation,
