@@ -2964,7 +2964,8 @@ fn validate_ci_account_session(value: Value, now: i64) -> Result<Value, ProductE
         && device_id.starts_with("gha-")
         && (device_id.ends_with("-interactive")
             || device_id.ends_with("-macos-app")
-            || device_id.ends_with("-windows-app"))
+            || device_id.ends_with("-windows-app")
+            || device_id.ends_with("-ios-app"))
         && !username.is_empty()
         && username.chars().count() <= 320
         && user_id.is_some()
@@ -3708,6 +3709,12 @@ mod tests {
         assert_eq!(
             validate_ci_account_session(macos_app.clone(), now),
             Ok(macos_app)
+        );
+        let mut ios_app = session.clone();
+        ios_app["deviceId"] = Value::String("gha-12345-1-ios-app".into());
+        assert_eq!(
+            validate_ci_account_session(ios_app.clone(), now),
+            Ok(ios_app)
         );
         let mut with_refresh = session.clone();
         with_refresh["refreshToken"] = Value::String("forbidden".into());
