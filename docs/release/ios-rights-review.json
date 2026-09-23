@@ -1,0 +1,40 @@
+{
+  "schema": "fabushi.ios.rights-review.v1",
+  "status": "blocked",
+  "releaseBlocking": true,
+  "reviewedReference": {
+    "repository": "b-nnett/grok-bot-0.18-reconstructed",
+    "commit": "a9f633e09d49a85829b8236331b9e21f7e612634"
+  },
+  "migrationSource": {
+    "repository": "bhrumom/fabushi",
+    "commit": "7851b689d2fe3fc3893cd9f4363899cc4a03e83b"
+  },
+  "blockers": [
+    {
+      "id": "upstream-reconstruction-redistribution",
+      "status": "open",
+      "requirement": "Independent review of copyright and redistribution rights for reconstructed Grok Bot-derived source and behavior mappings."
+    },
+    {
+      "id": "trademark-and-branding",
+      "status": "open",
+      "requirement": "Confirm that shipping UI, names, icons, screenshots, and marketing do not imply upstream endorsement or misuse protected branding."
+    },
+    {
+      "id": "third-party-dependency-licenses",
+      "status": "open",
+      "requirement": "Complete dependency/license inventory for source/packages and embedded runtime artifacts and retain required notices."
+    },
+    {
+      "id": "service-terms-and-privacy",
+      "status": "open",
+      "requirement": "Review provider/service terms, App Store privacy declarations, account/session handling, telemetry, passkeys, and remote-device behavior."
+    }
+  ],
+  "approval": {
+    "reviewer": null,
+    "reviewedAt": null,
+    "evidence": null
+  }
+}
