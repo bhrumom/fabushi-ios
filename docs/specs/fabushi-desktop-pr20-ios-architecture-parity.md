@@ -284,6 +284,12 @@ The ledger must distinguish “desktop mechanism N/A” from “product capabili
 
 `source/mahayana-agent-coordinator/**` is the iOS counterpart of Desktop PR #20 `source/node-agent-coordinator/**`.
 
+### 10.1 iOS carrier adaptation
+
+Desktop `source/node-agent-coordinator/src/carrier.rs` owns more than the desktop process mechanism. Its portable contract includes validated coordinator bootstrap metadata, distinct `coordinator-control` / `coordinator-data` / `coordinator-main-data` channel identity, ordered buffering, fail-closed handling for unknown channels, and deterministic close semantics that reject new posts and discard queued work.
+
+On iOS these responsibilities remain Coordinator-owned even though the transport is in-process. `source/mahayana-agent-coordinator/carrier.swift` is the canonical iOS carrier owner, and the shipping `InProcessCoordinatorPort` must route its frame delivery through that carrier rather than bypassing it. `IOSMainRuntime` supplies validated app-version/package/data-directory bootstrap metadata to `IOSCoordinatorLauncher`; SwiftUI/renderer code never owns or synthesizes carrier truth. The iOS transport may project the existing `CoordinatorPort` API onto the control channel while retaining typed data/main-data channels for Coordinator-internal routing.
+
 It owns, as applicable:
 
 - renderer port lifecycle;

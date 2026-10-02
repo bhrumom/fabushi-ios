@@ -16,7 +16,7 @@ final class IOSPreloadBridge {
     private let client: IOSCoordinatorPortClient
 
     init(main: IOSMainRuntime) {
-        let pair = InProcessCoordinatorPort.makePair()
+        let pair = InProcessCoordinatorPort.makePair(bootstrap: main.coordinatorBootstrap)
         let server = main.makeRendererPortServer(port: pair.server)
 
         pair.server.onFrame = { [weak server] frame in

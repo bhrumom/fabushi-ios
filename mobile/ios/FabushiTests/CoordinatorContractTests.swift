@@ -1,6 +1,16 @@
 import XCTest
 @testable import Fabushi
 
+private func validatedTestCoordinatorBootstrap() throws -> ValidatedCoordinatorBootstrap {
+    try CoordinatorBootstrap(
+        processConfig: .init(
+            appVersion: "1.0-test",
+            isPackaged: false,
+            dataDir: "/tmp/fabushi-coordinator-tests"
+        )
+    ).validatedForCarrier()
+}
+
 @MainActor
 private final class TestCoordinatorPort: CoordinatorPort {
     var frames: [CoordinatorFrame] = []
@@ -73,7 +83,7 @@ final class CoordinatorContractTests: XCTestCase {
 
     @MainActor
     func testInProcessCarrierProvidesHandshakeAndRequestReply() async throws {
-        let pair = InProcessCoordinatorPort.makePair()
+        let pair = InProcessCoordinatorPort.makePair(bootstrap: try validatedTestCoordinatorBootstrap())
         let server = RendererPortServer(port: pair.server) { method, args in
             .ok(.object(["method": .string(method), "args": args]))
         }
@@ -102,7 +112,7 @@ final class CoordinatorContractTests: XCTestCase {
 
     @MainActor
     func testIOSPreloadPortClientUsesRendererCoordinatorBoundary() async throws {
-        let pair = InProcessCoordinatorPort.makePair()
+        let pair = InProcessCoordinatorPort.makePair(bootstrap: try validatedTestCoordinatorBootstrap())
         let server = RendererPortServer(port: pair.server) { method, args in
             .ok(.object([
                 "method": .string(method),
@@ -134,6 +144,58 @@ final class CoordinatorContractTests: XCTestCase {
 
         client.shutdown()
         XCTAssertEqual(client.settlement, .shutdownRequested)
+    }
+
+
+    @MainActor
+    func testCarrierValidatesBootstrapAndPreservesChannelOrdering() throws {
+        XCTAssertThrowsError(try CoordinatorBootstrap(
+            processConfig: .init(appVersion: "   ", isPackaged: false, dataDir: "/tmp/fabushi")
+        ).validatedForCarrier()) { error in
+            XCTAssertEqual(error as? CoordinatorCarrierError, .emptyAppVersion)
+        }
+        XCTAssertThrowsError(try CoordinatorBootstrap(
+            processConfig: .init(appVersion: "1.0", isPackaged: false, dataDir: "")
+        ).validatedForCarrier()) { error in
+            XCTAssertEqual(error as? CoordinatorCarrierError, .emptyDataDirectory)
+        }
+
+        let pair = InProcessCoordinatorPort.makePair(bootstrap: try validatedTestCoordinatorBootstrap())
+        var observed: [String] = []
+        pair.server.onFrame = { _ in observed.append("control") }
+
+        try pair.client.post(.event(family: "data", payload: .null), on: .data)
+        pair.client.post(.event(family: "control", payload: .null))
+        XCTAssertEqual(observed, [])
+        XCTAssertEqual(pair.server.pendingMessageCount, 2)
+
+        pair.server.onDataFrame = { _ in observed.append("data") }
+        XCTAssertEqual(observed, ["data", "control"])
+        XCTAssertEqual(pair.server.pendingMessageCount, 0)
+
+        try pair.client.post(.event(family: "main", payload: .null), on: .mainData)
+        XCTAssertEqual(pair.server.pendingMessageCount, 1)
+        pair.server.onMainDataFrame = { _ in observed.append("main") }
+        XCTAssertEqual(observed, ["data", "control", "main"])
+    }
+
+    @MainActor
+    func testCarrierRejectsUnknownChannelAndPostsAfterClose() throws {
+        let pair = InProcessCoordinatorPort.makePair(bootstrap: try validatedTestCoordinatorBootstrap())
+        XCTAssertThrowsError(try pair.server.acceptEnvelope(.init(
+            wireChannel: "coordinator-unknown",
+            frame: .event(family: "x", payload: .null)
+        ))) { error in
+            XCTAssertEqual(error as? CoordinatorCarrierError, .unknownChannel("coordinator-unknown"))
+        }
+
+        try pair.client.post(.event(family: "queued", payload: .null), on: .data)
+        XCTAssertEqual(pair.server.pendingMessageCount, 1)
+        pair.server.close()
+        XCTAssertEqual(pair.server.pendingMessageCount, 0)
+        XCTAssertThrowsError(try pair.server.post(.event(family: "late", payload: .null), on: .control)) { error in
+            XCTAssertEqual(error as? CoordinatorCarrierError, .closed)
+        }
     }
 
     func testSSEDecoderPreservesEventDataBoundaries() {

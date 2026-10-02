@@ -22,17 +22,17 @@
     {
       "desktop_path": "source/node-agent-coordinator/src/carrier.rs",
       "desktop_blob_sha": "31fcc507a390a8ad019d0cb6aeb85db92f2ae614",
-      "desktop_responsibility": "pending-review",
+      "desktop_responsibility": "Own coordinator bootstrap validation, control/data/main-data carrier channel identity, ordered buffering, unknown-channel rejection, and deterministic close semantics.",
       "desktop_owner": "coordinator",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "desktop_visible_effect": "Coordinator transport starts only with valid bootstrap metadata; frames retain channel identity and order; invalid channels and closed carriers fail closed.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/mahayana-agent-coordinator/carrier.swift",
+      "ios_language": "Swift",
+      "ios_platform_delta": "Desktop process carrier is replaced by an in-process iOS carrier boundary while preserving Coordinator ownership and protocol semantics.",
+      "implementation_status": "implemented",
+      "production_evidence": "source/mahayana-agent-coordinator/carrier.swift; source/ios-main/IOSMainRuntime.swift; source/ios-main/coordinator/coordinator-launcher.swift; source/ios-preload/preload.swift",
+      "test_evidence": "mobile/ios/FabushiTests/CoordinatorContractTests.swift; exact-HEAD GitHub Actions pending",
+      "notes": "Re-read against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; promote to verified only after exact-HEAD CI."
     },
     {
       "desktop_path": "source/node-agent-coordinator/src/client_side_tool_v2_relay.rs",

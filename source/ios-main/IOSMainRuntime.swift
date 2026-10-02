@@ -7,6 +7,7 @@ import SwiftUI
 @MainActor
 final class IOSMainRuntime {
     let coordinator: MahayanaCoordinator
+    let coordinatorBootstrap: ValidatedCoordinatorBootstrap
     let lifecycleReporter: IOSLifecycleReporter
     private let lifecycleRecovery: IOSLifecycleRecoveryStore
     private let passkeyProvider: IOSAuthenticationServicesPasskeyProvider
@@ -21,6 +22,15 @@ final class IOSMainRuntime {
         devCapability: IOSDevCapability = .live(),
         devControlsGate: IOSDevControlsGate = .live()
     ) throws {
+        let appVersion = (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "development"
+        coordinatorBootstrap = try CoordinatorBootstrap(
+            processConfig: .init(
+                appVersion: appVersion,
+                isPackaged: true,
+                dataDir: appDataDirectory.path
+            )
+        ).validatedForCarrier()
+
         self.devCapability = devCapability
         devControlAdapter = IOSNativeDevControlAdapter(gate: devControlsGate)
         lifecycleRecovery = try IOSLifecycleRecoveryStore(appDataDirectory: appDataDirectory)

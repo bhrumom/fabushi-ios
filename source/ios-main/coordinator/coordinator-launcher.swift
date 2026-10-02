@@ -8,7 +8,7 @@ final class IOSCoordinatorLaunchHandle {
     let serverPort: InProcessCoordinatorPort
 
     init(main: IOSMainRuntime) {
-        let pair = InProcessCoordinatorPort.makePair()
+        let pair = InProcessCoordinatorPort.makePair(bootstrap: main.coordinatorBootstrap)
         let server = main.makeRendererPortServer(port: pair.server)
         let client = CoordinatorControlPortClient(port: pair.client, autoStart: false)
 
