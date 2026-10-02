@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "39e1eeaee2d861b18a5db5864dac4f7fc049530b",
+  "sourceCommit": "f138ffbcff2f6e541899a3f17dc95d25b06b1bcd",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -1210,8 +1210,8 @@
     },
     {
       "path": "source/host/src/extensions/mcp/production_box_state.rs",
-      "blobSha": "f4f6670c3bd96e30002b512012c3bce2ba57bc69",
-      "size": 7024
+      "blobSha": "f0b771f445446c033f7dbcaef9e6bf77b141a19f",
+      "size": 5894
     },
     {
       "path": "source/host/src/extensions/mcp/skill_publish.rs",
@@ -2245,8 +2245,8 @@
     },
     {
       "path": "source/host/src/ports/mcp_state_executor.rs",
-      "blobSha": "9f2f07e15524c73e3590648ea64575125770f94b",
-      "size": 1896
+      "blobSha": "ee2e306419d868859146959fe2a51c67f9ab69dc",
+      "size": 9399
     },
     {
       "path": "source/host/src/ports/mod.rs",
@@ -4025,8 +4025,8 @@
     },
     {
       "path": "source/host/tests/mcp_state_executor_contract.rs",
-      "blobSha": "811ce6e6db61f0ba31806cdffd1ee3d3b136367d",
-      "size": 2360
+      "blobSha": "66c3e94de2b6ac9252746a219855e544a5556b4b",
+      "size": 3076
     },
     {
       "path": "source/host/tests/media_mime_contract.rs",
