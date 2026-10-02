@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `9e0b1701d405ebd0b2707620c01781103562b39b`
+- pinned source commit for this baseline: `9467112079551dc9ff64d40ba2c0bed0f62a114a`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -167,6 +167,14 @@ Current Desktop shipping ownership is explicit. `host_gateway_api.rs` is the sin
 The iOS shipping topology still preserves the architectural boundary: SwiftUI is projection only; `IOSMainRuntime` forwards native lifecycle; `MahayanaCoordinator` is the only production caller allowed to invoke `MahayanaHostRuntime`; the Rust `FeatureHostController` owns canonical feature/runtime state. No SwiftUI, Coordinator or alternate Swift runtime was found constructing a parallel Host extension owner for the responsibilities above. That does not prove parity: current `feature.sessionActivity` only records scene focus/activity and does not yet implement the Desktop generation-safe quiesce -> durable recreate carry/filter -> resume state machine. Therefore all twelve changed selected-source rows are deliberately reset to `mapped`; no older implemented/verified status or old exact-head CI is inherited.
 
 The current protected Global Dharma acceptance exposed a separate shipping auth restoration defect that must be fixed before any acceptance promotion. GitHub Actions successfully creates a bounded refresh-token-free Fabushi session and the UI test forwards its bytes to the launched Simulator app as `FABUSHI_CI_ACCOUNT_SESSION_BASE64`; the canonical Rust Mahayana product auth loader currently accepts only the host-side `FABUSHI_CI_ACCOUNT_SESSION_FILE` path, which the Simulator application cannot read. The iOS contract is therefore: CI application-session restoration remains owned by Rust product auth, never SwiftUI; it may consume exactly one bounded file or base64 transport only when `GITHUB_ACTIONS=true`; both transports must pass the same provenance, identity, size and lifetime validator; malformed, oversized, ambiguous or non-GitHub-Actions transport must fail closed; the bounded application session contains no refresh token. Swift/XCTest may transport the opaque bytes into launch environment but must not become an authentication or session-persistence owner.
+
+### 1.16 Exact-HEAD rebaseline: 2026-10-03 / 9467112079551dc9ff64d40ba2c0bed0f62a114a
+
+Desktop PR #20 advanced two commits from `9e0b1701d405ebd0b2707620c01781103562b39b` to `9467112079551dc9ff64d40ba2c0bed0f62a114a`. The selected `frontend/** + source/**` inventory remains exactly 7,926 paths; only two existing Host focused-contract files changed. No production source owner moved again, but the acceptance contract tightened, so both affected ledger rows are rebound to the current blob identity and reset to `mapped` rather than inheriting the preceding current-head judgment.
+
+The first contract now proves that AutoReview startup stale-approval sweeping is composed through `ProductionHostExtensions.start_auto_review`, with the expire-sweep failure sink installed before the startup sweep and failures reported only through the Host structured-log owner. Shipping Host must consume this centralized AutoReview owner and must not construct a second extension; Coordinator and Electron telemetry remain non-owners.
+
+The second contract strengthens the centralized production composition invariant: `CURRENT_SHIPPING_PRODUCTION_EXTENSION_IDS` must cover the exact 35 frozen Host extension slots exactly once, and no `NoopProductionExtension`/no-op placeholder may satisfy a frozen slot. The already-audited iOS architecture still has one Coordinator->Host boundary and a single Rust `FeatureHostController` rather than SwiftUI parallel Host owners, but this evidence-only upstream tightening does not promote iOS parity. The two changed rows remain mapped pending native shipping-path proof and same-iOS-HEAD acceptance.
 
 ## 2. Product goal
 

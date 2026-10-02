@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "9e0b1701d405ebd0b2707620c01781103562b39b",
+  "sourceCommit": "9467112079551dc9ff64d40ba2c0bed0f62a114a",
   "group": "source-host",
   "fileCount": 956,
   "files": [
@@ -3060,8 +3060,8 @@
     },
     {
       "path": "source/host/tests/auto_review_expire_sweep_production_wiring_contract.rs",
-      "blobSha": "b1019135bb6371ff9dc6dfc84dbc03c9c8cc3563",
-      "size": 1700
+      "blobSha": "f2f214b43e300b6a1456f3578e9871342487d826",
+      "size": 2249
     },
     {
       "path": "source/host/tests/auto_review_expire_sweep_telemetry_contract.rs",
@@ -3820,8 +3820,8 @@
     },
     {
       "path": "source/host/tests/host_production_extensions_contract.rs",
-      "blobSha": "23154526a48966f1e67e6fdafe86212d38d8f45d",
-      "size": 21153
+      "blobSha": "cfdd72dfc5b4e2960c2da5a443826937f922512b",
+      "size": 21221
     },
     {
       "path": "source/host/tests/host_runner_composition_local_permission_contract.rs",

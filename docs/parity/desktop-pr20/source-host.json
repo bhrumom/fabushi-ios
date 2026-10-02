@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "9e0b1701d405ebd0b2707620c01781103562b39b",
+  "sourceCommit": "9467112079551dc9ff64d40ba2c0bed0f62a114a",
   "group": "source-host",
   "rowCount": 956,
   "rows": [
@@ -9171,18 +9171,18 @@
     },
     {
       "desktop_path": "source/host/tests/auto_review_expire_sweep_production_wiring_contract.rs",
-      "desktop_blob_sha": "b1019135bb6371ff9dc6dfc84dbc03c9c8cc3563",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "f2f214b43e300b6a1456f3578e9871342487d826",
+      "desktop_responsibility": "Focused shipping contract proves startup AutoReview expire-sweep failure reporting is installed by the centralized ProductionHostExtensions owner, consumed by shipping Host, and emitted only through the unique Host structured-log owner rather than Coordinator or Electron parallel telemetry owners.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "AutoReview startup cleanup failures have one production composition owner and one structured-log owner; duplicate lifecycle or telemetry owners cannot silently report or miss stale approval cleanup failures.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9467112079551dc9ff64d40ba2c0bed0f62a114a. The 9e0b170->9467112 contract change invalidates older current-head status/evidence for this exact row; it remains mapped until iOS shipping ownership and same-head acceptance prove the tightened responsibility."
     },
     {
       "desktop_path": "source/host/tests/auto_review_expire_sweep_telemetry_contract.rs",
@@ -11451,10 +11451,10 @@
     },
     {
       "desktop_path": "source/host/tests/host_production_extensions_contract.rs",
-      "desktop_blob_sha": "23154526a48966f1e67e6fdafe86212d38d8f45d",
-      "desktop_responsibility": "Focused composition contract proves ProductionHostExtensions is the unique lifecycle owner for centralized frozen extension slots and that shipping main consumes those owners rather than constructing duplicates.",
+      "desktop_blob_sha": "cfdd72dfc5b4e2960c2da5a443826937f922512b",
+      "desktop_responsibility": "Focused composition contract now additionally requires the shipping production registry to cover all 35 frozen Host extension slots exactly once with no no-op placeholder, while retaining unique centralized lifecycle ownership for Transcript, AutoReview, Session, CrossUserSharing, Notifications, TurnExecution, MCP, Automations and other frozen owners.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "Shipping composition has one lifecycle owner per centralized extension slot and rejects duplicate owners, preventing divergent state or teardown behavior.",
+      "desktop_visible_effect": "Every frozen Host extension slot is represented exactly once by a real shipping production owner, preventing missing/no-op slots and duplicate lifecycle state across Host composition.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
@@ -11462,7 +11462,7 @@
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility. Revalidated against Desktop PR #20 9467112079551dc9ff64d40ba2c0bed0f62a114a. The 9e0b170->9467112 contract change invalidates older current-head status/evidence for this exact row; it remains mapped until iOS shipping ownership and same-head acceptance prove the tightened responsibility."
     },
     {
       "desktop_path": "source/host/tests/host_runner_composition_local_permission_contract.rs",
