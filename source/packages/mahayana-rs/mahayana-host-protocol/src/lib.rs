@@ -1084,6 +1084,36 @@ pub enum FeatureCommand {
         #[serde(rename = "conversationId")]
         conversation_id: String,
     },
+    #[serde(rename = "conversation.openWindowed")]
+    ConversationOpenWindowed {
+        #[serde(rename = "requestId")]
+        request_id: String,
+        #[serde(rename = "conversationId")]
+        conversation_id: String,
+        #[serde(
+            rename = "beforeMessageId",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        before_message_id: Option<String>,
+        #[serde(default = "default_conversation_window_limit")]
+        limit: usize,
+    },
+    #[serde(rename = "conversation.openTail")]
+    ConversationOpenTail {
+        #[serde(rename = "requestId")]
+        request_id: String,
+        #[serde(rename = "conversationId")]
+        conversation_id: String,
+        #[serde(
+            rename = "beforeMessageId",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        before_message_id: Option<String>,
+        #[serde(default = "default_conversation_window_limit")]
+        limit: usize,
+    },
     #[serde(rename = "capability.list")]
     CapabilityList {
         #[serde(rename = "requestId")]
@@ -1914,6 +1944,8 @@ impl FeatureCommand {
             Self::ChatSend { request_id, .. }
             | Self::ConversationList { request_id, .. }
             | Self::ConversationOpen { request_id, .. }
+            | Self::ConversationOpenWindowed { request_id, .. }
+            | Self::ConversationOpenTail { request_id, .. }
             | Self::CapabilityList { request_id, .. }
             | Self::AutomationList { request_id, .. }
             | Self::AutomationUpsert { request_id, .. }
@@ -2021,7 +2053,11 @@ const fn default_memory_limit() -> usize {
     1000
 }
 
-const fn default_search_limit() -> usize {
+const fn default_conversation_window_limit() -> usize {
+    200
+}
+
+fn default_search_limit() -> usize {
     50
 }
 
@@ -2187,6 +2223,48 @@ pub enum HostEvent {
         #[serde(rename = "conversationId")]
         conversation_id: String,
         messages: Vec<ConversationMessage>,
+    },
+    #[serde(rename = "conversation.windowOpened")]
+    ConversationWindowOpened {
+        timestamp: String,
+        #[serde(rename = "conversationId")]
+        conversation_id: String,
+        messages: Vec<ConversationMessage>,
+        #[serde(
+            rename = "nextBeforeMessageId",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        next_before_message_id: Option<String>,
+    },
+    #[serde(rename = "conversation.appended")]
+    ConversationAppended {
+        timestamp: String,
+        #[serde(rename = "conversationId")]
+        conversation_id: String,
+        messages: Vec<ConversationMessage>,
+    },
+    #[serde(rename = "conversation.activated")]
+    ConversationActivated {
+        timestamp: String,
+        #[serde(rename = "conversationId")]
+        conversation_id: String,
+        #[serde(
+            rename = "previousConversationId",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        previous_conversation_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        generation: Option<u64>,
+    },
+    #[serde(rename = "conversation.activationFailed")]
+    ConversationActivationFailed {
+        timestamp: String,
+        #[serde(rename = "conversationId")]
+        conversation_id: String,
+        generation: u64,
+        message: String,
     },
     #[serde(rename = "messaging.event")]
     MessagingEvent {
@@ -2689,6 +2767,10 @@ impl HostEvent {
             Self::SecretProvided { .. } => "secret.provided",
             Self::ConversationListed { .. } => "conversation.listed",
             Self::ConversationOpened { .. } => "conversation.opened",
+            Self::ConversationWindowOpened { .. } => "conversation.windowOpened",
+            Self::ConversationAppended { .. } => "conversation.appended",
+            Self::ConversationActivated { .. } => "conversation.activated",
+            Self::ConversationActivationFailed { .. } => "conversation.activationFailed",
             Self::MessagingEvent { .. } => "messaging.event",
             Self::CapabilityListed { .. } => "capability.listed",
             Self::AutomationListed { .. } => "automation.listed",
@@ -2786,6 +2868,35 @@ mod tests {
             serde_json::to_value(command).expect("encode command")["type"],
             "capability.request"
         );
+    }
+
+    #[test]
+    fn conversation_window_commands_and_activation_events_use_stable_wire_shapes() {
+        let command: FeatureCommand = serde_json::from_str(
+            r#"{"type":"conversation.openWindowed","requestId":"open-1","conversationId":"mahayana-ai:agent:assistant","limit":64}"#,
+        )
+        .expect("decode bounded conversation command");
+        assert_eq!(command.request_id(), "open-1");
+        assert!(matches!(
+            command,
+            FeatureCommand::ConversationOpenWindowed {
+                limit: 64,
+                before_message_id: None,
+                ..
+            }
+        ));
+
+        let event = HostEvent::ConversationActivated {
+            timestamp: "0".into(),
+            conversation_id: "mahayana-ai:agent:assistant".into(),
+            previous_conversation_id: Some("codex:agent:research".into()),
+            generation: Some(7),
+        };
+        let value = serde_json::to_value(event).expect("encode activation event");
+        assert_eq!(value["type"], "conversation.activated");
+        assert_eq!(value["conversationId"], "mahayana-ai:agent:assistant");
+        assert_eq!(value["previousConversationId"], "codex:agent:research");
+        assert_eq!(value["generation"], 7);
     }
 
     #[test]

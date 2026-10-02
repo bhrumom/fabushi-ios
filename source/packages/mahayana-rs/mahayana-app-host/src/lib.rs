@@ -184,6 +184,9 @@ impl AppHost {
     }
 
     fn handle_feature(&self, method: &str, params: Value) -> Result<Value, AppHostError> {
+        self.feature
+            .note_scene_contact()
+            .map_err(|error| AppHostError::Operation(error.to_string()))?;
         match method {
             "feature.info" => serde_json::to_value(self.feature.info())
                 .map_err(|error| AppHostError::Operation(error.to_string())),
@@ -191,6 +194,7 @@ impl AppHost {
             "feature.awaitOperation" => self.feature_await_operation(params),
             "feature.awaitOperation.cancel" => self.feature_cancel_await_operation(params),
             "feature.receive" => self.feature_receive(params),
+            "feature.sessionActivity" => self.feature_session_activity(params),
             "feature.approval.resolve" => self.feature_resolve_approval(params),
             "feature.interrupt" => self.feature_interrupt(params),
             "feature.auth.status" => self
@@ -284,6 +288,16 @@ impl AppHost {
             .cancel_awaited_operation(operation_id)
             .map_err(|error| AppHostError::Operation(error.to_string()))?;
         Ok(Value::Null)
+    }
+
+    fn feature_session_activity(&self, params: Value) -> Result<Value, AppHostError> {
+        let active = params
+            .get("active")
+            .and_then(Value::as_bool)
+            .ok_or_else(|| AppHostError::InvalidRequest("active is required".into()))?;
+        self.feature
+            .set_scene_active(active)
+            .map_err(|error| AppHostError::Operation(error.to_string()))
     }
 
     fn feature_receive(&self, params: Value) -> Result<Value, AppHostError> {

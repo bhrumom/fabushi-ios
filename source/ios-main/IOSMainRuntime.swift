@@ -123,6 +123,7 @@ final class IOSMainRuntime {
             metadata: ["phase": "protected-data-unavailable"]
         )
         coordinator.sceneWillSuspend()
+        reportSessionActivity(active: false)
     }
 
     func protectedDataDidBecomeAvailable() {
@@ -200,14 +201,17 @@ final class IOSMainRuntime {
             lifecycleRecovery.transition(to: .active)
             lifecycleReporter.report(.rendererLifecycle, metadata: ["phase": "active"])
             coordinator.sceneBecameActive()
+            reportSessionActivity(active: true)
         case .background:
             lifecycleRecovery.transition(to: .background)
             lifecycleReporter.report(.rendererLifecycle, metadata: ["phase": "background"])
             coordinator.sceneEnteredBackground()
+            reportSessionActivity(active: false)
         case .inactive:
             lifecycleRecovery.transition(to: .inactive)
             lifecycleReporter.report(.rendererLifecycle, metadata: ["phase": "inactive"])
             coordinator.sceneWillSuspend()
+            reportSessionActivity(active: false)
         @unknown default:
             lifecycleRecovery.transition(to: .inactive)
             lifecycleReporter.report(
@@ -216,6 +220,28 @@ final class IOSMainRuntime {
                 metadata: ["phase": "unknown"]
             )
             coordinator.sceneWillSuspend()
+            reportSessionActivity(active: false)
+        }
+    }
+
+    private func reportSessionActivity(active: Bool) {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                _ = try await coordinator.request(
+                    method: "feature.sessionActivity",
+                    params: ["active": active]
+                )
+            } catch {
+                lifecycleReporter.report(
+                    .coordinatorHandoff,
+                    level: .warn,
+                    metadata: [
+                        "session_activity": active ? "active" : "inactive",
+                        "result": "host-unavailable",
+                    ]
+                )
+            }
         }
     }
 
@@ -227,6 +253,7 @@ final class IOSMainRuntime {
         )
         accountRuntime.reset()
         coordinator.updateAccountSettingsScope(nil)
+        reportSessionActivity(active: false)
         coordinator.beginShutdown()
     }
 }

@@ -224,9 +224,139 @@ enum MemoryAction {
     Clear,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct DeferredConversationActivation {
+    generation: u64,
+    conversation_id: String,
+    shipped_through_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Default)]
+struct ConversationSessionState {
+    active_conversation_id: Option<String>,
+    pending_activation: Option<DeferredConversationActivation>,
+    activation_generation: u64,
+    scene_active: bool,
+    focused_at_ms: Option<i64>,
+}
+
+impl ConversationSessionState {
+    fn set_scene_active(&mut self, active: bool, now_ms: i64) {
+        self.scene_active = active;
+        self.focused_at_ms = active.then_some(now_ms);
+    }
+
+    fn note_contact(&mut self, now_ms: i64) {
+        if self.scene_active {
+            self.focused_at_ms = Some(now_ms);
+        }
+    }
+
+    fn schedule_deferred_activation(
+        &mut self,
+        conversation_id: &str,
+        shipped_through_id: Option<&str>,
+    ) -> u64 {
+        self.activation_generation = self.activation_generation.wrapping_add(1);
+        if self.activation_generation == 0 {
+            self.activation_generation = 1;
+        }
+        let generation = self.activation_generation;
+        self.pending_activation = Some(DeferredConversationActivation {
+            generation,
+            conversation_id: conversation_id.to_string(),
+            shipped_through_id: shipped_through_id.map(ToOwned::to_owned),
+        });
+        generation
+    }
+
+    fn invalidate_deferred_activation(&mut self) {
+        self.pending_activation = None;
+    }
+
+    fn claim_deferred_activation(&mut self) -> Option<DeferredConversationActivation> {
+        self.pending_activation.take()
+    }
+
+    fn switch_immediately(&mut self, conversation_id: &str) -> Option<String> {
+        self.invalidate_deferred_activation();
+        self.replace_active(conversation_id)
+    }
+
+    fn activate_claimed(&mut self, conversation_id: &str) -> Option<String> {
+        self.replace_active(conversation_id)
+    }
+
+    fn replace_active(&mut self, conversation_id: &str) -> Option<String> {
+        let previous = self
+            .active_conversation_id
+            .replace(conversation_id.to_string());
+        previous.filter(|previous| previous != conversation_id)
+    }
+
+    fn mark_deleted(&mut self, conversation_id: &str) {
+        if self
+            .pending_activation
+            .as_ref()
+            .is_some_and(|pending| pending.conversation_id == conversation_id)
+        {
+            self.invalidate_deferred_activation();
+        }
+        if self.active_conversation_id.as_deref() == Some(conversation_id) {
+            self.active_conversation_id = None;
+        }
+    }
+
+    fn windowed_catch_up(
+        shipped_through_id: Option<&str>,
+        messages: &[ConversationMessage],
+    ) -> Vec<ConversationMessage> {
+        let start = match shipped_through_id {
+            None => 0,
+            Some(shipped_through_id) => {
+                let Some(index) = messages
+                    .iter()
+                    .position(|message| message.id == shipped_through_id)
+                else {
+                    return Vec::new();
+                };
+                index + 1
+            }
+        };
+        messages[start..].to_vec()
+    }
+}
+
+fn bounded_conversation_window(
+    messages: &[ConversationMessage],
+    before_message_id: Option<&str>,
+    limit: usize,
+) -> (Vec<ConversationMessage>, Option<String>) {
+    let end = match before_message_id {
+        None => messages.len(),
+        Some(before_message_id) => {
+            let Some(index) = messages
+                .iter()
+                .position(|message| message.id == before_message_id)
+            else {
+                return (Vec::new(), None);
+            };
+            index
+        }
+    };
+    let limit = limit.clamp(1, 200);
+    let start = end.saturating_sub(limit);
+    let window = messages[start..end].to_vec();
+    let next_before_message_id = (start > 0)
+        .then(|| window.first().map(|message| message.id.clone()))
+        .flatten();
+    (window, next_before_message_id)
+}
+
 #[derive(Debug)]
 struct FeatureState {
     events: VecDeque<HostEvent>,
+    conversation_session: ConversationSessionState,
     installed: BTreeMap<String, String>,
     pending_approvals: BTreeMap<String, PendingApproval>,
     operations: BTreeSet<String>,
@@ -260,6 +390,7 @@ impl Default for FeatureState {
     fn default() -> Self {
         Self {
             events: VecDeque::new(),
+            conversation_session: ConversationSessionState::default(),
             installed: BTreeMap::new(),
             pending_approvals: BTreeMap::new(),
             operations: BTreeSet::new(),
@@ -491,6 +622,22 @@ impl FeatureHostController {
 
     pub fn info(&self) -> HostInfo {
         self.info.clone()
+    }
+
+    pub fn set_scene_active(&self, active: bool) -> Result<Value, FeatureHostError> {
+        let now_ms = now_millis();
+        let mut state = self.state()?;
+        state.conversation_session.set_scene_active(active, now_ms);
+        Ok(json!({
+            "active": active,
+            "focusedAtMs": state.conversation_session.focused_at_ms,
+        }))
+    }
+
+    pub fn note_scene_contact(&self) -> Result<(), FeatureHostError> {
+        let now_ms = now_millis();
+        self.state()?.conversation_session.note_contact(now_ms);
+        Ok(())
     }
 
     /// Return UI-safe account state. Credentials stay inside the Rust product
@@ -1581,6 +1728,9 @@ impl FeatureHostController {
                     .bots
                     .remove(&id)
                     .ok_or_else(|| FeatureHostError::Contract(format!("unknown bot: {id}")))?;
+                if let Some(conversation_id) = bot.conversation_id.as_deref() {
+                    state.conversation_session.mark_deleted(conversation_id);
+                }
                 ("deleted", bot)
             }
             FeatureCommand::BotSetHidden { id, hidden, .. } => {
@@ -5602,6 +5752,85 @@ impl FeatureHostController {
         }
     }
 
+    fn advance_deferred_conversation_activation(
+        &self,
+    ) -> Result<Option<HostEvent>, FeatureHostError> {
+        let claim = {
+            let mut state = self.state()?;
+            state.conversation_session.claim_deferred_activation()
+        };
+        let Some(claim) = claim else {
+            return Ok(None);
+        };
+
+        match self.config.mode {
+            HostMode::Test => {
+                let mut state = self.state()?;
+                let previous = state
+                    .conversation_session
+                    .activate_claimed(&claim.conversation_id);
+                state.events.push_back(HostEvent::ConversationActivated {
+                    timestamp: timestamp(),
+                    conversation_id: claim.conversation_id,
+                    previous_conversation_id: previous,
+                    generation: Some(claim.generation),
+                });
+                Ok(state.events.pop_front())
+            }
+            HostMode::Production => {
+                #[cfg(feature = "production")]
+                {
+                    let messages = match self.production_read_conversation_messages(
+                        &claim.conversation_id,
+                        200,
+                    ) {
+                        Ok(messages) => messages,
+                        Err(error) => {
+                            return Ok(Some(HostEvent::ConversationActivationFailed {
+                                timestamp: timestamp(),
+                                conversation_id: claim.conversation_id,
+                                generation: claim.generation,
+                                message: error.to_string(),
+                            }));
+                        }
+                    };
+                    let catch_up = ConversationSessionState::windowed_catch_up(
+                        claim.shipped_through_id.as_deref(),
+                        &messages,
+                    );
+                    {
+                        let mut state = self.state()?;
+                        let previous = state
+                            .conversation_session
+                            .activate_claimed(&claim.conversation_id);
+                        if !catch_up.is_empty() {
+                            state.events.push_back(HostEvent::ConversationAppended {
+                                timestamp: timestamp(),
+                                conversation_id: claim.conversation_id.clone(),
+                                messages: catch_up,
+                            });
+                        }
+                        state.events.push_back(HostEvent::ConversationActivated {
+                            timestamp: timestamp(),
+                            conversation_id: claim.conversation_id.clone(),
+                            previous_conversation_id: previous,
+                            generation: Some(claim.generation),
+                        });
+                    }
+                    let _ = self.production_list_conversations_from_runtime(
+                        format!("session-activation-roster-{}", claim.generation),
+                        None,
+                    );
+                    Ok(self.state()?.events.pop_front())
+                }
+                #[cfg(not(feature = "production"))]
+                {
+                    Err(FeatureHostError::ProductionUnavailable)
+                }
+            }
+        }
+    }
+
     pub fn receive(&self) -> Result<Option<HostEvent>, FeatureHostError> {
         self.receive_with_timeout(Duration::ZERO)
     }
@@ -5612,6 +5841,9 @@ impl FeatureHostController {
     ) -> Result<Option<HostEvent>, FeatureHostError> {
         self.fire_due_automation()?;
         if let Some(event) = self.state()?.events.pop_front() {
+            return Ok(Some(event));
+        }
+        if let Some(event) = self.advance_deferred_conversation_activation()? {
             return Ok(Some(event));
         }
         match self.config.mode {
@@ -5804,6 +6036,7 @@ impl FeatureHostController {
                 .unwrap_or_default();
             let mut state = self.state()?;
             state.events.clear();
+            state.conversation_session = ConversationSessionState::default();
             state.pending_approvals.clear();
             state.operations.clear();
             state.operation_agents.clear();
@@ -6920,6 +7153,7 @@ impl FeatureHostController {
         self.runtime()?.clear_session()?;
         let mut state = self.state()?;
         state.session_active = false;
+        state.conversation_session = ConversationSessionState::default();
         state.events.push_back(HostEvent::SessionCleared {
             timestamp: timestamp(),
         });
@@ -7288,6 +7522,35 @@ impl FeatureHostController {
     }
 
     #[cfg(feature = "production")]
+    fn production_read_conversation_messages(
+        &self,
+        conversation_id: &str,
+        limit: usize,
+    ) -> Result<Vec<ConversationMessage>, FeatureHostError> {
+        let messages = match self
+            .runtime()?
+            .execute(RuntimeCommand::ConversationHistory {
+                conversation_id: ConversationId(conversation_id.to_string()),
+                limit: Some(limit.clamp(1, 500)),
+            })? {
+            RuntimeResponse::History { data } => data,
+            other => return Err(unexpected_response("conversation.history", other)),
+        };
+        Ok(messages
+            .into_iter()
+            .map(|message| ConversationMessage {
+                id: message.id.0,
+                role: match message.role {
+                    RuntimeMessageRole::User => MessageRole::User,
+                    _ => MessageRole::Assistant,
+                },
+                text: message.text,
+                created_at_ms: message.created_at_ms,
+            })
+            .collect())
+    }
+
+    #[cfg(feature = "production")]
     fn production_open_conversation(
         &self,
         request_id: String,
@@ -7304,34 +7567,66 @@ impl FeatureHostController {
         conversation_id: String,
     ) -> Result<CommandAccepted, FeatureHostError> {
         let conversation_id = required(conversation_id, "conversationId")?;
-        let messages = match self
-            .runtime()?
-            .execute(RuntimeCommand::ConversationHistory {
-                conversation_id: ConversationId(conversation_id.clone()),
-                limit: Some(200),
-            })? {
-            RuntimeResponse::History { data } => data,
-            other => return Err(unexpected_response("conversation.open", other)),
-        };
-        let messages = messages
-            .into_iter()
-            .map(|message| ConversationMessage {
-                id: message.id.0,
-                role: match message.role {
-                    RuntimeMessageRole::User => MessageRole::User,
-                    _ => MessageRole::Assistant,
-                },
-                text: message.text,
-                created_at_ms: message.created_at_ms,
-            })
-            .collect();
-        self.state()?
-            .events
-            .push_back(HostEvent::ConversationOpened {
+        let messages = self.production_read_conversation_messages(&conversation_id, 200)?;
+        {
+            let mut state = self.state()?;
+            let previous = state
+                .conversation_session
+                .switch_immediately(&conversation_id);
+            state.events.push_back(HostEvent::ConversationOpened {
                 timestamp: timestamp(),
-                conversation_id,
+                conversation_id: conversation_id.clone(),
                 messages,
             });
+            state.events.push_back(HostEvent::ConversationActivated {
+                timestamp: timestamp(),
+                conversation_id: conversation_id.clone(),
+                previous_conversation_id: previous,
+                generation: None,
+            });
+        }
+        let _ = self.production_list_conversations_from_runtime(
+            format!("session-explicit-switch-{request_id}"),
+            None,
+        );
+        Ok(CommandAccepted {
+            request_id,
+            operation_id: None,
+        })
+    }
+
+    #[cfg(feature = "production")]
+    fn production_open_conversation_windowed(
+        &self,
+        request_id: String,
+        conversation_id: String,
+        before_message_id: Option<String>,
+        limit: usize,
+    ) -> Result<CommandAccepted, FeatureHostError> {
+        self.require_authenticated_account()?;
+        let conversation_id = required(conversation_id, "conversationId")?;
+        let all_messages = self.production_read_conversation_messages(&conversation_id, 500)?;
+        let (messages, next_before_message_id) = bounded_conversation_window(
+            &all_messages,
+            before_message_id.as_deref(),
+            limit,
+        );
+        let shipped_through_id = messages.last().map(|message| message.id.clone());
+        let mut state = self.state()?;
+        let was_active = state.conversation_session.active_conversation_id.as_deref()
+            == Some(conversation_id.as_str());
+        state.events.push_back(HostEvent::ConversationWindowOpened {
+            timestamp: timestamp(),
+            conversation_id: conversation_id.clone(),
+            messages,
+            next_before_message_id,
+        });
+        if !was_active {
+            state.conversation_session.schedule_deferred_activation(
+                &conversation_id,
+                shipped_through_id.as_deref(),
+            );
+        }
         Ok(CommandAccepted {
             request_id,
             operation_id: None,
@@ -7426,6 +7721,23 @@ impl FeatureHostController {
             FeatureCommand::ConversationOpen {
                 conversation_id, ..
             } => self.production_open_conversation(request_id, conversation_id),
+            FeatureCommand::ConversationOpenWindowed {
+                conversation_id,
+                before_message_id,
+                limit,
+                ..
+            }
+            | FeatureCommand::ConversationOpenTail {
+                conversation_id,
+                before_message_id,
+                limit,
+                ..
+            } => self.production_open_conversation_windowed(
+                request_id,
+                conversation_id,
+                before_message_id,
+                limit,
+            ),
             FeatureCommand::CapabilityList { query, .. } => {
                 self.production_list_capabilities(request_id, query)
             }
@@ -7548,11 +7860,54 @@ impl FeatureHostController {
             FeatureCommand::ConversationOpen {
                 conversation_id, ..
             } => {
+                let previous = state
+                    .conversation_session
+                    .switch_immediately(&conversation_id);
                 state.events.push_back(HostEvent::ConversationOpened {
                     timestamp: timestamp(),
-                    conversation_id,
+                    conversation_id: conversation_id.clone(),
                     messages: Vec::new(),
                 });
+                state.events.push_back(HostEvent::ConversationActivated {
+                    timestamp: timestamp(),
+                    conversation_id,
+                    previous_conversation_id: previous,
+                    generation: None,
+                });
+                Ok(CommandAccepted {
+                    request_id,
+                    operation_id: None,
+                })
+            }
+            FeatureCommand::ConversationOpenWindowed {
+                conversation_id,
+                before_message_id,
+                limit,
+                ..
+            }
+            | FeatureCommand::ConversationOpenTail {
+                conversation_id,
+                before_message_id,
+                limit,
+                ..
+            } => {
+                let (messages, next_before_message_id) =
+                    bounded_conversation_window(&[], before_message_id.as_deref(), limit);
+                let shipped_through_id = messages.last().map(|message| message.id.clone());
+                let was_active = state.conversation_session.active_conversation_id.as_deref()
+                    == Some(conversation_id.as_str());
+                state.events.push_back(HostEvent::ConversationWindowOpened {
+                    timestamp: timestamp(),
+                    conversation_id: conversation_id.clone(),
+                    messages,
+                    next_before_message_id,
+                });
+                if !was_active {
+                    state.conversation_session.schedule_deferred_activation(
+                        &conversation_id,
+                        shipped_through_id.as_deref(),
+                    );
+                }
                 Ok(CommandAccepted {
                     request_id,
                     operation_id: None,
@@ -7687,6 +8042,7 @@ impl FeatureHostController {
             }
             FeatureCommand::SessionClear { .. } => {
                 state.session_active = false;
+                state.conversation_session = ConversationSessionState::default();
                 state.events.push_back(HostEvent::SessionCleared {
                     timestamp: timestamp(),
                 });
@@ -13502,6 +13858,145 @@ mod tests {
             std::thread::sleep(Duration::from_millis(5));
         }
         panic!("assistant unread did not become {expected}")
+    }
+
+
+    #[test]
+    fn deferred_conversation_activation_is_generation_fenced_and_runs_after_window_delivery() {
+        let controller = controller();
+        let _ = drain(&controller);
+
+        controller
+            .execute(FeatureCommand::ConversationOpenWindowed {
+                request_id: "window-a".into(),
+                conversation_id: "codex:agent:a".into(),
+                before_message_id: None,
+                limit: 50,
+            })
+            .expect("open first bounded conversation");
+        controller
+            .execute(FeatureCommand::ConversationOpenTail {
+                request_id: "window-b".into(),
+                conversation_id: "codex:agent:b".into(),
+                before_message_id: None,
+                limit: 50,
+            })
+            .expect("supersede bounded conversation");
+
+        let first = controller.receive().expect("receive first window").expect("first event");
+        let second = controller.receive().expect("receive second window").expect("second event");
+        assert!(matches!(
+            first,
+            HostEvent::ConversationWindowOpened {
+                ref conversation_id,
+                ..
+            } if conversation_id == "codex:agent:a"
+        ));
+        assert!(matches!(
+            second,
+            HostEvent::ConversationWindowOpened {
+                ref conversation_id,
+                ..
+            } if conversation_id == "codex:agent:b"
+        ));
+        assert!(controller
+            .state()
+            .expect("feature state")
+            .conversation_session
+            .active_conversation_id
+            .is_none());
+
+        let activated = controller
+            .receive()
+            .expect("receive activation")
+            .expect("activation event");
+        assert!(matches!(
+            activated,
+            HostEvent::ConversationActivated {
+                ref conversation_id,
+                generation: Some(2),
+                ..
+            } if conversation_id == "codex:agent:b"
+        ));
+        assert_eq!(
+            controller
+                .state()
+                .expect("feature state")
+                .conversation_session
+                .active_conversation_id
+                .as_deref(),
+            Some("codex:agent:b")
+        );
+    }
+
+    #[test]
+    fn explicit_conversation_switch_invalidates_pending_activation() {
+        let controller = controller();
+        let _ = drain(&controller);
+        controller
+            .execute(FeatureCommand::ConversationOpenWindowed {
+                request_id: "window-a".into(),
+                conversation_id: "codex:agent:a".into(),
+                before_message_id: None,
+                limit: 50,
+            })
+            .expect("schedule bounded conversation");
+        let _ = controller.receive().expect("receive window");
+
+        controller
+            .execute(FeatureCommand::ConversationOpen {
+                request_id: "switch-b".into(),
+                conversation_id: "codex:agent:b".into(),
+            })
+            .expect("explicit switch");
+        let state = controller.state().expect("feature state");
+        assert!(state.conversation_session.pending_activation.is_none());
+        assert_eq!(
+            state.conversation_session.active_conversation_id.as_deref(),
+            Some("codex:agent:b")
+        );
+    }
+
+    #[test]
+    fn conversation_catch_up_is_strictly_after_shipped_anchor_and_missing_anchor_fails_closed() {
+        let messages = ["a", "b", "c"]
+            .into_iter()
+            .map(|id| ConversationMessage {
+                id: id.into(),
+                role: MessageRole::Assistant,
+                text: id.into(),
+                created_at_ms: 0,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            ConversationSessionState::windowed_catch_up(Some("b"), &messages)
+                .into_iter()
+                .map(|message| message.id)
+                .collect::<Vec<_>>(),
+            vec!["c"]
+        );
+        assert!(ConversationSessionState::windowed_catch_up(Some("missing"), &messages).is_empty());
+        assert_eq!(
+            ConversationSessionState::windowed_catch_up(None, &messages).len(),
+            3
+        );
+    }
+
+    #[test]
+    fn scene_contact_freshness_only_advances_while_active() {
+        let mut session = ConversationSessionState::default();
+        session.note_contact(10);
+        assert_eq!(session.focused_at_ms, None);
+
+        session.set_scene_active(true, 20);
+        assert_eq!(session.focused_at_ms, Some(20));
+        session.note_contact(30);
+        assert_eq!(session.focused_at_ms, Some(30));
+
+        session.set_scene_active(false, 40);
+        assert_eq!(session.focused_at_ms, None);
+        session.note_contact(50);
+        assert_eq!(session.focused_at_ms, None);
     }
 
     #[cfg(feature = "production")]
