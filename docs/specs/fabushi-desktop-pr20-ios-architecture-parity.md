@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `f6d4c48d113d02ec2e223c4fcbad1e6417549424`
+- pinned source commit for this baseline: `c96b56c47c6b2a478370839888124d1703aac518`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -183,6 +183,14 @@ Desktop PR #20 advanced one evidence-only commit from `9467112079551dc9ff64d40ba
 The preceding production-source audit remains semantically current because all selected source blobs are identical. The iOS Rust CI-session transport fix is retained as production code, but acceptance results tied to its pre-rebaseline iOS SHA are not used as proof for the post-rebaseline exact HEAD; that exact HEAD must earn its own architecture, Rust, Swift/UI, archive and protected complete-state evidence.
 
 Rebaseline generation evidence: GitHub Actions run `37076005927` completed successfully; its generation step, `git diff --check`, strict Desktop PR20 architecture checker, and final durable commit/push all succeeded before this provenance note was added. This run proves only the baseline generation/integrity operation, not the downstream product acceptance gates.
+
+### 1.18 Exact-HEAD rebaseline: 2026-10-03 / `c96b56c47c6b2a478370839888124d1703aac518`
+
+Desktop PR #20 advanced two production-source commits from `f6d4c48d113d02ec2e223c4fcbad1e6417549424` to `c96b56c47c6b2a478370839888124d1703aac518`. The selected `frontend/** + source/**` inventory is now **7,927** blobs rather than 7,926 because `source/host/tests/host_runner_composition_production_wiring_contract.rs` is newly selected. `source-host` therefore grows from 956 to 957 rows. The other changed selected paths are `source/host/app/src/main.rs`, `source/host/src/host_runner_composition.rs`, and `source/host/tests/sand_host_production_wiring_contract.rs`. All manifest/ledger `sourceCommit` authorities, indexes, changed blob identities, `MIGRATION_SOURCE.md`, and the strict checker are rebound to this exact HEAD before further product work.
+
+The normative production change centralizes per-turn Runner assembly in `HostRunnerComposition.compose_production_turn(...)`. Shipping `main.rs` supplies the turn-scoped `ProductionRunnerCompositionInput` and `ProductionTurnCompositionHooks`, but the HostRunnerComposition owner alone calls `create_production_runner_composition` and applies agent-management, state-writer, routine auto-review, box-shell review, Subagent, routine-post-write, and multitask decorations in one deterministic order. A new production-wiring contract explicitly forbids shipping `main.rs` from constructing a second Runner composition or attaching those hooks itself. This is a shipping ownership rule, not merely a test refactor.
+
+For iOS the mechanism may differ, but the responsibility does not: one canonical Host/Runner owner must assemble the production turn capability stack before execution; SwiftUI and the Coordinator may supply requests/platform capabilities but must not own a parallel Runner-decoration path. The current iOS tree already keeps SwiftUI outside canonical Runtime truth and routes production work through Mahayana Coordinator -> Host/Runtime, but current evidence does not yet prove a single native Runner-composition owner equivalent to this new Desktop contract. The four affected rows are therefore `mapped`, never inherited as implemented/verified. The next production audit must either identify one existing shipping owner and add focused behavior evidence, or consolidate any real parallel composition path before promotion.
 
 ## 2. Product goal
 
