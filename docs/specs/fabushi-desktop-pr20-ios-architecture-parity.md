@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef`
+- pinned source commit for this baseline: `612a075e7a7de5d845f765ade4eb51c7c318e3c8`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -223,6 +223,12 @@ For Desktop PR #20 `1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef`, `HostRunnerCompos
 The iOS production analogue must be explicit in the shipping Rust Host composition, not inferred from presentation code. `MahayanaHost::build_runtime` is the composition root and must construct exactly one native Runner graph whose `NativeEngine` instance is shared by the Runtime engine backend and the `NativeAgentBackend`. NativeEngine remains the sole owner of operation control, prompt/attempt durability, model loop, approvals, tool execution, checkpointable session state, retry/delivery recovery, and terminal settlement. The mobile turn-execution extension may expose a Host-bound adapter for Desktop-derived extension contracts, but it must not construct a second model/tool/session engine or own parallel durable turn truth.
 
 The closure must therefore provide a real Host-owned composition object used by `build_runtime` on the shipping MobileEmbedded path, prove that the engine and Agent surfaces share the same NativeEngine owner, and keep SwiftUI/Coordinator outside Runner construction. Focused Rust tests must exercise that production composition seam. Only after the same iOS exact HEAD passes the required architecture/Rust/Swift/UI/archive/protected-session gates may the affected Desktop rows advance beyond `implemented`.
+
+### 1.23 Exact-HEAD rebaseline: 2026-10-03 / `612a075e7a7de5d845f765ade4eb51c7c318e3c8`
+
+Desktop PR #20 advanced one commit from `1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef` to `612a075e7a7de5d845f765ade4eb51c7c318e3c8`. The selected inventory remains **7,927** and `source-host` remains 957; only `source/host/app/src/main.rs` changed. The production delta is a worker-closure capture correction: the asynchronous turn worker now calls the cloned `worker_host_runner_composition` for `compose_production_turn` and `compose_production_runner` rather than referencing the outer binding. No Host/Runner ownership, lifecycle state machine, or product effect changed.
+
+The iOS native Runner composition closure defined in Section 1.22 therefore remains the correct adaptation. This rebaseline only refreshes Desktop authority/blob identity; it does not promote the affected row. Same-iOS-HEAD production/test evidence remains required.
 
 ## 2. Product goal
 
