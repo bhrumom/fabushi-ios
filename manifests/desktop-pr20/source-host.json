@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0",
+  "sourceCommit": "b49e4567abc101ee75a60b6bd635153fba292d25",
   "group": "source-host",
   "fileCount": 955,
   "files": [
@@ -1915,8 +1915,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/runner_registry.rs",
-      "blobSha": "2b4b2743d31903c7a7b391006d47c702b49e4c9b",
-      "size": 4663
+      "blobSha": "db0ec055ed753312c848e717bc3bf5d4c388e09a",
+      "size": 8861
     },
     {
       "path": "source/host/src/extensions/transcript/sand_ack_obligation_store.rs",
@@ -2000,8 +2000,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "74e90cc567105c21317cccf222a81860b1006f30",
-      "size": 11805
+      "blobSha": "cfd3d84e27b204a6793d697d0ad572c9060d18cc",
+      "size": 11232
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -4240,8 +4240,8 @@
     },
     {
       "path": "source/host/tests/runner_routed_provider_contract.rs",
-      "blobSha": "e8f5e33852f1abddc4320ef39d6e81e87e93fda6",
-      "size": 7896
+      "blobSha": "df92103defd4b6e3969a3aefb4641fbb703cf59f",
+      "size": 10380
     },
     {
       "path": "source/host/tests/runner_small_modules_contract.rs",
@@ -4590,8 +4590,8 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "c14bffd2ee2586fc74062bfc6950415b17fe65bd",
-      "size": 4193
+      "blobSha": "f8c3f6ed5aee66ba46ed2e92e617b5b956a7372c",
+      "size": 5148
     },
     {
       "path": "source/host/tests/transcript_mirror_contract.rs",
