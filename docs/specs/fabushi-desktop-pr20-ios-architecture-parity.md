@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `f782c0c8fb6e2641c64d3daf25ebe0a9bcc3b110`
+- pinned source commit for this baseline: `95995bdf36a9687788e106c8544d292b2bb0877f`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -467,7 +467,7 @@ Final completion additionally requires all mandatory rows `verified` or reviewed
 
 The authority cutover begins from iOS PR #3 exact HEAD `cdcbfd4344377b592ed882e049dfb1a36a534aa6`.
 
-All implementation counts/statuses from the prior Grok-direct ledger are **historical only** until revalidated against Desktop PR #20 `f782c0c8fb6e2641c64d3daf25ebe0a9bcc3b110`. The current baseline contains 7,925 source-bearing `frontend/**` + `source/**` files. Relative to the immediately previous Desktop baseline `b49e4567abc101ee75a60b6bd635153fba292d25`, exactly one file changed: `source/host/tests/runner_routed_provider_contract.rs` (blob `cc5ef858c2ecc9ee79746b56225c4b4ab9e9be16`). This is a focused Host/Runner acceptance-contract change that strengthens current-stream watchdog cancellation evidence; no production source blob changed in this upstream step. The previously reviewed `source/node-agent-coordinator/src/carrier.rs` blob is unchanged, so its iOS status remains `implemented` but requires new exact-HEAD iOS CI before promotion to `verified`.
+All implementation counts/statuses from the prior Grok-direct ledger are **historical only** until revalidated against Desktop PR #20 `95995bdf36a9687788e106c8544d292b2bb0877f`. The current baseline contains 7,925 source-bearing `frontend/**` + `source/**` files. Relative to the immediately previous source-bearing baseline `f782c0c8fb6e2641c64d3daf25ebe0a9bcc3b110`, Desktop advanced by three commits that only modify `projects/grok-fabu-parity/architecture-manifest.json`, which is outside the authoritative iOS inventory roots `frontend/**` + `source/**`. Therefore all 7,925 source-bearing paths and blob identities are unchanged in this rebaseline. The prior `f782c0c8` step changed only `source/host/tests/runner_routed_provider_contract.rs` (blob `cc5ef858c2ecc9ee79746b56225c4b4ab9e9be16`) and strengthened current-stream watchdog cancellation evidence without changing production source. The previously reviewed `source/node-agent-coordinator/src/carrier.rs` blob is unchanged, so its iOS status remains `implemented` but requires new exact-HEAD iOS CI before promotion to `verified`.
 
 | Item | Status | Evidence / reason |
 | --- | --- | --- |
