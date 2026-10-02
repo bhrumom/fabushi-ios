@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `854d4bffde64dee2d7f12ba093207381ef369af4`
+- pinned source commit for this baseline: `2126a60a388b9bc44545f11eaa22889861314d39`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -199,6 +199,14 @@ Desktop PR #20 advanced two production-source commits from `c96b56c47c6b2a478370
 The production ownership introduced at `c96b56c` is expanded. `HostRunnerComposition` now owns not only the ordered Runner decorator stack but also production transcript/checkpoint sink construction and turn state-surface construction. It opens the canonical Agent store/blob store, constructs the production transcript mirror and generated-occurrence codec, builds the `ProductionAgentStateCheckpointSink`, and constructs memory-backed Agent state plus optional multitask todo state. Shipping `main.rs` consumes these composition entrypoints and is contractually forbidden from rebuilding the same state/checkpoint/Runner graph in parallel.
 
 The iOS adaptation must preserve this single-owner rule rather than copy Desktop process details. SwiftUI and Mahayana Coordinator may transport lifecycle/request inputs, but canonical production checkpoint/state/Runner composition must remain in one Host/Runtime owner. Current iOS architecture has the correct high-level Coordinator -> Host boundary, yet the newly centralized checkpoint/state/Runner composition has not been proved on the shipping path. All three changed rows remain `mapped` pending focused production evidence and same-iOS-HEAD CI; no previous `implemented`/`verified` result is inherited.
+
+### 1.20 Exact-HEAD rebaseline: 2026-10-03 / `2126a60a388b9bc44545f11eaa22889861314d39`
+
+Desktop PR #20 advanced one production commit from `854d4bffde64dee2d7f12ba093207381ef369af4` to `2126a60a388b9bc44545f11eaa22889861314d39`. The selected inventory remains exactly **7,927** blobs and `source-host` remains 957 rows; only `source/host/app/src/main.rs`, `source/host/src/host_runner_composition.rs`, and `source/host/tests/host_runner_composition_production_wiring_contract.rs` changed.
+
+The single-owner boundary is now complete through Runner facade construction. `HostRunnerComposition.compose_production_runner(...)` constructs `ProductionTurnAgentOwner`, attaches the production checkpoint sink and shared upgrade-quiesce signal, constructs `SandAgentRunner`, and attaches the generated-Agent runtime. Shipping `main.rs` delegates this construction and is contractually forbidden from directly rebuilding `ProductionTurnAgentOwner` or `SandAgentRunner`. This extends the already centralized turn decorators, transcript/checkpoint sink, and turn state surfaces.
+
+The iOS responsibility is the same even though the native mechanism differs: one Host/Runtime owner must construct the complete production Runner graph and lifecycle fences. SwiftUI and Mahayana Coordinator remain request/lifecycle transport layers, not parallel Runner constructors. These three changed rows stay `mapped` until the current iOS shipping path is audited and same-iOS-HEAD focused/CI evidence proves the equivalent ownership.
 
 ## 2. Product goal
 
