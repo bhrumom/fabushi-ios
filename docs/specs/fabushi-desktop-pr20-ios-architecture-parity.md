@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `ed06d2c96471d5e80b66cd3c4b09116e968a0e56`
+- pinned source commit for this baseline: `79a9867ac6cbfecc5af9fcc9ac81225890c20245`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -131,6 +131,14 @@ The focused contract tightens one semantic point for iOS: closing-send delivery 
 The iOS shipping adaptation keeps Mahayana NativeEngine as the Runner/Agent-loop owner. Visible user turns already suppress plain model prose, perform at most three reply nudges, and treat a successful send_message as delivery. The new production path records tool work after a delivery and, if that work would otherwise terminate in hidden plain text, inserts exactly one operation-scoped closing-send nudge into canonical NativeSession.history. The marker carries the operation id and is persisted with the runtime session, so recovery/resume cannot create a second closing nudge for the same operation. Suspension/interruption fence both reply and closing nudges; request_box_help still terminates as waiting-user before closing recovery.
 
 If a visible user turn exhausts bounded reply nudges without a successful send_message, NativeEngine records content-free empty-delivery telemetry through RuntimeTelemetry, including aggregate nudge attempts, tool calls, stream-output presence, and duration. This is canonical runtime telemetry, not renderer state. Focused Rust contracts exercise the production owner. These 61f behavior rows are implemented pending exact-HEAD Actions. The ed06 production-wiring evidence row remains mapped until the separate iOS reaction owner is audited and wired into the same delivery-debt predicate; no reaction capability is fabricated inside NativeEngine merely to satisfy a Desktop string contract.
+
+### 1.12 Exact-HEAD rebaseline: 2026-10-03 / 79a9867ac6cbfecc5af9fcc9ac81225890c20245
+
+Desktop PR #20 adds one shipping lifecycle slice across five source/host files while the selected inventory remains exactly 7,926 blobs. The new resumeAfterRecreate path carries canonical upgrade-resume Agent identities plus durable pending wakes, restores the manager lifecycle state, restores eligible pending wakes, then resumes interrupted upgrade turns. Recreate status exports the same pending-wake carry.
+
+Only CloudAgent and Shell pending-wake kinds may cross recreate, and carry can be disabled. Restore is canonical-Host owned: values are coerced/validated, ineligible kinds ignored, existing durable identities deduplicated, Shell markers flagged interrupted-by-recreate, newly persisted through the pending-wake runtime owner, then rearmed with recreate provenance. No renderer replay owns this state.
+
+Current iOS source has no resumeAfterRecreate/pending-wake carry equivalent by name and must be audited by responsibility rather than copied gateway syntax. The immediately preceding NativeEngine closing-send/empty-delivery implementation remains real production work, but main.rs is mapped again because its upstream responsibility expanded. TranscriptManager's automation projection also remains a valid implemented sub-responsibility while its changed row returns to mapped for the new recreate carry gap. The iOS implementation must locate or add one durable lifecycle/wake owner below SwiftUI, preserve identity/idempotency across scene/app recreation, and resume interrupted work only after durable wake state has been restored.
 
 ## 2. Product goal
 

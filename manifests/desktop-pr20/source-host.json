@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "ed06d2c96471d5e80b66cd3c4b09116e968a0e56",
+  "sourceCommit": "79a9867ac6cbfecc5af9fcc9ac81225890c20245",
   "group": "source-host",
   "fileCount": 956,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "3d536f022627910d8202d2a346f31399b319a4fe",
-      "size": 524172
+      "blobSha": "27cd42f43aee54877ce3f415482cd7f0480c9000",
+      "size": 526035
     },
     {
       "path": "source/host/build.rs",
@@ -1870,8 +1870,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/production_runtime.rs",
-      "blobSha": "78ed54b39479663cfd80d81a2c3623e2ce326af6",
-      "size": 60134
+      "blobSha": "43d3b141c0734a5487c9c0e0a9146f4650085294",
+      "size": 60814
     },
     {
       "path": "source/host/src/extensions/transcript/profile_watch.rs",
@@ -2000,8 +2000,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "404cb5e138cb577bcb6c1745c888ef35134428e5",
-      "size": 31838
+      "blobSha": "5240e9a3e7f0ab5d7f74b41e6786654b008ee882",
+      "size": 33521
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -2110,8 +2110,8 @@
     },
     {
       "path": "source/host/src/gateway_protocol.rs",
-      "blobSha": "6f837e91bf2ba909b04ce010905fc71294399463",
-      "size": 5118
+      "blobSha": "6fd73d16ade784bb22b09dd1a29ce1471c9b1982",
+      "size": 5141
     },
     {
       "path": "source/host/src/gateway_server.rs",
@@ -3865,8 +3865,8 @@
     },
     {
       "path": "source/host/tests/host_upgrade_production_contract.rs",
-      "blobSha": "73d66e9bb77dbadc9e4487395e579dc58f847437",
-      "size": 3538
+      "blobSha": "79d075b6dcc372eeee8e7fab9b4aaecbb701bc4e",
+      "size": 4802
     },
     {
       "path": "source/host/tests/host_upgrade_service_contract.rs",
