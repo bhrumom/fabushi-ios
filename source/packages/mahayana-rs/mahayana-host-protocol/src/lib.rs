@@ -2165,6 +2165,11 @@ pub enum AgentStepStatus {
 pub enum HostEvent {
     #[serde(rename = "host.ready")]
     HostReady { timestamp: String, info: HostInfo },
+    #[serde(rename = "host.transport")]
+    TransportEvent {
+        channel: String,
+        payload: Value,
+    },
     #[serde(rename = "chat.message")]
     ChatMessage {
         timestamp: String,
@@ -2760,6 +2765,7 @@ impl HostEvent {
     pub fn kind(&self) -> &'static str {
         match self {
             Self::HostReady { .. } => "host.ready",
+            Self::TransportEvent { .. } => "host.transport",
             Self::ChatMessage { .. } => "chat.message",
             Self::ChatDelta { .. } => "chat.delta",
             Self::TranscriptCard { .. } => "transcript.card",

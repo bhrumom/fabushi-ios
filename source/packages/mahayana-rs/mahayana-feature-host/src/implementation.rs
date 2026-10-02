@@ -12,6 +12,7 @@ use chrono::TimeZone;
 use chrono::Timelike;
 use chrono::Utc;
 
+use crate::client_side_tool_v2::{ClientSideToolV2Producer, FAMILY as CLIENT_SIDE_TOOL_V2_FAMILY};
 use fabushi_messaging_core::BlobId;
 use fabushi_messaging_core::ClientEnvelope as MessagingClientEnvelope;
 use fabushi_messaging_core::FileBlobStore;
@@ -443,6 +444,7 @@ pub struct FeatureHostController {
     /// This is deliberately not a credential; it is only an identity marker
     /// used to prevent transcript/state reuse across account boundaries.
     active_account_id: Mutex<Option<String>>,
+    client_side_tool_v2: Mutex<ClientSideToolV2Producer>,
     state: Mutex<FeatureState>,
 }
 
@@ -511,6 +513,7 @@ impl FeatureHostController {
             workflow_root_path,
             teach_recording: Mutex::new(None),
             active_account_id: Mutex::new(None),
+            client_side_tool_v2: Mutex::new(ClientSideToolV2Producer::new()),
             state: Mutex::new(state),
         }
     }
@@ -610,6 +613,7 @@ impl FeatureHostController {
             workflow_root_path,
             teach_recording: Mutex::new(None),
             active_account_id: Mutex::new(None),
+            client_side_tool_v2: Mutex::new(ClientSideToolV2Producer::new()),
             state: Mutex::new(state),
         };
         controller.ensure_account_boundary(&controller.auth_status()?)?;
@@ -6231,6 +6235,11 @@ impl FeatureHostController {
             let operation_ids = state.operations.iter().cloned().collect::<Vec<_>>();
             state.operations.clear();
             state.operation_agents.clear();
+            *self
+                .client_side_tool_v2
+                .lock()
+                .map_err(|_| FeatureHostError::StatePoisoned)? =
+                ClientSideToolV2Producer::new();
             state.events.push_back(HostEvent::HostClosed {
                 timestamp: timestamp(),
             });
@@ -6841,6 +6850,35 @@ impl FeatureHostController {
                     let state = self.state()?;
                     activity_parent_agent_id(&state, &operation_id)
                 };
+                if kind == "tool" {
+                    if let Some(tool_call_id) = metadata
+                        .as_ref()
+                        .and_then(|value| value.get("toolCallId"))
+                        .and_then(Value::as_str)
+                    {
+                        let transport = {
+                            let mut producer = self
+                                .client_side_tool_v2
+                                .lock()
+                                .map_err(|_| FeatureHostError::StatePoisoned)?;
+                            match status {
+                                RuntimeActivityStatus::Running => {
+                                    producer.publish_call(&agent_id, tool_call_id)
+                                }
+                                RuntimeActivityStatus::Completed | RuntimeActivityStatus::Failed => {
+                                    producer.publish_result(&agent_id, tool_call_id)
+                                }
+                                _ => None,
+                            }
+                        };
+                        if let Some(payload) = transport {
+                            self.state()?.events.push_back(HostEvent::TransportEvent {
+                                channel: CLIENT_SIDE_TOOL_V2_FAMILY.into(),
+                                payload,
+                            });
+                        }
+                    }
+                }
                 if kind == "subagent" {
                     let mut state = self.state()?;
                     let changed = update_subagents_from_activity(
@@ -13975,6 +14013,110 @@ mod tests {
                 && code == "provider_error"
                 && message == "provider unavailable"
         ));
+    }
+
+    #[cfg(feature = "production")]
+    #[test]
+    fn production_tool_activity_uses_host_owned_client_side_tool_v2_producer() {
+        let controller = FeatureHostController::create_with_host_config(
+            HostConfig {
+                profile_id: "production-client-tool-v2".into(),
+                mode: HostMode::Production,
+            },
+            SurfacePlatform::Electron,
+            isolated_host_config("production-client-tool-v2"),
+        )
+        .expect("create production Host");
+        let operation_id = OperationId("operation-tool-1".into());
+        {
+            let mut state = controller.state().expect("feature state");
+            state.operations.insert(operation_id.to_string());
+            state
+                .operation_agents
+                .insert(operation_id.to_string(), "agent-tools".into());
+            state.events.clear();
+        }
+
+        let started = controller
+            .translate_runtime_event(RuntimeEvent::AgentActivity {
+                operation_id: operation_id.clone(),
+                step_id: "tool:call-1".into(),
+                kind: "tool".into(),
+                title: "Running search".into(),
+                detail: None,
+                status: RuntimeActivityStatus::Running,
+                metadata: Some(json!({"tool": "search", "toolCallId": "call-1"})),
+            })
+            .expect("translate tool start")
+            .expect("tool start event");
+        assert!(matches!(started, HostEvent::AgentStep { .. }));
+
+        let first = controller
+            .state()
+            .expect("feature state")
+            .events
+            .pop_front()
+            .expect("client tool call transport");
+        let (epoch, sequence) = match first {
+            HostEvent::TransportEvent { channel, payload } => {
+                assert_eq!(channel, CLIENT_SIDE_TOOL_V2_FAMILY);
+                assert_eq!(payload["kind"], "call");
+                assert_eq!(payload["agentId"], "agent-tools");
+                assert_eq!(payload["sequence"], 1);
+                assert_eq!(payload["message"]["messageType"], "aiserver.v1.ClientSideToolV2Call");
+                (
+                    payload["epoch"].as_str().expect("epoch").to_string(),
+                    payload["sequence"].as_u64().expect("sequence"),
+                )
+            }
+            other => panic!("unexpected event: {other:?}"),
+        };
+        assert_eq!(sequence, 1);
+
+        let completed = controller
+            .translate_runtime_event(RuntimeEvent::AgentActivity {
+                operation_id,
+                step_id: "tool:call-1".into(),
+                kind: "tool".into(),
+                title: "Completed search".into(),
+                detail: None,
+                status: RuntimeActivityStatus::Completed,
+                metadata: Some(json!({"tool": "search", "toolCallId": "call-1"})),
+            })
+            .expect("translate tool completion")
+            .expect("tool completion event");
+        assert!(matches!(completed, HostEvent::AgentStep { .. }));
+        let second = controller
+            .state()
+            .expect("feature state")
+            .events
+            .pop_front()
+            .expect("client tool result transport");
+        match second {
+            HostEvent::TransportEvent { channel, payload } => {
+                assert_eq!(channel, CLIENT_SIDE_TOOL_V2_FAMILY);
+                assert_eq!(payload["kind"], "result");
+                assert_eq!(payload["epoch"], epoch);
+                assert_eq!(payload["sequence"], 2);
+                assert_eq!(payload["message"]["messageType"], "aiserver.v1.ClientSideToolV2Result");
+            }
+            other => panic!("unexpected event: {other:?}"),
+        }
+
+        let before_close_epoch = controller
+            .client_side_tool_v2
+            .lock()
+            .expect("producer")
+            .epoch()
+            .to_string();
+        controller.close().expect("close Host");
+        let after_close_epoch = controller
+            .client_side_tool_v2
+            .lock()
+            .expect("producer")
+            .epoch()
+            .to_string();
+        assert_ne!(before_close_epoch, after_close_epoch);
     }
 
     #[cfg(feature = "production")]

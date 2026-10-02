@@ -277,11 +277,13 @@ pub enum KernelEvent {
     },
     ToolStarted {
         operation_id: OperationId,
+        tool_call_id: String,
         tool: String,
         arguments: Value,
     },
     ToolCompleted {
         operation_id: OperationId,
+        tool_call_id: String,
         tool: String,
         output: Value,
         success: bool,

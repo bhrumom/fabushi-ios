@@ -633,6 +633,7 @@ impl NativeEngine {
                 self.telemetry.tool_started();
                 events.emit(KernelEvent::ToolStarted {
                     operation_id: operation_id.clone(),
+                    tool_call_id: call.call_id.clone(),
                     tool: call.name.clone(),
                     arguments: call.arguments.clone(),
                 })?;
@@ -657,6 +658,7 @@ impl NativeEngine {
                         self.telemetry.tool_completed(true);
                         events.emit(KernelEvent::ToolCompleted {
                             operation_id: operation_id.clone(),
+                            tool_call_id: call.call_id.clone(),
                             tool: call.name.clone(),
                             output: output.clone(),
                             success: true,
@@ -673,6 +675,7 @@ impl NativeEngine {
                         let message = error.to_string();
                         events.emit(KernelEvent::ToolCompleted {
                             operation_id: operation_id.clone(),
+                            tool_call_id: call.call_id.clone(),
                             tool: call.name.clone(),
                             output: json!({"error": message}),
                             success: false,

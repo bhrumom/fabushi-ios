@@ -681,16 +681,24 @@ impl KernelEventSink for RuntimeKernelEventBridge {
                 self.activity(step_id, kind, title, detail, status, Some(metadata))
             }
             KernelEvent::ToolStarted {
-                tool, arguments, ..
+                tool_call_id,
+                tool,
+                arguments,
+                ..
             } => self.activity(
-                format!("tool:{tool}"),
+                format!("tool:{tool_call_id}"),
                 "tool".into(),
                 format!("Running {tool}"),
                 None,
                 RuntimeActivityStatus::Running,
-                Some(json!({"tool": tool, "arguments": arguments})),
+                Some(json!({
+                    "tool": tool,
+                    "toolCallId": tool_call_id,
+                    "arguments": arguments
+                })),
             ),
             KernelEvent::ToolCompleted {
+                tool_call_id,
                 tool,
                 output,
                 success,
@@ -719,7 +727,7 @@ impl KernelEventSink for RuntimeKernelEventBridge {
                     })?;
                 }
                 self.activity(
-                    format!("tool:{tool}"),
+                    format!("tool:{tool_call_id}"),
                     "tool".into(),
                     format!("Completed {tool}"),
                     None,
@@ -728,7 +736,12 @@ impl KernelEventSink for RuntimeKernelEventBridge {
                     } else {
                         RuntimeActivityStatus::Failed
                     },
-                    Some(json!({"tool": tool, "output": output, "success": success})),
+                    Some(json!({
+                        "tool": tool,
+                        "toolCallId": tool_call_id,
+                        "output": output,
+                        "success": success
+                    })),
                 )
             },
             KernelEvent::ApprovalRequested {

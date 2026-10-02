@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `5523b564ff16ee8be6f00fce64c4162a6c07b35d`
+- pinned source commit for this baseline: `69401d853cc251666a8d5a65e93d9a18bad27c8d`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -483,6 +483,15 @@ Affected rows are re-bound to the new blob identities but no prior exact-HEAD ve
 Desktop PR #20 advanced from `6ac2d23df5cdb45004d5c73c771f78de334d6b02` to `5523b564ff16ee8be6f00fce64c4162a6c07b35d` in one focused-contract-only commit. The selected inventory remains 7,925 files and only `source/host/tests/transcript_manager_contract.rs` changed. The production lifecycle implementation is unchanged. The strengthened contract now records a real durable acknowledgement obligation before arming the redrive timer, so TranscriptManager disposal is proven against non-empty durable redrive state rather than an empty scheduler.
 
 This does not create a new iOS transcript-ack owner. The iOS disposition from 11.11 remains: there is no parallel Transcript AckObligations/redrive scheduler; provider/service acknowledgement durability stays with its canonical provider owner, while native Host lifecycle settlement must not create or leave a second redrive callback. The changed Desktop test row is rebound to the new blob and cannot inherit exact-HEAD test verification from `6ac2d23...`; current iOS production and focused-contract evidence still require same-HEAD GitHub Actions before promotion to `verified`.
+
+
+### 11.13 Client-side-tool-v2 producer ownership rebaseline
+
+Desktop PR #20 advanced from `5523b564ff16ee8be6f00fce64c4162a6c07b35d` to `69401d853cc251666a8d5a65e93d9a18bad27c8d` in one source-bearing ownership commit. The selected inventory remains 7,925 files and three Host blobs changed: `source/host/app/src/main.rs`, `source/host/src/extensions/transcript/transcript_manager.rs`, and `source/host/tests/transcript_manager_contract.rs`. The product change is not cosmetic: the stateful client-side-tool-v2 producer (per-Agent epoch, strictly monotonic sequence, open Call/Result settlement, reset) is no longer permitted as an independent routed-provider producer. `TranscriptManager` now constructs and owns that producer, routed provider observation publishes through the manager, and manager disposal resets the producer together with the rest of process-local transcript state.
+
+iOS already has the downstream Coordinator relay and renderer projection, with `(agentId, epoch, sequence, protobuf toolCallId)` fencing, replay, reset, and shutdown clearing. The remaining applicable Host responsibility is upstream production of the versioned transport envelopes from the canonical Runtime tool-observation path. That producer must be owned by the existing canonical iOS Host/Runtime composition (the single `FeatureHostController`/Runtime line), not SwiftUI and not a second global/static producer. Call and Result must carry the real tool-call identity, Result without a matching open Call must fail closed, sequence must remain monotonic per Agent within one producer epoch, and Host lifecycle settlement must clear/reset producer state.
+
+The three changed Desktop rows are invalidated from prior exact-HEAD evidence until this ownership is wired. The adjacent Desktop `client_side_tool_v2_{inventory,producer,projection}` responsibilities and focused contracts must be reviewed as one behavior slice because the current iOS ledger already records the Coordinator relay as implemented but explicitly blocks end-to-end verification on the missing mobile Rust Host producer. PR #26 is observation-only even when rebased; it is not an iOS migration authority until merged into PR #20.
 
 ## 12. Frontend requirements
 

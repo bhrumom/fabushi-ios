@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "5523b564ff16ee8be6f00fce64c4162a6c07b35d",
+  "sourceCommit": "69401d853cc251666a8d5a65e93d9a18bad27c8d",
   "group": "source-host",
   "rowCount": 955,
   "rows": [
@@ -36,7 +36,7 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "1593837408936f16eb07963152ae1a3a63ff3526",
+      "desktop_blob_sha": "6a97d6df81805f3e4d717bc5f46ca9105e863f33",
       "desktop_responsibility": "Shipping Host shutdown orders transcript/session lifecycle owners and releases the canonical composition once.",
       "desktop_owner": "host",
       "desktop_visible_effect": "Host termination cannot leave transcript/session process-local state or callbacks alive after the application Host is destroyed.",
@@ -45,9 +45,9 @@
       "ios_language": "Rust",
       "ios_platform_delta": "MobileAppHost Drop stops extensions, shuts down and joins the Host thread; AppHost destruction drops the sole FeatureHostController, whose Drop calls close.",
       "implementation_status": "implemented",
-      "production_evidence": "source/packages/mahayana-rs/mahayana-app-host-mobile/src/lib.rs MobileAppHost::drop -> UnifiedAppHost/AppHost destruction; source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs FeatureHostController::Drop/close.",
-      "test_evidence": "Focused Rust contract `close_settles_process_local_host_lifecycle_without_erasing_durable_state`; exact-HEAD GitHub Actions required because htch-runtime lacks libpipewire-0.3.",
-      "notes": "Revalidated at Desktop f5517530. f551 routes the remaining shipping group/shared-room/widget delegate call sites through TranscriptManager. This row proves composition ownership only; unchanged shared_rooms.rs and widget_responses.rs product-behavior rows remain independently unreviewed. Pre-dispatch direct-turn wiring revalidated: Host classifies recoverable direct-send shape, Runtime owns exact operation/dispatched state; broader app main responsibilities remain as separately described. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions."
+      "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs; source/packages/mahayana-rs/mahayana-runtime/src/kernel_conversation.rs; source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs; source/packages/mahayana-rs/mahayana-host-protocol/src/lib.rs",
+      "test_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs focused production_tool_activity_uses_host_owned_client_side_tool_v2_producer; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs unit contracts; exact-HEAD GitHub Actions pending",
+      "notes": "Revalidated at Desktop f5517530. f551 routes the remaining shipping group/shared-room/widget delegate call sites through TranscriptManager. This row proves composition ownership only; unchanged shared_rooms.rs and widget_responses.rs product-behavior rows remain independently unreviewed. Pre-dispatch direct-turn wiring revalidated: Host classifies recoverable direct-send shape, Runtime owns exact operation/dispatched state; broader app main responsibilities remain as separately described. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -5467,17 +5467,17 @@
     {
       "desktop_path": "source/host/src/extensions/transcript/client_side_tool_v2_producer.rs",
       "desktop_blob_sha": "ee80788bb3f4cf525d061f12506895310c036862",
-      "desktop_responsibility": "pending-review",
-      "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
+      "desktop_responsibility": "Own versioned client-side-tool-v2 transport envelope identity, per-Agent sequence/open-call settlement, and Host-lifecycle producer state.",
+      "desktop_owner": "Transcript/Host producer",
+      "desktop_visible_effect": "Coordinator receives ordered call/result transport envelopes with stable Agent/epoch/sequence/tool-call identity; stale result without an open call is dropped.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs",
       "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "ios_platform_delta": "iOS emits the same transport contract from canonical Runtime tool activity instead of Desktop routed-provider observation; ownership stays in FeatureHostController.",
+      "implementation_status": "implemented",
+      "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs; source/packages/mahayana-rs/mahayana-runtime/src/kernel_conversation.rs; source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs; source/packages/mahayana-rs/mahayana-host-protocol/src/lib.rs",
+      "test_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs focused production_tool_activity_uses_host_owned_client_side_tool_v2_producer; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs unit contracts; exact-HEAD GitHub Actions pending",
+      "notes": "Reviewed against Desktop PR #20 69401d85. Producer ownership and envelope fencing are implemented in the shipping iOS Host path; exact-HEAD CI pending, so not verified."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/client_side_tool_v2_projection.rs",
@@ -5991,7 +5991,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "desktop_blob_sha": "cca4a19671033c7c28b9375c343e6e61c23dcb67",
+      "desktop_blob_sha": "664625b565d62383c59e3839682a19036857b422",
       "desktop_responsibility": "Single composition owner for transcript delegates plus ordered, idempotent lifecycle settlement before Session close.",
       "desktop_owner": "host",
       "desktop_visible_effect": "All transcript-adjacent delegates share one owner and settle exactly once without parallel state.",
@@ -6000,9 +6000,9 @@
       "ios_language": "Rust",
       "ios_platform_delta": "The sole AppHost-owned FeatureHostController remains the iOS composition owner; its idempotent close/Drop now performs process-local lifecycle settlement and durable-state preservation.",
       "implementation_status": "implemented",
-      "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs FeatureHostController::close/Drop; source/packages/mahayana-rs/mahayana-app-host-mobile/src/lib.rs MobileAppHost::drop production ownership chain.",
-      "test_evidence": "Focused Rust contract `close_settles_process_local_host_lifecycle_without_erasing_durable_state`; exact-HEAD GitHub Actions required because htch-runtime lacks libpipewire-0.3.",
-      "notes": "Ownership responsibility remains implemented after f5517530. This status does not promote the separate unchanged shared_rooms.rs/widget_responses.rs behavior rows, which remain unreviewed. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions."
+      "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs; source/packages/mahayana-rs/mahayana-runtime/src/kernel_conversation.rs; source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs; source/packages/mahayana-rs/mahayana-host-protocol/src/lib.rs",
+      "test_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs focused production_tool_activity_uses_host_owned_client_side_tool_v2_producer; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs unit contracts; exact-HEAD GitHub Actions pending",
+      "notes": "Ownership responsibility remains implemented after f5517530. This status does not promote the separate unchanged shared_rooms.rs/widget_responses.rs behavior rows, which remain unreviewed. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -10192,17 +10192,17 @@
     {
       "desktop_path": "source/host/tests/client_side_tool_v2_producer_contract.rs",
       "desktop_blob_sha": "425a4c74b7db1d177d1cc024b8653e9c49e21543",
-      "desktop_responsibility": "pending-review",
-      "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
+      "desktop_responsibility": "Own versioned client-side-tool-v2 transport envelope identity, per-Agent sequence/open-call settlement, and Host-lifecycle producer state.",
+      "desktop_owner": "Transcript/Host producer",
+      "desktop_visible_effect": "Coordinator receives ordered call/result transport envelopes with stable Agent/epoch/sequence/tool-call identity; stale result without an open call is dropped.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs",
       "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "ios_platform_delta": "iOS emits the same transport contract from canonical Runtime tool activity instead of Desktop routed-provider observation; ownership stays in FeatureHostController.",
+      "implementation_status": "implemented",
+      "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs; source/packages/mahayana-rs/mahayana-runtime/src/kernel_conversation.rs; source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs; source/packages/mahayana-rs/mahayana-host-protocol/src/lib.rs",
+      "test_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs focused production_tool_activity_uses_host_owned_client_side_tool_v2_producer; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs unit contracts; exact-HEAD GitHub Actions pending",
+      "notes": "Reviewed against Desktop PR #20 69401d85. Producer ownership and envelope fencing are implemented in the shipping iOS Host path; exact-HEAD CI pending, so not verified."
     },
     {
       "desktop_path": "source/host/tests/client_side_tool_v2_projection_contract.rs",
@@ -13761,7 +13761,7 @@
     },
     {
       "desktop_path": "source/host/tests/transcript_manager_contract.rs",
-      "desktop_blob_sha": "0ea48892fab6c000badf458c5345fec1c0935b00",
+      "desktop_blob_sha": "7a76a0a8628f929cff57527210ab191e8e855fd2",
       "desktop_responsibility": "Focused production contract for single transcript composition ownership and complete lifecycle settlement.",
       "desktop_owner": "host",
       "desktop_visible_effect": "Regression coverage fails if delegated owners split or shutdown leaves process-local state/watchers alive.",
@@ -13770,9 +13770,9 @@
       "ios_language": "Rust",
       "ios_platform_delta": "The iOS focused Host contract seeds deferred/session/approval/operation/background/group state, closes twice, proves process-local settlement, durable automation retention and exactly one host.closed event.",
       "implementation_status": "implemented",
-      "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs test close_settles_process_local_host_lifecycle_without_erasing_durable_state; Desktop durable-ack redrive subcase is not-applicable-with-replacement because iOS has no parallel Transcript AckObligations scheduler.",
-      "test_evidence": "Focused contract exists in source but same-HEAD GitHub Actions are pending; htch-runtime package test is blocked by missing libpipewire-0.3.",
-      "notes": "New e8910869 focused-contract responsibility is mapped to the iOS single-controller composition replacement; no test-only parallel owner was introduced. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 5523b564; changed upstream blob requires current exact-HEAD test evidence."
+      "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs; source/packages/mahayana-rs/mahayana-runtime/src/kernel_conversation.rs; source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs; source/packages/mahayana-rs/mahayana-host-protocol/src/lib.rs",
+      "test_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs focused production_tool_activity_uses_host_owned_client_side_tool_v2_producer; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs unit contracts; exact-HEAD GitHub Actions pending",
+      "notes": "New e8910869 focused-contract responsibility is mapped to the iOS single-controller composition replacement; no test-only parallel owner was introduced. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 5523b564; changed upstream blob requires current exact-HEAD test evidence. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified."
     },
     {
       "desktop_path": "source/host/tests/transcript_mirror_contract.rs",
