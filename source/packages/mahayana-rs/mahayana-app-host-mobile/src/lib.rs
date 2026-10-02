@@ -532,7 +532,9 @@ enum MobileHostCommand {
         input: String,
         reply: mpsc::SyncSender<String>,
     },
-    Shutdown,
+    Shutdown {
+        reply: mpsc::SyncSender<Result<(), String>>,
+    },
 }
 
 #[derive(Clone)]
@@ -573,7 +575,11 @@ impl MobileHostBridge {
                             };
                             let _ = reply.send(output);
                         }
-                        MobileHostCommand::Shutdown => break,
+                        MobileHostCommand::Shutdown { reply } => {
+                            let result = host.close().map_err(|error| error.to_string());
+                            let _ = reply.send(result);
+                            break;
+                        }
                     }
                 }
             })
@@ -621,8 +627,14 @@ impl MobileHostBridge {
             .unwrap_or(false)
     }
 
-    fn shutdown(&self) {
-        let _ = self.commands.send(MobileHostCommand::Shutdown);
+    fn shutdown(&self) -> Result<(), String> {
+        let (reply, receiver) = mpsc::sync_channel(1);
+        self.commands
+            .send(MobileHostCommand::Shutdown { reply })
+            .map_err(|_| "mobile Host thread unavailable during shutdown".to_string())?;
+        receiver
+            .recv()
+            .map_err(|_| "mobile Host shutdown settlement reply unavailable".to_string())?
     }
 }
 
@@ -732,7 +744,7 @@ impl MobileAppHost {
         let extension_runtime = match tokio::runtime::Builder::new_current_thread().build() {
             Ok(runtime) => runtime,
             Err(error) => {
-                host.shutdown();
+                let _ = host.shutdown();
                 let _ = host_thread.join();
                 return Err(format!("create mobile Host extension runtime: {error}"));
             }
@@ -783,7 +795,7 @@ impl Drop for MobileAppHost {
         if let Some(mut extensions) = self.extensions.take() {
             self.extension_runtime.block_on(extensions.stop());
         }
-        self.host.shutdown();
+        let _ = self.host.shutdown();
         if let Some(host_thread) = self.host_thread.take() {
             let _ = host_thread.join();
         }
@@ -1080,6 +1092,12 @@ mod mobile_turn_execution_composition_tests {
             .unwrap();
         assert!(group_runner.host_is_live());
         assert!(group_runner.is_group_member());
+
+        host.host.shutdown().expect("settle mobile Host");
+        assert!(
+            !host.host.request_ok("host.platform"),
+            "shutdown must not return until the canonical Host thread has settled and stopped"
+        );
 
         drop(host);
         let _ = fs::remove_dir_all(root);
