@@ -9,7 +9,12 @@ This repository is the canonical source for **native iOS application, iOS-specif
 - Verify the current GitHub repository before product-affecting work.
 - Do not implement another Fabushi platform's product code here. Switch to that platform's canonical repository first.
 - `bhrumom/fabushi` is the legacy migration/source-history repository, not the canonical implementation repository for this scope.
-- For the active standalone iOS architecture, this repository owns the complete iOS product runtime and contracts, including iOS-local Mahayana Coordinator/Host/Runner source and build integration. Do not require another Fabushi source repository to build or run the iOS product. Task-specific active Specs may define the exact local module layout.
+- For the active standalone iOS architecture, this repository owns the complete iOS product runtime and contracts, including iOS-local Mahayana Coordinator/Host/Runner source and build integration. Do not require another Fabushi source repository to build or run the iOS product.
+- The active iOS architecture/product migration source is `bhrumom/fabushi-desktop` PR #20 at the exact SHA pinned by `docs/specs/fabushi-desktop-pr20-ios-architecture-parity.md`.
+- Grok Bot 0.18 is historical architecture/provenance context through Desktop PR #20; it is not the direct iOS parity/completion authority.
+- Code may be reused/ported from the pinned Desktop source into this repository, but do not create or require a shared Desktop/iOS runtime repository merely to deduplicate implementation. Reused source becomes iOS-owned source.
+- When Desktop PR #20 HEAD changes, rebaseline the Desktop source manifest/ledger and invalidate affected stale parity evidence before continuing production migration.
+- Task-specific active Specs define the exact local module layout and acceptance gates.
 
 ## CRITICAL: Spec-first development — No Spec, No Code
 
