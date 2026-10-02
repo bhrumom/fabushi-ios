@@ -390,9 +390,10 @@ impl NativeEngine {
         Ok(())
     }
 
-    async fn persist_session_if_configured(
+    fn persist_session_state_if_configured(
         &self,
         session_id: &SessionId,
+        session: &NativeSession,
     ) -> Result<(), KernelError> {
         let path = self
             .persisted_sessions
@@ -403,7 +404,36 @@ impl NativeEngine {
         let Some(path) = path else {
             return Ok(());
         };
-        let snapshot = self.snapshot_session(session_id).await?;
+        let state = NativeSnapshotState {
+            session: session.clone(),
+            memory: self
+                .memory
+                .lock()
+                .map_err(|_| KernelError::Backend("memory store poisoned".into()))?
+                .clone(),
+            workflows: self
+                .workflows
+                .lock()
+                .map_err(|_| KernelError::Backend("workflow store poisoned".into()))?
+                .clone(),
+            subagents: self
+                .subagents
+                .lock()
+                .map_err(|_| KernelError::Backend("subagent scheduler poisoned".into()))?
+                .clone(),
+            hooks: self
+                .hooks
+                .lock()
+                .map_err(|_| KernelError::Backend("hook registry poisoned".into()))?
+                .clone(),
+        };
+        let snapshot = KernelSessionSnapshot {
+            session_id: session_id.clone(),
+            backend_id: "mahayana-native".into(),
+            state: serde_json::to_value(state)
+                .map_err(|error| KernelError::Backend(error.to_string()))?,
+            metadata: json!({"snapshotVersion": 1, "updatedAtMs": session.updated_at_ms}),
+        };
         let bytes = serde_json::to_vec(&snapshot)
             .map_err(|error| KernelError::Backend(error.to_string()))?;
         let parent = path
@@ -414,6 +444,15 @@ impl NativeEngine {
         write_private_file(&temporary, &bytes)?;
         replace_file(&temporary, &path)?;
         Ok(())
+    }
+
+    async fn persist_session_if_configured(
+        &self,
+        session_id: &SessionId,
+    ) -> Result<(), KernelError> {
+        let session = self.session(session_id)?;
+        let session = session.lock().await.clone();
+        self.persist_session_state_if_configured(session_id, &session)
     }
 
     fn apply_hooks(
@@ -1472,12 +1511,14 @@ impl NativeEngine {
         session: &mut NativeSession,
         operation_id: &OperationId,
         prompt: PromptEntry,
+        attempt_id: Option<String>,
         append_user_prompt: bool,
         policy: &ExecutionPolicy,
         control: &OperationControl,
         events: SharedKernelEventSink,
     ) -> Result<(), KernelError> {
-        let attempt_id = Self::start_attempt(session, operation_id, &prompt.id);
+        let attempt_id =
+            attempt_id.unwrap_or_else(|| Self::start_attempt(session, operation_id, &prompt.id));
         let result = self
             .run_prompt(
                 session,
@@ -1687,10 +1728,15 @@ impl EngineBackend for NativeEngine {
                 ));
             }
             session.active_prompt = Some(prompt.clone());
+            let attempt_id =
+                Self::start_attempt(&mut session, &request.operation_id, &prompt.id);
+            session.updated_at_ms = now_ms();
+            self.persist_session_state_if_configured(&request.session_id, &session)?;
             self.execute_active_prompt(
                 &mut session,
                 &request.operation_id,
                 prompt,
+                Some(attempt_id),
                 true,
                 &request.policy,
                 control.as_ref(),
@@ -1879,6 +1925,7 @@ impl EngineBackend for NativeEngine {
                 &mut session,
                 &request.operation_id,
                 prompt,
+                None,
                 false,
                 &request.policy,
                 control.as_ref(),
@@ -2817,6 +2864,54 @@ mod tests {
         }
     }
 
+    struct SnapshotCheckingModel {
+        state_path: PathBuf,
+        expected_operation_id: String,
+        observed: Arc<AtomicBool>,
+    }
+
+    #[async_trait]
+    impl ModelRuntime for SnapshotCheckingModel {
+        async fn infer(
+            &self,
+            _request: ModelRequest,
+            events: SharedModelEventSink,
+        ) -> Result<(), ModelError> {
+            let bytes = std::fs::read(&self.state_path)
+                .map_err(|error| ModelError::Inference(format!("missing pre-inference snapshot: {error}")))?;
+            let snapshot: KernelSessionSnapshot = serde_json::from_slice(&bytes)
+                .map_err(|error| ModelError::Inference(format!("invalid pre-inference snapshot: {error}")))?;
+            let state: NativeSnapshotState = serde_json::from_value(snapshot.state)
+                .map_err(|error| ModelError::Inference(format!("invalid native snapshot state: {error}")))?;
+            let active_prompt = state
+                .session
+                .active_prompt
+                .as_ref()
+                .ok_or_else(|| ModelError::Inference("pre-inference snapshot has no active prompt".into()))?;
+            let has_running_attempt = state.session.attempts.iter().any(|attempt| {
+                attempt.operation_id == self.expected_operation_id
+                    && attempt.prompt_id == active_prompt.id
+                    && attempt.state == OperationAttemptState::Running
+                    && attempt.finished_at_ms.is_none()
+            });
+            if !has_running_attempt {
+                return Err(ModelError::Inference(
+                    "pre-inference snapshot has no matching running operation attempt".into(),
+                ));
+            }
+            self.observed.store(true, Ordering::SeqCst);
+            events.emit(ModelEvent::Completed {
+                output: json!({
+                    "output": [{"type":"message", "content":[{"type":"output_text", "text":"checkpoint observed"}]}]
+                }),
+            })
+        }
+
+        fn provider_mode(&self) -> ModelProviderMode {
+            ModelProviderMode::LocalModel
+        }
+    }
+
     #[derive(Default)]
     struct Events(Mutex<Vec<KernelEvent>>);
 
@@ -3512,6 +3607,53 @@ mod tests {
             .await
             .expect("restore snapshot");
         assert_eq!(restored, session);
+    }
+
+    #[tokio::test]
+    async fn persisted_main_session_checkpoints_active_operation_before_inference() {
+        let root =
+            std::env::temp_dir().join(format!("mahayana-pre-inference-checkpoint-{}", Uuid::new_v4()));
+        let state_path = root.join("assistant.json");
+        let operation_id = OperationId::new();
+        let observed = Arc::new(AtomicBool::new(false));
+        let model = Arc::new(SnapshotCheckingModel {
+            state_path: state_path.clone(),
+            expected_operation_id: operation_id.as_str().to_owned(),
+            observed: Arc::clone(&observed),
+        });
+        let mut config = NativeEngineConfig::desktop("checkpoint-model");
+        config.session_state_path = Some(state_path.clone());
+        let engine = NativeEngine::new(model, config).expect("create checkpoint engine");
+        let session = engine
+            .open_session(OpenSessionRequest {
+                profile: mahayana_kernel::RuntimeProfile::DesktopFull,
+                workspace_root: None,
+                model: None,
+                metadata: json!({"conversationId": MAIN_ASSISTANT_CONVERSATION_ID}),
+            })
+            .await
+            .expect("open persisted main session");
+
+        engine
+            .run(
+                RunRequest {
+                    session_id: session,
+                    operation_id,
+                    input: "persist identity before inference".into(),
+                    policy: ExecutionPolicy::interactive_default(),
+                    required_capabilities: CapabilitySet::new([Capability::Model]),
+                    metadata: Value::Null,
+                },
+                Arc::new(Events::default()),
+            )
+            .await
+            .expect("run with durable pre-inference checkpoint");
+
+        assert!(
+            observed.load(Ordering::SeqCst),
+            "model inference must observe the active prompt and matching running operation attempt already persisted"
+        );
+        std::fs::remove_dir_all(root).expect("cleanup");
     }
 
     #[tokio::test]
