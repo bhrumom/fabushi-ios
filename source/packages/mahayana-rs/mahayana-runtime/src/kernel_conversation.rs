@@ -98,6 +98,7 @@ pub struct KernelConversationProvider {
     session_id: AsyncMutex<Option<SessionId>>,
     state: Arc<Mutex<ConversationState>>,
     history_path: Option<PathBuf>,
+    direct_operations: AsyncMutex<BTreeMap<String, KernelOperationId>>,
 }
 
 impl KernelConversationProvider {
@@ -120,6 +121,7 @@ impl KernelConversationProvider {
             session_id: AsyncMutex::new(None),
             state: Arc::new(Mutex::new(ConversationState::new(history))),
             history_path,
+            direct_operations: AsyncMutex::new(BTreeMap::new()),
         }
     }
 
@@ -246,6 +248,30 @@ impl ConversationProvider for KernelConversationProvider {
         }
 
         let kernel_operation_id = KernelOperationId::from_string(request.operation_id.as_str());
+        let conversation_key = request.conversation_id.as_str().to_string();
+        if !request.hidden {
+            let previous = self
+                .direct_operations
+                .lock()
+                .await
+                .insert(conversation_key.clone(), kernel_operation_id.clone());
+            if let Some(previous) = previous
+                && previous != kernel_operation_id
+            {
+                match self.backend.interrupt(&previous).await {
+                    Ok(()) | Err(KernelError::OperationNotFound(_)) => {}
+                    Err(error) => {
+                        clear_current_direct_operation(
+                            &self.direct_operations,
+                            &conversation_key,
+                            &kernel_operation_id,
+                        )
+                        .await;
+                        return Err(kernel_error(error));
+                    }
+                }
+            }
+        }
         let sink: SharedKernelEventSink = Arc::new(RuntimeKernelEventBridge {
             conversation_id: request.conversation_id,
             operation_id: request.operation_id,
@@ -254,11 +280,12 @@ impl ConversationProvider for KernelConversationProvider {
             history_path: self.history_path.clone(),
             hidden: request.hidden,
         });
-        self.backend
+        let result = self
+            .backend
             .run(
                 RunRequest {
                     session_id,
-                    operation_id: kernel_operation_id,
+                    operation_id: kernel_operation_id.clone(),
                     input: request.text,
                     policy: execution_policy(self.profile),
                     required_capabilities: CapabilitySet::new([Capability::Model]),
@@ -269,8 +296,16 @@ impl ConversationProvider for KernelConversationProvider {
                 },
                 sink,
             )
-            .await
-            .map_err(kernel_error)
+            .await;
+        if !request.hidden {
+            clear_current_direct_operation(
+                &self.direct_operations,
+                &conversation_key,
+                &kernel_operation_id,
+            )
+            .await;
+        }
+        result.map_err(kernel_error)
     }
 
     async fn interrupt(&self, operation_id: &OperationId) -> Result<(), ConversationError> {
@@ -283,6 +318,7 @@ impl ConversationProvider for KernelConversationProvider {
     async fn reset_session(&self) -> Result<(), ConversationError> {
         self.backend.reset_session().map_err(kernel_error)?;
         *self.session_id.lock().await = None;
+        self.direct_operations.lock().await.clear();
         {
             let mut state = self.state.lock().map_err(|_| {
                 ConversationError::Provider("kernel conversation state mutex poisoned".into())
@@ -307,6 +343,18 @@ impl ConversationProvider for KernelConversationProvider {
             })
             .await
             .map_err(kernel_error)
+    }
+}
+
+
+async fn clear_current_direct_operation(
+    operations: &AsyncMutex<BTreeMap<String, KernelOperationId>>,
+    conversation_key: &str,
+    operation_id: &KernelOperationId,
+) {
+    let mut operations = operations.lock().await;
+    if operations.get(conversation_key) == Some(operation_id) {
+        operations.remove(conversation_key);
     }
 }
 
@@ -684,6 +732,28 @@ mod tests {
         ));
         assert_eq!(state.history.len(), 1);
         assert_eq!(state.unread_count(&assistant), 1);
+    }
+
+    #[tokio::test]
+    async fn direct_operation_identity_fences_stale_settlement() {
+        let operations = AsyncMutex::new(BTreeMap::new());
+        let first = KernelOperationId::from_string("first");
+        let second = KernelOperationId::from_string("second");
+        operations
+            .lock()
+            .await
+            .insert("conversation-a".into(), first.clone());
+        let previous = operations
+            .lock()
+            .await
+            .insert("conversation-a".into(), second.clone());
+        assert_eq!(previous, Some(first.clone()));
+
+        clear_current_direct_operation(&operations, "conversation-a", &first).await;
+        assert_eq!(operations.lock().await.get("conversation-a"), Some(&second));
+
+        clear_current_direct_operation(&operations, "conversation-a", &second).await;
+        assert!(!operations.lock().await.contains_key("conversation-a"));
     }
 
     #[test]

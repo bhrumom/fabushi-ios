@@ -5740,14 +5740,14 @@
       "desktop_responsibility": "Own live Runner task identity/registry and targeted cancellation, including direct-user supersession of only the current routed one-to-one run while preserving stale stream identity and separate group-member task ownership.",
       "desktop_owner": "host",
       "desktop_visible_effect": "A newer direct user message supersedes the currently active same-Agent run without cancelling stale/completed identities or unrelated Agents; cancellation reason and downstream settlement remain attributable to the correct run.",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Upstream blob changed at Desktop PR #20 b49e4567abc101ee75a60b6bd635153fba292d25; responsibility must be re-reviewed before promotion. Revalidated for Desktop PR #20 3ad5c76a67408357cfe5647c6d073b36015c8eb5; upstream now preempts only the current same-Agent routed one-to-one run after durable direct-user admission, preserves stale identity, records ack interruption, and emits superseded turn-interrupt telemetry. iOS status is not inherited."
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-runtime/src/kernel_conversation.rs",
+      "ios_language": "rust",
+      "ios_platform_delta": "iOS keeps in-process Runtime/Host boundaries: visible direct turns are durably persisted by KernelConversationProvider, then supersede only the current operation for the same conversation; hidden/background turns do not participate. Stable Desktop interrupt reason, ack-interrupt accounting and turn-interrupt telemetry remain to be ported.",
+      "implementation_status": "mapped",
+      "production_evidence": "Shipping KernelConversationProvider now owns a per-conversation current visible operation registry, registers only after durable visible-user persistence, interrupts the previous current kernel operation, ignores already-settled OperationNotFound, and compare-and-clears on settlement/reset so stale completion cannot erase the replacement identity.",
+      "test_evidence": "Focused htch-runtime contract direct_operation_identity_fences_stale_settlement added; exact-head GitHub runtime/Host acceptance pending. Remaining reason/ack/telemetry semantics are not yet claimed.",
+      "notes": "Upstream blob changed at Desktop PR #20 b49e4567abc101ee75a60b6bd635153fba292d25; responsibility must be re-reviewed before promotion. Revalidated for Desktop PR #20 3ad5c76a67408357cfe5647c6d073b36015c8eb5; upstream now preempts only the current same-Agent routed one-to-one run after durable direct-user admission, preserves stale identity, records ack interruption, and emits superseded turn-interrupt telemetry. iOS status is not inherited. Partial production port on iOS: targeted current-operation supersession and stale-settlement fencing are wired; keep mapped until cancellation reason, ack interruption and telemetry lineage reach parity."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/sand_ack_obligation_store.rs",
