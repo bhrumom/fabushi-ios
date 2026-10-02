@@ -91,7 +91,6 @@ fn history_request_marks_read(limit: u32) -> bool {
     limit == OPEN_CONVERSATION_HISTORY_LIMIT
 }
 
-
 #[derive(Debug, Default)]
 struct DirectOperationGate {
     dispatched: bool,
@@ -244,10 +243,10 @@ impl KernelConversationProvider {
                 continue;
             }
 
-            self.interrupt_reasons
-                .lock()
-                .await
-                .insert(previous.operation_id.as_str().to_string(), SUPERSEDE_REASON.to_string());
+            self.interrupt_reasons.lock().await.insert(
+                previous.operation_id.as_str().to_string(),
+                SUPERSEDE_REASON.to_string(),
+            );
             match self.backend.interrupt(&previous.operation_id).await {
                 Ok(()) => {
                     operations.insert(conversation_key.to_string(), current.clone());
@@ -377,12 +376,7 @@ impl ConversationProvider for KernelConversationProvider {
             .filter(|message| &message.conversation_id == conversation_id)
             .cloned()
             .collect::<Vec<_>>();
-        select_history_window(
-            &matching,
-            before_message_id,
-            after_message_id,
-            limit,
-        )
+        select_history_window(&matching, before_message_id, after_message_id, limit)
     }
 
     async fn replace_message(
@@ -450,7 +444,8 @@ impl ConversationProvider for KernelConversationProvider {
         let recovery_shaped = carries_recovery
             && request.recovery_eligible
             && request.selected_image_data_urls.is_empty();
-        let direct_operation = DirectOperationState::new(kernel_operation_id.clone(), recovery_shaped);
+        let direct_operation =
+            DirectOperationState::new(kernel_operation_id.clone(), recovery_shaped);
         if !request.hidden {
             self.admit_direct_operation(
                 &conversation_key,
@@ -500,6 +495,8 @@ impl ConversationProvider for KernelConversationProvider {
                         "isFork": request.is_fork,
                         "attachmentBatchId": request.attachment_batch_id,
                         "selectedImageDataUrls": request.selected_image_data_urls,
+                        "hidden": request.hidden,
+                        "showAssistantOutput": request.show_assistant_output,
                     }),
                 },
                 sink,
@@ -532,14 +529,17 @@ impl ConversationProvider for KernelConversationProvider {
 
     async fn interrupt(&self, operation_id: &OperationId) -> Result<(), ConversationError> {
         let kernel_operation_id = KernelOperationId::from_string(operation_id.as_str());
-        self.interrupt_reasons
-            .lock()
-            .await
-            .insert(operation_id.as_str().to_string(), "interrupted by user".to_string());
+        self.interrupt_reasons.lock().await.insert(
+            operation_id.as_str().to_string(),
+            "interrupted by user".to_string(),
+        );
         match self.backend.interrupt(&kernel_operation_id).await {
             Ok(()) => Ok(()),
             Err(error) => {
-                self.interrupt_reasons.lock().await.remove(operation_id.as_str());
+                self.interrupt_reasons
+                    .lock()
+                    .await
+                    .remove(operation_id.as_str());
                 Err(kernel_error(error))
             }
         }
@@ -576,7 +576,6 @@ impl ConversationProvider for KernelConversationProvider {
             .map_err(kernel_error)
     }
 }
-
 
 fn visible_user_text(request: &SendMessageRequest) -> String {
     request
@@ -643,6 +642,9 @@ impl KernelEventSink for RuntimeKernelEventBridge {
     fn emit(&self, event: KernelEvent) -> Result<(), KernelError> {
         match event {
             KernelEvent::MessageDelta { delta, .. } => {
+                if self.hide_assistant_output {
+                    return Ok(());
+                }
                 self.emit_runtime(RuntimeEvent::MessageDelta {
                     operation_id: self.operation_id.clone(),
                     conversation_id: self.conversation_id.clone(),
@@ -667,6 +669,9 @@ impl KernelEventSink for RuntimeKernelEventBridge {
                     .record_assistant_completion(message.clone(), self.hide_assistant_output);
                 if should_persist {
                     persist_history(&self.state, self.history_path.as_deref())?;
+                }
+                if self.hide_assistant_output {
+                    return Ok(());
                 }
                 self.emit_runtime(RuntimeEvent::MessageCompleted {
                     operation_id: self.operation_id.clone(),
@@ -750,10 +755,14 @@ impl KernelEventSink for RuntimeKernelEventBridge {
                         self.is_fork,
                         self.attachment_batch_id.as_deref(),
                     )
-                    .ok_or_else(|| KernelError::Backend(
-                        "send_message tool completed without canonical generated payload".into(),
-                    ))?;
-                    let should_persist = state.record_assistant_completion(message.clone(), self.hide_assistant_output);
+                    .ok_or_else(|| {
+                        KernelError::Backend(
+                            "send_message tool completed without canonical generated payload"
+                                .into(),
+                        )
+                    })?;
+                    let should_persist = state
+                        .record_assistant_completion(message.clone(), self.hide_assistant_output);
                     drop(state);
                     if should_persist {
                         persist_history(&self.state, self.history_path.as_deref())?;
@@ -780,7 +789,7 @@ impl KernelEventSink for RuntimeKernelEventBridge {
                         "success": success
                     })),
                 )
-            },
+            }
             KernelEvent::ApprovalRequested {
                 approval_id,
                 title,
@@ -869,18 +878,28 @@ fn generated_send_message(
             &message.conversation_id == conversation_id && message.id.as_str() == candidate
         })
     };
+    let synthetic_reply_nudge = output
+        .get("syntheticReplyNudge")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
     let explicit_reply = output
         .get("replyToMessageId")
         .and_then(Value::as_str)
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .filter(|value| *value != message_id.as_str() && live_target(value));
-    let reply_to = explicit_reply.or_else(|| {
+    let inherited_reply_thread_target = if synthetic_reply_nudge {
+        None
+    } else {
         reply_thread_target
+    };
+    let reply_to = explicit_reply.or_else(|| {
+        inherited_reply_thread_target
             .map(str::trim)
             .filter(|value| !value.is_empty() && live_target(value))
     });
-    let branched = is_fork && reply_thread_target.is_some_and(live_target);
+    let branched =
+        !synthetic_reply_nudge && is_fork && inherited_reply_thread_target.is_some_and(live_target);
     let mut metadata = json!({
         "runtime": "mahayana-kernel",
         "generatedSend": true,
@@ -888,18 +907,25 @@ fn generated_send_message(
     });
     if let Some(object) = metadata.as_object_mut() {
         if let Some(reply_to) = reply_to {
-            object.insert("replyToMessageId".into(), Value::String(reply_to.to_string()));
+            object.insert(
+                "replyToMessageId".into(),
+                Value::String(reply_to.to_string()),
+            );
         }
         if branched {
             object.insert("branched".into(), Value::Bool(true));
         }
         if let Some(attachment) = attachment {
             object.insert("generatedAttachment".into(), attachment);
-            if let Some(batch_id) = attachment_batch_id
-                .map(str::trim)
-                .filter(|value| !value.is_empty())
+            if !synthetic_reply_nudge
+                && let Some(batch_id) = attachment_batch_id
+                    .map(str::trim)
+                    .filter(|value| !value.is_empty())
             {
-                object.insert("attachmentBatchId".into(), Value::String(batch_id.to_string()));
+                object.insert(
+                    "attachmentBatchId".into(),
+                    Value::String(batch_id.to_string()),
+                );
             }
         }
     }
@@ -1124,11 +1150,69 @@ mod tests {
         )
         .expect("attachment-only generated send");
         assert!(attachment_only.text.is_empty());
-        assert_eq!(attachment_only.metadata["attachmentBatchId"], "batch-attachment");
+        assert_eq!(
+            attachment_only.metadata["attachmentBatchId"],
+            "batch-attachment"
+        );
         assert_eq!(
             attachment_only.metadata["generatedAttachment"]["file_name"],
             "image.png"
         );
+    }
+
+    #[test]
+    fn reply_nudge_send_drops_inherited_reply_fork_and_attachment_identity() {
+        let conversation_id = conversation(mahayana_core::MAHAYANA_AI_CONVERSATION_ID);
+        let history = vec![Message {
+            id: MessageId("live-reply".into()),
+            conversation_id: conversation_id.clone(),
+            role: MessageRole::User,
+            text: "original".into(),
+            created_at_ms: 1,
+            metadata: Value::Null,
+        }];
+        let generated = generated_send_message(
+            &conversation_id,
+            &json!({
+                "generatedMessage": "delivered after nudge",
+                "generatedAttachment": {
+                    "url": "file:///tmp/result.pdf",
+                    "file_name": "result.pdf"
+                },
+                "toolCallId": "call-nudge",
+                "syntheticReplyNudge": true
+            }),
+            &history,
+            Some("live-reply"),
+            true,
+            Some("original-attachment-batch"),
+        )
+        .expect("reply nudge generated send");
+
+        assert!(generated.metadata.get("replyToMessageId").is_none());
+        assert!(generated.metadata.get("branched").is_none());
+        assert!(generated.metadata.get("attachmentBatchId").is_none());
+        assert_eq!(
+            generated.metadata["generatedAttachment"]["file_name"],
+            "result.pdf"
+        );
+
+        let explicit_reply = generated_send_message(
+            &conversation_id,
+            &json!({
+                "generatedMessage": "explicit reply after nudge",
+                "toolCallId": "call-nudge-explicit",
+                "replyToMessageId": "live-reply",
+                "syntheticReplyNudge": true
+            }),
+            &history,
+            Some("ignored-inherited-target"),
+            true,
+            Some("ignored-batch"),
+        )
+        .expect("explicit reply nudge send");
+        assert_eq!(explicit_reply.metadata["replyToMessageId"], "live-reply");
+        assert!(explicit_reply.metadata.get("branched").is_none());
     }
 
     #[test]
@@ -1204,30 +1288,34 @@ mod tests {
 
     #[test]
     fn pre_dispatch_supersession_requires_recovery_on_both_turns() {
-        let ordinary = DirectOperationState::new(
-            KernelOperationId::from_string("ordinary"),
-            false,
+        let ordinary = DirectOperationState::new(KernelOperationId::from_string("ordinary"), false);
+        assert!(
+            !ordinary
+                .pre_dispatch_supersede_allowed(false)
+                .expect("ordinary gate")
         );
-        assert!(!ordinary
-            .pre_dispatch_supersede_allowed(false)
-            .expect("ordinary gate"));
-        assert!(!ordinary
-            .pre_dispatch_supersede_allowed(true)
-            .expect("ordinary gate with incoming recovery"));
+        assert!(
+            !ordinary
+                .pre_dispatch_supersede_allowed(true)
+                .expect("ordinary gate with incoming recovery")
+        );
 
-        let recovery = DirectOperationState::new(
-            KernelOperationId::from_string("recovery"),
-            true,
+        let recovery = DirectOperationState::new(KernelOperationId::from_string("recovery"), true);
+        assert!(
+            !recovery
+                .pre_dispatch_supersede_allowed(false)
+                .expect("recovery gate without incoming recovery")
         );
-        assert!(!recovery
-            .pre_dispatch_supersede_allowed(false)
-            .expect("recovery gate without incoming recovery"));
-        assert!(recovery
-            .pre_dispatch_supersede_allowed(true)
-            .expect("recovery gate"));
-        assert!(recovery
-            .cancel_before_dispatch("superseded by a new user message")
-            .expect("cancel recovery before dispatch"));
+        assert!(
+            recovery
+                .pre_dispatch_supersede_allowed(true)
+                .expect("recovery gate")
+        );
+        assert!(
+            recovery
+                .cancel_before_dispatch("superseded by a new user message")
+                .expect("cancel recovery before dispatch")
+        );
         assert_eq!(
             recovery
                 .mark_dispatched_or_cancelled()
@@ -1239,22 +1327,24 @@ mod tests {
 
     #[test]
     fn dispatched_direct_operation_leaves_pre_dispatch_fence() {
-        let recovery = DirectOperationState::new(
-            KernelOperationId::from_string("dispatched"),
-            true,
-        );
+        let recovery =
+            DirectOperationState::new(KernelOperationId::from_string("dispatched"), true);
         assert_eq!(
             recovery
                 .mark_dispatched_or_cancelled()
                 .expect("mark dispatched"),
             None
         );
-        assert!(!recovery
-            .pre_dispatch_supersede_allowed(true)
-            .expect("dispatched gate"));
-        assert!(!recovery
-            .cancel_before_dispatch("too late")
-            .expect("dispatch fence blocks local cancellation"));
+        assert!(
+            !recovery
+                .pre_dispatch_supersede_allowed(true)
+                .expect("dispatched gate")
+        );
+        assert!(
+            !recovery
+                .cancel_before_dispatch("too late")
+                .expect("dispatch fence blocks local cancellation")
+        );
     }
 
     #[test]

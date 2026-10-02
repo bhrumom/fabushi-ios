@@ -750,9 +750,25 @@ impl CodexAgentInner {
                     .await;
             }
         }
+        let interrupt_after_response =
+            params.namespace.as_deref() == Some("mahayana") && params.tool == "request_box_help";
+        let thread_id = params.thread_id.clone();
+        let turn_id = params.turn_id.clone();
         let response = self.execute_dynamic_tool(params).await;
+        let succeeded = response.success;
         self.resolve_dynamic_tool_response(request_id, response)
-            .await
+            .await?;
+        if interrupt_after_response && succeeded {
+            let _: TurnInterruptResponse = self
+                .requests
+                .request_typed(ClientRequest::TurnInterrupt {
+                    request_id: self.request_id(),
+                    params: TurnInterruptParams { thread_id, turn_id },
+                })
+                .await
+                .map_err(|error| AgentError::Backend(error.to_string()))?;
+        }
+        Ok(())
     }
 
     async fn handle_server_request(&self, request: ServerRequest) -> Result<(), AgentError> {
@@ -954,6 +970,39 @@ impl CodexAgentInner {
         }
         let result = match params.tool.as_str() {
             "computer" => return self.execute_computer_dynamic_tool(&params).await,
+            "request_box_help" => {
+                let Some(instruction) = required_string_argument(&params.arguments, "instruction")
+                else {
+                    return dynamic_tool_error("instruction 不能为空");
+                };
+                let events = match self.operation_sink(&params.thread_id, Some(&params.turn_id)) {
+                    Ok(Some(events)) => events,
+                    Ok(None) => {
+                        return dynamic_tool_error("当前 Agent turn 已结束，无法请求用户接管");
+                    }
+                    Err(error) => return dynamic_tool_error(&error.to_string()),
+                };
+                let metadata = json!({
+                    "toolCallId": params.call_id,
+                    "instruction": instruction,
+                    "reason": params.arguments.get("reason").cloned().unwrap_or(Value::Null),
+                    "domain": params.arguments.get("domain").cloned().unwrap_or(Value::Null),
+                    "idp_domain": params.arguments.get("idp_domain").cloned().unwrap_or(Value::Null),
+                });
+                if let Err(error) = events.emit(AgentEvent::Activity {
+                    activity: AgentActivity {
+                        step_id: format!("box-handoff:{}", params.call_id),
+                        kind: "box_handoff_request".into(),
+                        title: "Waiting for user help".into(),
+                        detail: Some(instruction.to_string()),
+                        status: AgentActivityStatus::Completed,
+                        metadata: Some(metadata),
+                    },
+                }) {
+                    return dynamic_tool_error(&error.to_string());
+                }
+                Ok(json!({"status":"awaiting_user","instruction":instruction}))
+            }
             "list_conversations" => {
                 let mut conversations = Vec::new();
                 for provider in &self.conversation_providers {
@@ -2843,6 +2892,22 @@ fn mahayana_dynamic_tools() -> Vec<DynamicToolSpec> {
                 defer_loading: false,
             }),
             DynamicToolNamespaceTool::Function(DynamicToolFunctionSpec {
+                name: "request_box_help".into()
+                description: "Hand control to the user for a step only they can safely do, such as login, SSO, passkey, 2FA, captcha, or payment confirmation. This turn ends after the request and resumes automatically after the user returns control.".into(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "instruction": {"type": "string", "minLength": 1, "maxLength": 1000},
+                        "reason": {"type": "string", "enum": ["auth", "captcha", "payment", "other"]},
+                        "domain": {"type": "string", "maxLength": 128},
+                        "idp_domain": {"type": "string", "maxLength": 128}
+                    },
+                    "required": ["instruction"],
+                    "additionalProperties": false
+                }),
+                defer_loading: false,
+            }),
+            DynamicToolNamespaceTool::Function(DynamicToolFunctionSpec {
                 name: "list_conversations".into(),
                 description: "列出当前大乘 Runtime 中可供 Codex 接入的联系人会话。".into(),
                 input_schema: json!({
@@ -2996,6 +3061,35 @@ mod tests {
         assert_eq!(
             approval_response(ApprovalResponseKind::LegacyExec, ApprovalDecision::Cancel),
             json!({"decision": "abort"})
+        );
+    }
+
+    #[test]
+    fn mahayana_dynamic_tools_expose_box_help_handoff_contract() {
+        let value = serde_json::to_value(mahayana_dynamic_tools()).expect("serialize tools");
+        let tools = value
+            .get(0)
+            .and_then(|namespace| namespace.get("tools"))
+            .and_then(Value::as_array)
+            .expect("dynamic tool namespace");
+        let handoff = tools
+            .iter()
+            .find(|tool| tool.get("name").and_then(Value::as_str) == Some("request_box_help"))
+            .expect("request_box_help tool");
+        let schema = handoff
+            .get("inputSchema")
+            .or_else(|| handoff.get("input_schema"))
+            .expect("input schema");
+        assert!(
+            schema["required"]
+                .as_array()
+                .is_some_and(|required| required.iter().any(|field| field == "instruction"))
+        );
+        assert_eq!(
+            schema["properties"]["reason"]["enum"]
+                .as_array()
+                .map(Vec::len),
+            Some(4)
         );
     }
 

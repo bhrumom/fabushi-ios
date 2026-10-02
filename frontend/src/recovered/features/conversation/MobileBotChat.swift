@@ -177,8 +177,14 @@ internal struct MobileBotChat: View {
         }
         for entry in entries.suffix(50) {
             let id = Self.semanticId("mobile-bot-entry-\(entry.id)")
-            let roleName = entry.role == .user ? "用户消息" : entry.kind == .action ? "Bot 动作" : entry.kind == .thinking ? "Bot 思考" : "Bot 消息"
+            let roleName = entry.role == .user ? "用户消息" : entry.kind == .handoff ? "等待用户接管" : entry.kind == .action ? "Bot 动作" : entry.kind == .thinking ? "Bot 思考" : "Bot 消息"
             elements.append(.init(agentId: id, role: "log", name: roleName))
+        }
+        for entry in entries where entry.kind == .handoff && entry.actionStatus == "pending" {
+            let completeId = Self.semanticId("mobile-bot-handoff-complete-\(entry.id)")
+            let dismissId = Self.semanticId("mobile-bot-handoff-dismiss-\(entry.id)")
+            elements.append(.init(agentId: completeId, role: "button", name: "已完成并归还控制"))
+            elements.append(.init(agentId: dismissId, role: "button", name: "无法完成此步骤"))
         }
         var actions: [String: FabushiAppAgentSurface.Action] = [
             "mobile-bot-close": .init(allowed: ["invoke"]) { _ in onClose() },
@@ -189,6 +195,16 @@ internal struct MobileBotChat: View {
         }
         if bot.miniAppId == GlobalDharmaMiniAppBridge.globalDharmaId {
             actions["mobile-bot-open-miniapp"] = .init(allowed: ["invoke"]) { _ in openedMiniApp = true }
+        }
+        for entry in entries where entry.kind == .handoff && entry.actionStatus == "pending" {
+            let completeId = Self.semanticId("mobile-bot-handoff-complete-\(entry.id)")
+            let dismissId = Self.semanticId("mobile-bot-handoff-dismiss-\(entry.id)")
+            actions[completeId] = .init(allowed: ["invoke"]) { _ in
+                Task { await resolveBoxHandoff(entry, resolution: "completed") }
+            }
+            actions[dismissId] = .init(allowed: ["invoke"]) { _ in
+                Task { await resolveBoxHandoff(entry, resolution: "dismissed") }
+            }
         }
         try? appAgentSurface.publish(screen: "bot-chat", elements: elements, actions: actions)
     }
@@ -208,6 +224,29 @@ internal struct MobileBotChat: View {
                 ProgressView().controlSize(.mini)
             }
             .padding(.vertical, 4)
+        } else if entry.kind == .handoff {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 7) {
+                    Image(systemName: "person.crop.circle.badge.exclamationmark")
+                    Text("需要你完成一步").font(.caption.weight(.semibold))
+                }
+                Text(entry.text).font(.system(size: 15))
+                if entry.actionStatus == "pending" {
+                    HStack(spacing: 8) {
+                        Button("已完成，继续") { Task { await resolveBoxHandoff(entry, resolution: "completed") } }
+                            .buttonStyle(.borderedProminent)
+                            .accessibilityIdentifier(Self.semanticId("mobile-bot-handoff-complete-\(entry.id)"))
+                        Button("无法完成") { Task { await resolveBoxHandoff(entry, resolution: "dismissed") } }
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier(Self.semanticId("mobile-bot-handoff-dismiss-\(entry.id)"))
+                    }
+                } else {
+                    Text(entry.actionStatus == "completed" ? "已归还控制" : "已结束接管")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .padding(12)
+            .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         } else if entry.kind == .action {
             HStack(spacing: 7) {
                 Circle().fill(entry.actionStatus == "failed" ? Color.red : Color.orange).frame(width: 7, height: 7)
@@ -369,6 +408,51 @@ internal struct MobileBotChat: View {
     }
 
     @MainActor
+    private func resolveBoxHandoff(_ entry: MobileChatMessage, resolution: String) async {
+        guard entry.actionStatus == "pending",
+              let handoffRequestId = entry.handoffRequestId,
+              let handoffAgentId = entry.handoffAgentId
+        else { return }
+        do {
+            let result = try await bridge.request(
+                method: "feature.execute",
+                params: [
+                    "command": [
+                        "type": "box.handoff.resolve",
+                        "requestId": "ios-box-handoff-\(UUID().uuidString.lowercased())",
+                        "handoffRequestId": handoffRequestId,
+                        "agentId": handoffAgentId,
+                        "resolution": resolution,
+                    ],
+                ]
+            )
+            if let index = entries.firstIndex(where: { $0.handoffRequestId == handoffRequestId }) {
+                entries[index].actionStatus = resolution
+            }
+            guard let accepted = result.value as? [String: Any],
+                  let operationId = accepted["operationId"] as? String,
+                  !operationId.isEmpty
+            else { return }
+            busy = true
+            activeOperationId = operationId
+            entries.append(MobileChatMessage(
+                id: "thinking:\(operationId)",
+                role: .assistant,
+                text: "",
+                kind: .thinking,
+                operationId: operationId,
+                actionTitle: "Resuming after handoff",
+                actionStatus: "running"
+            ))
+            await pump(operationId: operationId)
+            activeOperationId = nil
+            busy = false
+        } catch {
+            errorText = error.localizedDescription
+        }
+    }
+
+    @MainActor
     private func stop() async {
         guard bot.miniAppId == nil, let activeOperationId else { return }
         _ = try? await bridge.request(method: "feature.interrupt", params: ["operationId": activeOperationId])
@@ -386,6 +470,29 @@ internal struct MobileBotChat: View {
                 let eventOperationId = event["operationId"] as? String ?? operationId
                 if ["chat.message", "chat.delta", "agent.step", "operation.started", "operation.completed", "operation.interrupted", "operation.failed", "model.routed"].contains(type), eventOperationId != operationId { continue }
                 switch type {
+                case "box.handoff.requested":
+                    guard eventOperationId == operationId,
+                          let requestId = event["requestId"] as? String,
+                          let agentId = event["agentId"] as? String
+                    else { continue }
+                    let row = MobileChatMessage(
+                        id: "handoff:\(requestId)",
+                        role: .assistant,
+                        text: event["instruction"] as? String ?? "Please complete the requested step.",
+                        kind: .handoff,
+                        operationId: operationId,
+                        actionTitle: "Waiting for user help",
+                        actionDetail: [event["reason"] as? String, event["domain"] as? String].compactMap { $0 }.joined(separator: " · "),
+                        actionStatus: "pending",
+                        handoffRequestId: requestId,
+                        handoffAgentId: agentId
+                    )
+                    if let index = entries.firstIndex(where: { $0.handoffRequestId == requestId }) { entries[index] = row } else { entries.append(row) }
+                case "box.handoff.resolved":
+                    guard let requestId = event["requestId"] as? String else { continue }
+                    if let index = entries.firstIndex(where: { $0.handoffRequestId == requestId }) {
+                        entries[index].actionStatus = event["resolution"] as? String ?? "completed"
+                    }
                 case "chat.message":
                     guard (event["role"] as? String) != "user" else { continue }
                     removeThinking(operationId)

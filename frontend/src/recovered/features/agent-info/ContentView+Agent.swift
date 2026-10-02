@@ -82,6 +82,29 @@ extension ContentView {
             .padding(10).background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 13))
             .overlay(RoundedRectangle(cornerRadius: 13).stroke(Color.orange.opacity(0.24)))
             .accessibilityIdentifier("mahayana-thinking")
+        } else if entry.kind == .handoff {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(spacing: 8) {
+                    avatar.frame(width: 28, height: 28)
+                    Text("需要你完成一步").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                }
+                Text(entry.text).font(.subheadline).foregroundStyle(.white)
+                if entry.actionStatus == "pending" {
+                    HStack(spacing: 8) {
+                        Button("已完成，继续") { Task { await model.resolveBoxHandoff(entry, resolution: "completed") } }
+                            .buttonStyle(.borderedProminent)
+                            .accessibilityIdentifier("mahayana-handoff-complete")
+                        Button("无法完成") { Task { await model.resolveBoxHandoff(entry, resolution: "dismissed") } }
+                            .buttonStyle(.bordered)
+                            .accessibilityIdentifier("mahayana-handoff-dismiss")
+                    }
+                } else {
+                    Text(entry.actionStatus == "completed" ? "已归还控制" : "接管已结束").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .padding(10).background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 13))
+            .overlay(RoundedRectangle(cornerRadius: 13).stroke(Color.orange.opacity(0.24)))
+            .accessibilityIdentifier("mahayana-handoff")
         } else if entry.kind == .action {
             HStack(spacing: 8) {
                 avatar.frame(width: 25, height: 25)

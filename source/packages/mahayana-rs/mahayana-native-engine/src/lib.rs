@@ -46,6 +46,8 @@ use web_research::{WebResearchClient, WebResearchConfig};
 const MAIN_ASSISTANT_CONVERSATION_ID: &str = "mahayana-ai:agent:assistant";
 const MAX_TOOL_OUTPUT_BYTES: usize = 64 * 1024;
 const DEFAULT_MAX_MODEL_TURNS: usize = 16;
+const MAX_REPLY_NUDGES: usize = 3;
+const REPLY_NUDGE_PROMPT: &str = "Your previous turn left the user without the result they're waiting on — you never called send_message that turn, or every send_message you tried failed to deliver. Deliver the result now by actually invoking the send_message tool. Plain assistant text is not user-visible for this turn; only a successful send_message satisfies delivery.";
 const DEFAULT_APPROVAL_TIMEOUT_MS: u64 = 120_000;
 
 #[derive(Debug, Clone, Default)]
@@ -482,6 +484,10 @@ impl NativeEngine {
         // and function_call_output history, so the UI reflects real work.
         let mut explicit_tool_plan = explicit_tool_request_plan(&prompt);
         let mut last_workflow_id: Option<String> = None;
+        let visible_user_turn =
+            prompt_metadata.get("hidden").and_then(Value::as_bool) == Some(false);
+        let mut delivered_message = false;
+        let mut reply_nudge_attempts = 0usize;
 
         for turn in 0..self.config.max_model_turns {
             ensure_operation_active(control)?;
@@ -506,10 +512,11 @@ impl NativeEngine {
                 metadata: json!({"engine": "mahayana-native"}),
             })?;
 
-            let collector = Arc::new(ModelCollector::streaming(
-                Arc::clone(&events),
-                operation_id.clone(),
-            ));
+            let collector = Arc::new(if visible_user_turn {
+                ModelCollector::buffered()
+            } else {
+                ModelCollector::streaming(Arc::clone(&events), operation_id.clone())
+            });
             let sink: SharedModelEventSink = collector.clone();
             let started = Instant::now();
             let inference = self
@@ -579,14 +586,27 @@ impl NativeEngine {
                             "model completed without assistant text or tool calls".into(),
                         )
                     })?;
-                events.emit(KernelEvent::MessageDelta {
-                    operation_id: operation_id.clone(),
-                    delta: text.clone(),
-                })?;
-                events.emit(KernelEvent::MessageCompleted {
-                    operation_id: operation_id.clone(),
-                    text: text.clone(),
-                })?;
+                if visible_user_turn
+                    && should_attempt_reply_nudge(delivered_message, reply_nudge_attempts, control)
+                {
+                    reply_nudge_attempts = reply_nudge_attempts.saturating_add(1);
+                    session.history.push(json!({
+                        "role": "user",
+                        "content": REPLY_NUDGE_PROMPT,
+                        "source": "mahayana_reply_nudge",
+                    }));
+                    continue;
+                }
+                if !visible_user_turn {
+                    events.emit(KernelEvent::MessageDelta {
+                        operation_id: operation_id.clone(),
+                        delta: text.clone(),
+                    })?;
+                    events.emit(KernelEvent::MessageCompleted {
+                        operation_id: operation_id.clone(),
+                        text: text.clone(),
+                    })?;
+                }
                 return Ok(text);
             }
 
@@ -648,7 +668,19 @@ impl NativeEngine {
                     )
                     .await;
                 match output {
-                    Ok(output) => {
+                    Ok(mut output) => {
+                        if call.name == "send_message"
+                            && output
+                                .get("delivered")
+                                .and_then(Value::as_bool)
+                                .unwrap_or(false)
+                        {
+                            delivered_message = true;
+                            if reply_nudge_attempts > 0 {
+                                output["syntheticReplyNudge"] = Value::Bool(true);
+                            }
+                        }
+                        let waiting_user = call.name == "request_box_help";
                         if call.name == "workflow_create" {
                             last_workflow_id = output
                                 .get("workflow_id")
@@ -669,6 +701,9 @@ impl NativeEngine {
                             "output": serde_json::to_string(&output)
                                 .unwrap_or_else(|_| "null".into()),
                         }));
+                        if waiting_user {
+                            return Ok("waiting_user".into());
+                        }
                     }
                     Err(error) => {
                         self.telemetry.tool_completed(false);
@@ -758,6 +793,47 @@ impl NativeEngine {
                         "generatedAttachment": attachment,
                         "toolCallId": call.call_id.clone(),
                         "replyToMessageId": reply_to_message_id,
+                    }))
+                }
+                "request_box_help" => {
+                    let instruction = call
+                        .arguments
+                        .get("instruction")
+                        .and_then(Value::as_str)
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty())
+                        .ok_or_else(|| {
+                            KernelError::Backend(
+                                "request_box_help requires a non-empty instruction".into(),
+                            )
+                        })?;
+                    let reason = call.arguments.get("reason").cloned().unwrap_or(Value::Null);
+                    let domain = call.arguments.get("domain").cloned().unwrap_or(Value::Null);
+                    let idp_domain = call
+                        .arguments
+                        .get("idp_domain")
+                        .cloned()
+                        .unwrap_or(Value::Null);
+                    events.emit(KernelEvent::Activity {
+                        operation_id: operation_id.clone(),
+                        kind: "box_handoff_request".into(),
+                        title: "Waiting for user help".into(),
+                        detail: Some(instruction.to_string()),
+                        metadata: json!({
+                            "stepId": format!("box-handoff:{}", call.call_id),
+                            "status": "completed",
+                            "provider": {
+                                "toolCallId": call.call_id,
+                                "instruction": instruction,
+                                "reason": reason,
+                                "domain": domain,
+                                "idp_domain": idp_domain,
+                            }
+                        }),
+                    })?;
+                    Ok(json!({
+                        "status": "awaiting_user",
+                        "instruction": instruction,
                     }))
                 }
                 "workspace_read" => {
@@ -1990,6 +2066,10 @@ struct ModelCollector {
 }
 
 impl ModelCollector {
+    fn buffered() -> Self {
+        Self::default()
+    }
+
     fn streaming(events: SharedKernelEventSink, operation_id: OperationId) -> Self {
         Self {
             streaming_events: Some((events, operation_id)),
@@ -2394,6 +2474,17 @@ fn permission_memory_from_metadata(
     }
 }
 
+fn should_attempt_reply_nudge(
+    delivered_message: bool,
+    attempts: usize,
+    control: &OperationControl,
+) -> bool {
+    !delivered_message
+        && attempts < MAX_REPLY_NUDGES
+        && !control.suspended.load(Ordering::SeqCst)
+        && !control.interrupted.load(Ordering::SeqCst)
+}
+
 fn ensure_operation_active(control: &OperationControl) -> Result<(), KernelError> {
     if control.suspended.load(Ordering::SeqCst) {
         return Err(KernelError::Backend("operation suspended".into()));
@@ -2423,6 +2514,11 @@ fn tool_definitions(enable_process_tools: bool, enable_web_research: bool) -> Ve
             "send_message",
             "Send a concise user-visible progress update or answer as a separate message bubble. Use this for meaningful milestones, confirmations, and the final answer in a multi-step task. Do not invent progress; only report work that has happened or is about to happen.",
             json!({"type":"object","properties":{"message":{"type":"string","description":"Optional concise text to show the user."},"attachment":{"type":"object","properties":{"url":{"type":"string"},"file_name":{"type":"string"},"alt":{"type":"string"},"channel":{"type":"string"},"width":{"type":"integer"},"height":{"type":"integer"}},"required":["url"],"additionalProperties":false},"reply_to_message_id":{"type":"string","description":"Optional live transcript message id to reply to. Invalid or stale ids are ignored by the transcript owner."}},"anyOf":[{"required":["message"]},{"required":["attachment"]}],"additionalProperties":false}),
+        ),
+        function_tool(
+            "request_box_help",
+            "Hand control to the user for a protected or manual step only they can safely complete, such as login, SSO, passkey, 2FA, captcha, or payment confirmation. This turn ends after the request and resumes after the user returns control.",
+            json!({"type":"object","properties":{"instruction":{"type":"string","minLength":1,"maxLength":1000},"reason":{"type":"string","enum":["auth","captcha","payment","other"]},"domain":{"type":"string","maxLength":128},"idp_domain":{"type":"string","maxLength":128}},"required":["instruction"],"additionalProperties":false}),
         ),
         function_tool(
             "workspace_read",
@@ -2752,6 +2848,147 @@ mod tests {
         assert_eq!(metrics.operations_started, 1);
         assert_eq!(metrics.operations_completed, 1);
         assert_eq!(metrics.model_calls, 1);
+    }
+
+    #[tokio::test]
+    async fn visible_user_turn_retries_plain_text_until_send_message_delivers() {
+        let prose = |text| {
+            json!({
+                "output": [{"type":"message", "content":[{"type":"output_text", "text":text}]}]
+            })
+        };
+        let send = json!({
+            "output": [{
+                "type":"function_call",
+                "call_id":"call-send-final",
+                "name":"send_message",
+                "arguments":"{\"message\":\"final delivered result\"}"
+            }]
+        });
+        let model = Arc::new(FakeModel {
+            outputs: Mutex::new(VecDeque::from([
+                prose("plain-0"),
+                prose("plain-1"),
+                prose("plain-2"),
+                send,
+                prose("internal-after-send"),
+            ])),
+        });
+        let engine = NativeEngine::new(model.clone(), NativeEngineConfig::embedded("model"))
+            .expect("create engine");
+        let session = engine
+            .open_session(OpenSessionRequest {
+                profile: mahayana_kernel::RuntimeProfile::MobileEmbedded,
+                workspace_root: None,
+                model: None,
+                metadata: Value::Null,
+            })
+            .await
+            .expect("open session");
+        let events = Arc::new(Events::default());
+        engine
+            .run(
+                RunRequest {
+                    session_id: session,
+                    operation_id: OperationId::new(),
+                    input: "finish the task".into(),
+                    policy: ExecutionPolicy::mobile_default(),
+                    required_capabilities: CapabilitySet::new([Capability::Model]),
+                    metadata: json!({"hidden": false}),
+                },
+                events.clone(),
+            )
+            .await
+            .expect("run visible turn");
+        let events = events.0.lock().expect("events");
+        let delivered = events
+            .iter()
+            .find_map(|event| match event {
+                KernelEvent::ToolCompleted {
+                    tool,
+                    output,
+                    success: true,
+                    ..
+                } if tool == "send_message" => Some(output),
+                _ => None,
+            })
+            .expect("reply nudge send_message completion");
+        assert_eq!(delivered["syntheticReplyNudge"], true);
+        assert!(!events.iter().any(|event| matches!(
+            event,
+            KernelEvent::MessageDelta { .. } | KernelEvent::MessageCompleted { .. }
+        )));
+        assert_eq!(model.outputs.lock().expect("outputs").len(), 0);
+    }
+
+    #[tokio::test]
+    async fn request_box_help_ends_visible_turn_without_reply_nudge() {
+        let request_help = json!({
+            "output": [{
+                "type":"function_call",
+                "call_id":"call-handoff",
+                "name":"request_box_help",
+                "arguments":"{\"instruction\":\"Complete sign-in\",\"reason\":\"auth\",\"domain\":\"example.test\"}"
+            }]
+        });
+        let model = Arc::new(FakeModel {
+            outputs: Mutex::new(VecDeque::from([
+                request_help,
+                json!({"output": [{"type":"message", "content":[{"type":"output_text", "text":"must-not-run"}]}]}),
+            ])),
+        });
+        let engine = NativeEngine::new(model.clone(), NativeEngineConfig::embedded("model"))
+            .expect("create engine");
+        let session = engine
+            .open_session(OpenSessionRequest {
+                profile: mahayana_kernel::RuntimeProfile::MobileEmbedded,
+                workspace_root: None,
+                model: None,
+                metadata: Value::Null,
+            })
+            .await
+            .expect("open session");
+        let events = Arc::new(Events::default());
+        engine
+            .run(
+                RunRequest {
+                    session_id: session,
+                    operation_id: OperationId::new(),
+                    input: "sign me in".into(),
+                    policy: ExecutionPolicy::mobile_default(),
+                    required_capabilities: CapabilitySet::new([Capability::Model]),
+                    metadata: json!({"hidden": false}),
+                },
+                events.clone(),
+            )
+            .await
+            .expect("run handoff turn");
+        let events = events.0.lock().expect("events");
+        assert!(events.iter().any(|event| matches!(
+            event,
+            KernelEvent::Activity { kind, detail: Some(detail), .. }
+                if kind == "box_handoff_request" && detail == "Complete sign-in"
+        )));
+        assert!(events.iter().any(|event| matches!(
+            event,
+            KernelEvent::ToolCompleted { tool, success: true, .. } if tool == "request_box_help"
+        )));
+        assert_eq!(model.outputs.lock().expect("outputs").len(), 1);
+    }
+
+    #[test]
+    fn reply_nudge_guard_is_bounded_and_cancel_fenced() {
+        let control = OperationControl::default();
+        assert!(should_attempt_reply_nudge(false, 0, &control));
+        assert!(should_attempt_reply_nudge(false, 2, &control));
+        assert!(!should_attempt_reply_nudge(
+            false,
+            MAX_REPLY_NUDGES,
+            &control
+        ));
+        assert!(!should_attempt_reply_nudge(true, 0, &control));
+        control.interrupted.store(true, Ordering::SeqCst);
+        assert!(!should_attempt_reply_nudge(false, 0, &control));
     }
 
     #[tokio::test]

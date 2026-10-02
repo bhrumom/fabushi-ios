@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "7b41050434d76ac2a18b3b042b4dcb018122b414",
+  "sourceCommit": "827f22da7c527ab22df0700303f356d589c2a0f4",
   "group": "source-host",
   "fileCount": 956,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "3f054edf6f22f617864307bfe2f1410a566e6ef1",
-      "size": 517894
+      "blobSha": "94369025faf1b1f14b8cf2c57d63aa4d078b0cec",
+      "size": 520445
     },
     {
       "path": "source/host/build.rs",
@@ -2010,8 +2010,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/turn_runtime.rs",
-      "blobSha": "069f14a7a6e71b387f2da76c8d110669d973f63a",
-      "size": 5142
+      "blobSha": "56d80023b9dff0d1e97f83772a8af27ccd6f12a1",
+      "size": 6834
     },
     {
       "path": "source/host/src/extensions/transcript/upgrade_recreate_resume.rs",
@@ -3260,7 +3260,7 @@
     },
     {
       "path": "source/host/tests/box_handoff_resume_contract.rs",
-      "blobSha": "c6b945f338d1fcb9d8c852c739df563ef6af5ed3",
+      "blobSha": "b69f4b6c1fca1a7330e8d45c60eafbaa2f6be8fb",
       "size": 11102
     },
     {
@@ -4675,8 +4675,8 @@
     },
     {
       "path": "source/host/tests/turn_runtime_recovery_contract.rs",
-      "blobSha": "c02db7176a227b4a3bf967a610eaa4e4a44f5008",
-      "size": 3419
+      "blobSha": "d9c8b02e50b09292d7e12313c7c077f8d2b3fa05",
+      "size": 5536
     },
     {
       "path": "source/host/tests/turn_settle_checkpoint_contract.rs",

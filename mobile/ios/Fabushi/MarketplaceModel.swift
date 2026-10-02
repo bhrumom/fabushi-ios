@@ -12,6 +12,7 @@ enum MobileChatEntryKind: String, Equatable {
     case message
     case action
     case thinking
+    case handoff
 }
 
 enum MahayanaChatPumpOutcome: Equatable {
@@ -30,6 +31,8 @@ struct MobileChatMessage: Identifiable, Equatable {
     var actionTitle: String?
     var actionDetail: String?
     var actionStatus: String?
+    var handoffRequestId: String?
+    var handoffAgentId: String?
     var canonicalMessageId: String?
     var replyToMessageId: String?
     var attachmentBatchId: String?
@@ -522,6 +525,46 @@ final class MarketplaceModel {
         }
     }
 
+    func resolveBoxHandoff(_ entry: MobileChatMessage, resolution: String) async {
+        guard entry.actionStatus == "pending",
+              let handoffRequestId = entry.handoffRequestId,
+              let handoffAgentId = entry.handoffAgentId
+        else { return }
+        do {
+            let accepted = try await executeFeatureCommand(
+                type: "box.handoff.resolve",
+                requestId: "ios-box-handoff-\(UUID().uuidString.lowercased())",
+                fields: [
+                    "handoffRequestId": handoffRequestId,
+                    "agentId": handoffAgentId,
+                    "resolution": resolution,
+                ]
+            )
+            if let index = chatMessages.firstIndex(where: { $0.handoffRequestId == handoffRequestId }) {
+                chatMessages[index].actionStatus = resolution
+            }
+            guard let operationId = accepted["operationId"] as? String, !operationId.isEmpty else { return }
+            chatBusy = true
+            activeOperationId = operationId
+            chatMessages.append(MobileChatMessage(
+                id: "thinking:\(operationId)",
+                role: .assistant,
+                text: "",
+                kind: .thinking,
+                operationId: operationId,
+                actionTitle: "正在从接管状态恢复",
+                actionStatus: "running"
+            ))
+            let outcome = await pumpChatEvents(operationId: operationId)
+            if outcome.shouldSettleLifecycle {
+                chatBusy = false
+                activeOperationId = nil
+            }
+        } catch {
+            message = "恢复 Agent 失败：\(error.localizedDescription)"
+        }
+    }
+
     func stopChat() async {
         guard let operationId = activeOperationId else { return }
         _ = try? await bridge.request(method: "feature.interrupt", params: ["operationId": operationId])
@@ -537,6 +580,30 @@ final class MarketplaceModel {
                     continue
                 }
                 switch type {
+                case "box.handoff.requested":
+                    let eventOperationId = event["operationId"] as? String ?? operationId
+                    guard eventOperationId == operationId,
+                          let requestId = event["requestId"] as? String,
+                          let agentId = event["agentId"] as? String
+                    else { continue }
+                    let row = MobileChatMessage(
+                        id: "handoff:\(requestId)",
+                        role: .assistant,
+                        text: event["instruction"] as? String ?? "请完成 Agent 请求的本机步骤。",
+                        kind: .handoff,
+                        operationId: operationId,
+                        actionTitle: "等待用户接管",
+                        actionDetail: [event["reason"] as? String, event["domain"] as? String].compactMap { $0 }.joined(separator: " · "),
+                        actionStatus: "pending",
+                        handoffRequestId: requestId,
+                        handoffAgentId: agentId
+                    )
+                    if let index = chatMessages.firstIndex(where: { $0.handoffRequestId == requestId }) { chatMessages[index] = row } else { chatMessages.append(row) }
+                case "box.handoff.resolved":
+                    guard let requestId = event["requestId"] as? String else { continue }
+                    if let index = chatMessages.firstIndex(where: { $0.handoffRequestId == requestId }) {
+                        chatMessages[index].actionStatus = event["resolution"] as? String ?? "completed"
+                    }
                 case "model.routed":
                     guard (event["operationId"] as? String ?? operationId) == operationId else { continue }
                     let provider = event["provider"] as? String ?? ""

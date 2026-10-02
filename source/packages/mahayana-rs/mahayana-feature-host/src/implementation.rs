@@ -200,6 +200,16 @@ struct BackgroundOperationContext {
     teach_artifact: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PendingBoxHandoff {
+    request_id: String,
+    agent_id: String,
+    conversation_id: String,
+    instruction: String,
+    source_operation_id: String,
+    resolving: bool,
+}
+
 #[derive(Debug, Clone)]
 struct RemoteComputerLocalSession {
     device_id: String,
@@ -365,6 +375,7 @@ struct FeatureState {
     awaited_operations: BTreeSet<String>,
     operation_terminals: BTreeMap<String, Value>,
     background_operations: BTreeMap<String, BackgroundOperationContext>,
+    pending_box_handoffs: BTreeMap<String, PendingBoxHandoff>,
     remote_computer_sessions: BTreeMap<String, RemoteComputerLocalSession>,
     remote_computer_device_secrets: BTreeMap<String, String>,
     subagents: BTreeMap<String, SubagentSummary>,
@@ -399,6 +410,7 @@ impl Default for FeatureState {
             awaited_operations: BTreeSet::new(),
             operation_terminals: BTreeMap::new(),
             background_operations: BTreeMap::new(),
+            pending_box_handoffs: BTreeMap::new(),
             remote_computer_sessions: BTreeMap::new(),
             remote_computer_device_secrets: BTreeMap::new(),
             subagents: BTreeMap::new(),
@@ -1233,12 +1245,194 @@ impl FeatureHostController {
         ) {
             return self.execute_settings_and_audit(command);
         }
+        if matches!(&command, FeatureCommand::BoxHandoffResolve { .. }) {
+            return self.resolve_box_handoff(command);
+        }
         if is_product_surface_command(&command) {
             return self.execute_product_surface(command);
         }
         match self.config.mode {
             HostMode::Test => self.execute_test(command),
             HostMode::Production => self.execute_production(command),
+        }
+    }
+
+    fn resolve_box_handoff(
+        &self,
+        command: FeatureCommand,
+    ) -> Result<CommandAccepted, FeatureHostError> {
+        let FeatureCommand::BoxHandoffResolve {
+            request_id,
+            handoff_request_id,
+            agent_id,
+            resolution,
+        } = command
+        else {
+            unreachable!("box handoff resolver only accepts box.handoff.resolve");
+        };
+        let resolution = resolution.trim().to_string();
+        if !matches!(
+            resolution.as_str(),
+            "completed" | "dismissed" | "viewer-closed"
+        ) {
+            return Err(FeatureHostError::Contract(
+                "box handoff resolution must be completed, dismissed, or viewer-closed".into(),
+            ));
+        }
+        let pending = {
+            let mut state = self.state()?;
+            let Some(pending) = state.pending_box_handoffs.get_mut(&agent_id) else {
+                return Err(FeatureHostError::Contract(format!(
+                    "no pending box handoff for agent {agent_id}"
+                )));
+            };
+            if pending.request_id != handoff_request_id {
+                return Err(FeatureHostError::Contract(
+                    "box handoff request identity is stale".into(),
+                ));
+            }
+            if pending.resolving {
+                return Err(FeatureHostError::Contract(
+                    "box handoff is already settling".into(),
+                ));
+            }
+            pending.resolving = true;
+            pending.clone()
+        };
+
+        match self.config.mode {
+            HostMode::Test => {
+                let mut state = self.state()?;
+                state.pending_box_handoffs.remove(&agent_id);
+                state.events.push_back(HostEvent::BoxHandoffResolved {
+                    timestamp: timestamp(),
+                    request_id: handoff_request_id,
+                    agent_id,
+                    resolution,
+                    resume_operation_id: String::new(),
+                });
+                Ok(CommandAccepted {
+                    request_id,
+                    operation_id: None,
+                })
+            }
+            HostMode::Production => {
+                #[cfg(feature = "production")]
+                {
+                    let prompt = match resolution.as_str() {
+                        "dismissed" => {
+                            "[The user declined your request for help. Do not assume the requested step happened and do not immediately request the same help again. Continue another way if possible; if blocked, briefly tell the user what is blocked and wait.]"
+                        }
+                        "viewer-closed" => {
+                            "[The user closed the handoff without explicitly confirming completion. Re-check the current state using read-only tools before acting. If you cannot tell whether the requested step finished, ask the user briefly instead of assuming.]"
+                        }
+                        _ => {
+                            "[The user completed the requested handoff step and returned control. Re-check the current state with read-only tools first, then continue the task from the verified state.]"
+                        }
+                    };
+                    let runtime = match self.runtime() {
+                        Ok(runtime) => runtime,
+                        Err(error) => {
+                            if let Ok(mut state) = self.state() {
+                                if let Some(live) =
+                                    state.pending_box_handoffs.get_mut(&pending.agent_id)
+                                {
+                                    if live.request_id == pending.request_id {
+                                        live.resolving = false;
+                                    }
+                                }
+                            }
+                            return Err(error);
+                        }
+                    };
+                    let response = match runtime.execute(RuntimeCommand::SendMessage {
+                        conversation_id: ConversationId(pending.conversation_id.clone()),
+                        text: prompt.into(),
+                        display_text: None,
+                        client_message_id: Some(format!(
+                            "box-handoff-resume:{}",
+                            pending.request_id
+                        )),
+                        hidden: true,
+                        show_assistant_output: false,
+                        recovery_eligible: false,
+                        reply_to_message_id: None,
+                        is_fork: false,
+                        attachment_batch_id: None,
+                        selected_image_data_urls: Vec::new(),
+                    }) {
+                        Ok(response) => response,
+                        Err(error) => {
+                            if let Ok(mut state) = self.state() {
+                                if let Some(live) =
+                                    state.pending_box_handoffs.get_mut(&pending.agent_id)
+                                {
+                                    if live.request_id == pending.request_id {
+                                        live.resolving = false;
+                                    }
+                                }
+                            }
+                            return Err(error.into());
+                        }
+                    };
+                    let resume_operation_id = match response {
+                        RuntimeResponse::Accepted { operation_id } => operation_id.to_string(),
+                        other => {
+                            if let Ok(mut state) = self.state() {
+                                if let Some(live) =
+                                    state.pending_box_handoffs.get_mut(&pending.agent_id)
+                                {
+                                    if live.request_id == pending.request_id {
+                                        live.resolving = false;
+                                    }
+                                }
+                            }
+                            return Err(unexpected_response("box.handoff.resolve", other));
+                        }
+                    };
+                    let mut state = self.state()?;
+                    let still_current = !state.closed
+                        && state
+                            .pending_box_handoffs
+                            .get(&pending.agent_id)
+                            .is_some_and(|live| {
+                                live.request_id == pending.request_id && live.resolving
+                            });
+                    if !still_current {
+                        drop(state);
+                        let _ = self
+                            .runtime()?
+                            .interrupt(OperationId(resume_operation_id.clone()));
+                        return Err(FeatureHostError::Contract(
+                            "box handoff changed while resume was being prepared".into(),
+                        ));
+                    }
+                    state.pending_box_handoffs.remove(&pending.agent_id);
+                    state.operations.insert(resume_operation_id.clone());
+                    state
+                        .operation_agents
+                        .insert(resume_operation_id.clone(), pending.agent_id.clone());
+                    state.events.push_back(HostEvent::BoxHandoffResolved {
+                        timestamp: timestamp(),
+                        request_id: pending.request_id,
+                        agent_id: pending.agent_id,
+                        resolution,
+                        resume_operation_id: resume_operation_id.clone(),
+                    });
+                    state.events.push_back(HostEvent::OperationStarted {
+                        timestamp: timestamp(),
+                        operation_id: resume_operation_id.clone(),
+                        label: "box-handoff-resume".into(),
+                        interruptible: true,
+                    });
+                    Ok(CommandAccepted {
+                        request_id,
+                        operation_id: Some(resume_operation_id),
+                    })
+                }
+                #[cfg(not(feature = "production"))]
+                return Err(FeatureHostError::ProductionUnavailable);
+            }
         }
     }
 
@@ -6116,9 +6310,8 @@ impl FeatureHostController {
             // fresh password/browser/OAuth login, so the first chat.send only
             // submits work; it never becomes the trigger that starts the
             // provider process/thread.
-            self.runtime()?.warmup_conversation(ConversationId(
-                MAHAYANA_AI_CONVERSATION_ID.to_string(),
-            ))?;
+            self.runtime()?
+                .warmup_conversation(ConversationId(MAHAYANA_AI_CONVERSATION_ID.to_string()))?;
         }
         Ok(())
     }
@@ -6265,6 +6458,7 @@ impl FeatureHostController {
             state.awaited_operations.clear();
             state.operation_terminals.clear();
             state.background_operations.clear();
+            state.pending_box_handoffs.clear();
             state.remote_computer_sessions.clear();
             state.group_runs.clear();
             state.group_operations.clear();
@@ -6274,8 +6468,7 @@ impl FeatureHostController {
             *self
                 .client_side_tool_v2
                 .lock()
-                .map_err(|_| FeatureHostError::StatePoisoned)? =
-                ClientSideToolV2Producer::new();
+                .map_err(|_| FeatureHostError::StatePoisoned)? = ClientSideToolV2Producer::new();
             state.events.push_back(HostEvent::HostClosed {
                 timestamp: timestamp(),
             });
@@ -6911,6 +7104,69 @@ impl FeatureHostController {
                     let state = self.state()?;
                     activity_parent_agent_id(&state, &operation_id)
                 };
+                if kind == "box_handoff_request" {
+                    let provider_metadata = metadata
+                        .as_ref()
+                        .and_then(|value| value.get("provider"))
+                        .and_then(|value| value.as_object());
+                    let instruction = provider_metadata
+                        .and_then(|value| value.get("instruction"))
+                        .and_then(Value::as_str)
+                        .or(detail.as_deref())
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty())
+                        .ok_or_else(|| {
+                            FeatureHostError::Contract(
+                                "box handoff request is missing an instruction".into(),
+                            )
+                        })?
+                        .to_string();
+                    let optional_field = |name: &str| {
+                        provider_metadata
+                            .and_then(|value| value.get(name))
+                            .and_then(Value::as_str)
+                            .map(str::trim)
+                            .filter(|value| !value.is_empty())
+                            .map(str::to_string)
+                    };
+                    let reason = optional_field("reason");
+                    let domain = optional_field("domain");
+                    let idp_domain = optional_field("idp_domain");
+                    let mut state = self.state()?;
+                    let conversation_id = state
+                        .bots
+                        .get(&agent_id)
+                        .and_then(|bot| bot.conversation_id.clone())
+                        .unwrap_or_else(|| MAHAYANA_AI_CONVERSATION_ID.to_string());
+                    let pending = if let Some(existing) = state.pending_box_handoffs.get(&agent_id)
+                    {
+                        existing.clone()
+                    } else {
+                        let request_id = next_id(&mut state, "box-handoff");
+                        let pending = PendingBoxHandoff {
+                            request_id,
+                            agent_id: agent_id.clone(),
+                            conversation_id,
+                            instruction: instruction.clone(),
+                            source_operation_id: operation_id.clone(),
+                            resolving: false,
+                        };
+                        state
+                            .pending_box_handoffs
+                            .insert(agent_id.clone(), pending.clone());
+                        pending
+                    };
+                    return Ok(Some(HostEvent::BoxHandoffRequested {
+                        timestamp: timestamp(),
+                        request_id: pending.request_id,
+                        agent_id: pending.agent_id,
+                        operation_id: pending.source_operation_id,
+                        instruction: pending.instruction,
+                        reason,
+                        domain,
+                        idp_domain,
+                    }));
+                }
                 if kind == "tool" {
                     if let Some(tool_call_id) = metadata
                         .as_ref()
@@ -6926,7 +7182,8 @@ impl FeatureHostController {
                                 RuntimeActivityStatus::Running => {
                                     producer.publish_call(&agent_id, tool_call_id)
                                 }
-                                RuntimeActivityStatus::Completed | RuntimeActivityStatus::Failed => {
+                                RuntimeActivityStatus::Completed
+                                | RuntimeActivityStatus::Failed => {
                                     producer.publish_result(&agent_id, tool_call_id)
                                 }
                                 _ => None,
@@ -7521,10 +7778,8 @@ impl FeatureHostController {
             ),
             other => return Err(unexpected_response("runtime.status", other)),
         };
-        let media_channels =
-            crate::send_message_shaping::split_send_media_channels(&attachments);
-        let selected_image_data_urls =
-            selected_image_data_urls(&media_channels.image_attachments);
+        let media_channels = crate::send_message_shaping::split_send_media_channels(&attachments);
+        let selected_image_data_urls = selected_image_data_urls(&media_channels.image_attachments);
         let mut runtime_text = compose_agent_input(
             &text,
             mode,
@@ -7837,10 +8092,9 @@ impl FeatureHostController {
             next_before_message_id,
         });
         if !was_active {
-            state.conversation_session.schedule_deferred_activation(
-                &conversation_id,
-                shipped_through_id.as_deref(),
-            );
+            state
+                .conversation_session
+                .schedule_deferred_activation(&conversation_id, shipped_through_id.as_deref());
         }
         Ok(CommandAccepted {
             request_id,
@@ -9710,7 +9964,9 @@ fn load_agent_inbound_image_data_urls(images: &[AgentMessageImage]) -> Vec<Strin
         .iter()
         .filter_map(|image| {
             let url = url::Url::parse(&image.url).ok()?;
-            (url.scheme() == "file").then(|| url.to_file_path().ok()).flatten()
+            (url.scheme() == "file")
+                .then(|| url.to_file_path().ok())
+                .flatten()
         })
         .collect::<Vec<_>>();
     let path_strings = paths
@@ -12385,10 +12641,9 @@ mod tests {
             .expect("register awaited operation");
         {
             let mut state = controller.state().expect("state");
-            state.operation_terminals.insert(
-                operation_id.clone(),
-                json!({"status": "completed"}),
-            );
+            state
+                .operation_terminals
+                .insert(operation_id.clone(), json!({"status": "completed"}));
         }
 
         let terminal = controller
@@ -12610,10 +12865,12 @@ mod tests {
             state.settings.local_tool_permission,
             LocalToolPermission::Always
         );
-        assert!(state
-            .groups
-            .values()
-            .any(|group| group.name == "Single owner room"));
+        assert!(
+            state
+                .groups
+                .values()
+                .any(|group| group.name == "Single owner room")
+        );
     }
 
     #[test]
@@ -13876,10 +14133,7 @@ mod tests {
         let data_urls = load_agent_inbound_image_data_urls(&images);
         let _ = std::fs::remove_file(path);
         assert_eq!(data_urls.len(), 1);
-        assert_eq!(
-            data_urls[0],
-            "data:image/png;base64,Z2VuZXJhdGVkLWltYWdl"
-        );
+        assert_eq!(data_urls[0], "data:image/png;base64,Z2VuZXJhdGVkLWltYWdl");
     }
 
     #[cfg(not(feature = "production"))]
@@ -13936,6 +14190,114 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(kinds.contains(&"marketplace.installed"));
         assert!(kinds.contains(&"session.cleared"));
+    }
+
+    #[cfg(feature = "production")]
+    #[test]
+    fn transcript_owner_tracks_box_handoff_and_test_settlement_once() {
+        let controller = controller();
+        drain(&controller);
+        let operation_id = OperationId("operation-handoff".into());
+        {
+            let mut state = controller.state().expect("state");
+            state.operations.insert(operation_id.to_string());
+            state
+                .operation_agents
+                .insert(operation_id.to_string(), "mahayana-assistant".into());
+        }
+        let requested = controller
+            .translate_runtime_event(RuntimeEvent::AgentActivity {
+                operation_id: operation_id.clone(),
+                step_id: "box-handoff:tool-1".into(),
+                kind: "box_handoff_request".into(),
+                title: "Waiting for user help".into(),
+                detail: Some("Complete the sign-in challenge".into()),
+                status: RuntimeActivityStatus::Completed,
+                metadata: Some(json!({
+                    "stepId": "box-handoff:tool-1",
+                    "status": "completed",
+                    "provider": {
+                        "toolCallId": "tool-1",
+                        "instruction": "Complete the sign-in challenge",
+                        "reason": "auth",
+                        "domain": "example.com"
+                    }
+                })),
+            })
+            .expect("translate handoff request")
+            .expect("handoff request event");
+        let handoff_request_id = match requested {
+            HostEvent::BoxHandoffRequested {
+                request_id,
+                agent_id,
+                operation_id: source_operation,
+                instruction,
+                reason,
+                ..
+            } => {
+                assert_eq!(agent_id, "mahayana-assistant");
+                assert_eq!(source_operation, operation_id.to_string());
+                assert_eq!(instruction, "Complete the sign-in challenge");
+                assert_eq!(reason.as_deref(), Some("auth"));
+                request_id
+            }
+            other => panic!("unexpected event: {other:?}"),
+        };
+        assert_eq!(controller.state().unwrap().pending_box_handoffs.len(), 1);
+
+        let accepted = controller
+            .execute(FeatureCommand::BoxHandoffResolve {
+                request_id: "resolve-handoff".into(),
+                handoff_request_id: handoff_request_id.clone(),
+                agent_id: "mahayana-assistant".into(),
+                resolution: "completed".into(),
+            })
+            .expect("settle test handoff");
+        assert!(accepted.operation_id.is_none());
+        let mut state = controller.state().expect("state");
+        assert!(state.pending_box_handoffs.is_empty());
+        assert!(matches!(
+            state.events.pop_back(),
+            Some(HostEvent::BoxHandoffResolved {
+                request_id,
+                resolution,
+                ..
+            }) if request_id == handoff_request_id && resolution == "completed"
+        ));
+        drop(state);
+        assert!(
+            controller
+                .execute(FeatureCommand::BoxHandoffResolve {
+                    request_id: "resolve-stale".into(),
+                    handoff_request_id,
+                    agent_id: "mahayana-assistant".into(),
+                    resolution: "completed".into(),
+                })
+                .is_err()
+        );
+
+        controller
+            .translate_runtime_event(RuntimeEvent::AgentActivity {
+                operation_id,
+                step_id: "box-handoff:tool-2".into(),
+                kind: "box_handoff_request".into(),
+                title: "Waiting for user help".into(),
+                detail: Some("Complete a second protected step".into()),
+                status: RuntimeActivityStatus::Completed,
+                metadata: Some(json!({
+                    "stepId": "box-handoff:tool-2",
+                    "status": "completed",
+                    "provider": {
+                        "toolCallId": "tool-2",
+                        "instruction": "Complete a second protected step"
+                    }
+                })),
+            })
+            .expect("translate second handoff")
+            .expect("second handoff event");
+        assert_eq!(controller.state().unwrap().pending_box_handoffs.len(), 1);
+        controller.close().expect("close host");
+        assert!(controller.state().unwrap().pending_box_handoffs.is_empty());
     }
 
     #[cfg(feature = "production")]
@@ -14065,10 +14427,9 @@ mod tests {
         {
             let mut state = controller.state().expect("feature state");
             state.operations.insert(interrupted_id.to_string());
-            state.operation_agents.insert(
-                interrupted_id.to_string(),
-                "mahayana-assistant".into(),
-            );
+            state
+                .operation_agents
+                .insert(interrupted_id.to_string(), "mahayana-assistant".into());
         }
         let interrupted = controller
             .translate_runtime_event(RuntimeEvent::OperationInterrupted {
@@ -14087,13 +14448,15 @@ mod tests {
                 && reason == "superseded by a new user message"
         ));
         assert!(controller.state().expect("feature state").trays.is_empty());
-        assert!(controller
-            .translate_runtime_event(RuntimeEvent::OperationInterrupted {
-                operation_id: interrupted_id,
-                reason: "duplicate".into(),
-            })
-            .expect("translate duplicate interruption")
-            .is_none());
+        assert!(
+            controller
+                .translate_runtime_event(RuntimeEvent::OperationInterrupted {
+                    operation_id: interrupted_id,
+                    reason: "duplicate".into(),
+                })
+                .expect("translate duplicate interruption")
+                .is_none()
+        );
 
         let failed = controller
             .translate_runtime_event(RuntimeEvent::OperationFailed {
@@ -14164,7 +14527,10 @@ mod tests {
                 assert_eq!(payload["kind"], "call");
                 assert_eq!(payload["agentId"], "agent-tools");
                 assert_eq!(payload["sequence"], 1);
-                assert_eq!(payload["message"]["messageType"], "aiserver.v1.ClientSideToolV2Call");
+                assert_eq!(
+                    payload["message"]["messageType"],
+                    "aiserver.v1.ClientSideToolV2Call"
+                );
                 (
                     payload["epoch"].as_str().expect("epoch").to_string(),
                     payload["sequence"].as_u64().expect("sequence"),
@@ -14199,7 +14565,10 @@ mod tests {
                 assert_eq!(payload["kind"], "result");
                 assert_eq!(payload["epoch"], epoch);
                 assert_eq!(payload["sequence"], 2);
-                assert_eq!(payload["message"]["messageType"], "aiserver.v1.ClientSideToolV2Result");
+                assert_eq!(
+                    payload["message"]["messageType"],
+                    "aiserver.v1.ClientSideToolV2Result"
+                );
             }
             other => panic!("unexpected event: {other:?}"),
         }
@@ -14326,7 +14695,6 @@ mod tests {
         panic!("assistant unread did not become {expected}")
     }
 
-
     #[test]
     fn deferred_conversation_activation_is_generation_fenced_and_runs_after_window_delivery() {
         let controller = controller();
@@ -14349,8 +14717,14 @@ mod tests {
             })
             .expect("supersede bounded conversation");
 
-        let first = controller.receive().expect("receive first window").expect("first event");
-        let second = controller.receive().expect("receive second window").expect("second event");
+        let first = controller
+            .receive()
+            .expect("receive first window")
+            .expect("first event");
+        let second = controller
+            .receive()
+            .expect("receive second window")
+            .expect("second event");
         assert!(matches!(
             first,
             HostEvent::ConversationWindowOpened {
@@ -14365,12 +14739,14 @@ mod tests {
                 ..
             } if conversation_id == "codex:agent:b"
         ));
-        assert!(controller
-            .state()
-            .expect("feature state")
-            .conversation_session
-            .active_conversation_id
-            .is_none());
+        assert!(
+            controller
+                .state()
+                .expect("feature state")
+                .conversation_session
+                .active_conversation_id
+                .is_none()
+        );
 
         let activated = controller
             .receive()

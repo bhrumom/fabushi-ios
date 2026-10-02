@@ -1069,7 +1069,11 @@ pub enum FeatureCommand {
         model: Option<String>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         attachments: Vec<AttachmentContext>,
-        #[serde(rename = "replyToMessageId", default, skip_serializing_if = "Option::is_none")]
+        #[serde(
+            rename = "replyToMessageId",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
         reply_to_message_id: Option<String>,
         #[serde(rename = "isFork", default)]
         is_fork: bool,
@@ -1935,6 +1939,16 @@ pub enum FeatureCommand {
         request_id: String,
         label: String,
     },
+    #[serde(rename = "box.handoff.resolve")]
+    BoxHandoffResolve {
+        #[serde(rename = "requestId")]
+        request_id: String,
+        #[serde(rename = "handoffRequestId")]
+        handoff_request_id: String,
+        #[serde(rename = "agentId")]
+        agent_id: String,
+        resolution: String,
+    },
     #[serde(rename = "session.clear")]
     SessionClear {
         #[serde(rename = "requestId")]
@@ -2044,6 +2058,7 @@ impl FeatureCommand {
             | Self::UpdateCheck { request_id }
             | Self::UpdateInstall { request_id }
             | Self::RuntimeLongTask { request_id, .. }
+            | Self::BoxHandoffResolve { request_id, .. }
             | Self::SessionClear { request_id } => request_id,
         }
     }
@@ -2170,10 +2185,7 @@ pub enum HostEvent {
     #[serde(rename = "host.ready")]
     HostReady { timestamp: String, info: HostInfo },
     #[serde(rename = "host.transport")]
-    TransportEvent {
-        channel: String,
-        payload: Value,
-    },
+    TransportEvent { channel: String, payload: Value },
     #[serde(rename = "chat.message")]
     ChatMessage {
         timestamp: String,
@@ -2187,9 +2199,17 @@ pub enum HostEvent {
             skip_serializing_if = "Option::is_none"
         )]
         operation_id: Option<String>,
-        #[serde(rename = "replyToMessageId", default, skip_serializing_if = "Option::is_none")]
+        #[serde(
+            rename = "replyToMessageId",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
         reply_to_message_id: Option<String>,
-        #[serde(rename = "attachmentBatchId", default, skip_serializing_if = "Option::is_none")]
+        #[serde(
+            rename = "attachmentBatchId",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
         attachment_batch_id: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         attachment: Option<Value>,
@@ -2215,6 +2235,34 @@ pub enum HostEvent {
         )]
         operation_id: Option<String>,
         card: TranscriptCard,
+    },
+    #[serde(rename = "box.handoff.requested")]
+    BoxHandoffRequested {
+        timestamp: String,
+        #[serde(rename = "requestId")]
+        request_id: String,
+        #[serde(rename = "agentId")]
+        agent_id: String,
+        #[serde(rename = "operationId")]
+        operation_id: String,
+        instruction: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        reason: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        domain: Option<String>,
+        #[serde(rename = "idpDomain", default, skip_serializing_if = "Option::is_none")]
+        idp_domain: Option<String>,
+    },
+    #[serde(rename = "box.handoff.resolved")]
+    BoxHandoffResolved {
+        timestamp: String,
+        #[serde(rename = "requestId")]
+        request_id: String,
+        #[serde(rename = "agentId")]
+        agent_id: String,
+        resolution: String,
+        #[serde(rename = "resumeOperationId")]
+        resume_operation_id: String,
     },
     #[serde(rename = "draft.changed")]
     DraftChanged {
@@ -2783,6 +2831,8 @@ impl HostEvent {
             Self::ChatMessage { .. } => "chat.message",
             Self::ChatDelta { .. } => "chat.delta",
             Self::TranscriptCard { .. } => "transcript.card",
+            Self::BoxHandoffRequested { .. } => "box.handoff.requested",
+            Self::BoxHandoffResolved { .. } => "box.handoff.resolved",
             Self::DraftChanged { .. } => "draft.changed",
             Self::SecretProvided { .. } => "secret.provided",
             Self::ConversationListed { .. } => "conversation.listed",
@@ -2888,6 +2938,41 @@ mod tests {
             serde_json::to_value(command).expect("encode command")["type"],
             "capability.request"
         );
+    }
+
+    #[test]
+    fn box_handoff_command_and_events_use_stable_wire_shapes() {
+        let command: FeatureCommand = serde_json::from_str(
+            r#"{"type":"box.handoff.resolve","requestId":"resolve-1","handoffRequestId":"handoff-7","agentId":"agent-a","resolution":"completed"}"#,
+        )
+        .expect("decode handoff resolve command");
+        assert_eq!(command.request_id(), "resolve-1");
+        assert!(matches!(
+            command,
+            FeatureCommand::BoxHandoffResolve {
+                handoff_request_id,
+                agent_id,
+                resolution,
+                ..
+            } if handoff_request_id == "handoff-7" && agent_id == "agent-a" && resolution == "completed"
+        ));
+
+        let event = HostEvent::BoxHandoffRequested {
+            timestamp: "0".into(),
+            request_id: "handoff-7".into(),
+            agent_id: "agent-a".into(),
+            operation_id: "operation-1".into(),
+            instruction: "Complete sign-in".into(),
+            reason: Some("auth".into()),
+            domain: Some("example.com".into()),
+            idp_domain: None,
+        };
+        let value = serde_json::to_value(event).expect("encode handoff event");
+        assert_eq!(value["type"], "box.handoff.requested");
+        assert_eq!(value["requestId"], "handoff-7");
+        assert_eq!(value["agentId"], "agent-a");
+        assert_eq!(value["operationId"], "operation-1");
+        assert_eq!(value["instruction"], "Complete sign-in");
     }
 
     #[test]
