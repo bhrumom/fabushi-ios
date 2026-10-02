@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `2126a60a388b9bc44545f11eaa22889861314d39`
+- pinned source commit for this baseline: `1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -207,6 +207,14 @@ Desktop PR #20 advanced one production commit from `854d4bffde64dee2d7f12ba09320
 The single-owner boundary is now complete through Runner facade construction. `HostRunnerComposition.compose_production_runner(...)` constructs `ProductionTurnAgentOwner`, attaches the production checkpoint sink and shared upgrade-quiesce signal, constructs `SandAgentRunner`, and attaches the generated-Agent runtime. Shipping `main.rs` delegates this construction and is contractually forbidden from directly rebuilding `ProductionTurnAgentOwner` or `SandAgentRunner`. This extends the already centralized turn decorators, transcript/checkpoint sink, and turn state surfaces.
 
 The iOS responsibility is the same even though the native mechanism differs: one Host/Runtime owner must construct the complete production Runner graph and lifecycle fences. SwiftUI and Mahayana Coordinator remain request/lifecycle transport layers, not parallel Runner constructors. These three changed rows stay `mapped` until the current iOS shipping path is audited and same-iOS-HEAD focused/CI evidence proves the equivalent ownership.
+
+### 1.21 Exact-HEAD rebaseline: 2026-10-03 / `1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef`
+
+Desktop PR #20 advanced one production commit from `2126a60a388b9bc44545f11eaa22889861314d39` to `1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef`; selected inventory remains **7,927** and `source-host` remains 957. The same three Host paths changed.
+
+`HostRunnerComposition` now also owns computer-use session lifecycle: preparation and control-lease acquisition, ready/failed preparation state, ownership checks, model/usage settlement at turn end, lease release, and window cleanup. Shipping `main.rs` delegates these operations and the focused contract forbids direct `ComputerUseCoordination` lifecycle ownership there. This extends the same single composition owner that already owns turn decoration, transcript/checkpoint sinks, state surfaces, and final Runner construction.
+
+On iOS, computer-use or native-control mechanisms may differ, but control/session lifecycle truth must stay with the canonical Host/Runner owner. SwiftUI and Coordinator may transport intent and project state; they cannot own control leases, preparation truth, or terminal cleanup. The three changed rows remain `mapped` until the shipping iOS path and same-head focused/CI evidence prove this ownership.
 
 ## 2. Product goal
 

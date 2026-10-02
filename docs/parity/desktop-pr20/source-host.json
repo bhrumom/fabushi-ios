@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "2126a60a388b9bc44545f11eaa22889861314d39",
+  "sourceCommit": "1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -36,18 +36,18 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "80c22469aff95c1cff5b13487080001386418352",
-      "desktop_responsibility": "Shipping Host delegates production turn decoration, transcript/checkpoint and state-surface construction, and the final ProductionTurnAgentOwner/SandAgentRunner facade construction to HostRunnerComposition; main.rs supplies request-scoped dependencies but does not construct a parallel Runner owner.",
+      "desktop_blob_sha": "6bae266636427045073663c69779292cfadb1f1f",
+      "desktop_responsibility": "Shipping Host delegates the complete production Runner object graph plus computer-use preparation/control-lease/turn-settlement lifecycle to HostRunnerComposition; main.rs supplies request-specific inputs but no longer owns a parallel ComputerUseCoordination lifecycle.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "Every production turn crosses one Host-owned composition path including checkpoint, quiesce and generated-agent runtime wiring.",
+      "desktop_visible_effect": "Computer-use turns and ordinary turns share one Host-owned composition/lifecycle boundary, preventing leaked control leases or divergent settlement.",
       "ios_disposition": "ios-adapted",
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust",
-      "ios_platform_delta": "iOS must keep final Runner facade construction with the same single native Host/Runtime composition owner; SwiftUI/Coordinator remain callers, not owners.",
+      "ios_platform_delta": "iOS must keep computer-use/native-control preparation and settlement with the same canonical Host/Runner lifecycle owner; UI/Coordinator can request or project state but cannot own leases.",
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Revalidated against Desktop PR #20 2126a60a388b9bc44545f11eaa22889861314d39; ownership expanded again and current iOS parity is not inherited. Shipping-path audit plus same-head evidence required."
+      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -6591,18 +6591,18 @@
     },
     {
       "desktop_path": "source/host/src/host_runner_composition.rs",
-      "desktop_blob_sha": "f3e85fe9b4838fd7bf8be9c52f4c7c438742d3e3",
-      "desktop_responsibility": "Canonical Host -> Runner production composition owner for turn decorators, transcript/checkpoint sink, state surfaces, and final ProductionTurnAgentOwner/SandAgentRunner construction including upgrade-quiesce and generated-agent runtime.",
+      "desktop_blob_sha": "d25a85497bbd61ae7c7568b9a4b3feca09d0a56e",
+      "desktop_responsibility": "Canonical Host -> Runner owner for turn assembly, checkpoint/state surfaces, final Runner construction, and computer-use session lifecycle including preparation, control lease, ready/failed state, model/usage settlement, release, and window cleanup.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "One owner determines the complete shipping Runner object graph and lifecycle fences for each turn.",
+      "desktop_visible_effect": "One Host owner fences computer control and Runner lifecycle from preparation through terminal settlement.",
       "ios_disposition": "ios-adapted",
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust",
-      "ios_platform_delta": "Adapt to iOS-native runtime boundaries while retaining one Host-owned constructor for the complete production Runner graph.",
+      "ios_platform_delta": "Map Desktop computer-use coordination to iOS-native capability/session ownership without introducing SwiftUI or Coordinator lease truth.",
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Revalidated against Desktop PR #20 2126a60a388b9bc44545f11eaa22889861314d39; ownership expanded again and current iOS parity is not inherited. Shipping-path audit plus same-head evidence required."
+      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required."
     },
     {
       "desktop_path": "source/host/src/host_secret_store.rs",
@@ -11481,18 +11481,18 @@
     },
     {
       "desktop_path": "source/host/tests/host_runner_composition_production_wiring_contract.rs",
-      "desktop_blob_sha": "65b967fea8f9a30713082408824b75c82990a4f9",
-      "desktop_responsibility": "Focused production contract proving HostRunnerComposition exclusively owns turn decoration, checkpoint/state surfaces, and final Runner facade construction; shipping main.rs may only consume those entrypoints.",
+      "desktop_blob_sha": "28370427c38a9e447539657eee959a72718c3bfa",
+      "desktop_responsibility": "Focused production contract proving HostRunnerComposition owns turn/checkpoint/state/Runner construction and computer-use session lifecycle while shipping main.rs cannot directly acquire/release control leases or own preparation/settlement.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "CI rejects any second shipping Runner/checkpoint/state construction path.",
+      "desktop_visible_effect": "CI rejects parallel Runner or computer-use lifecycle ownership.",
       "ios_disposition": "ios-adapted",
       "ios_target_path": "mobile/ios/FabushiTests/RunnerParityTests.swift",
       "ios_language": "Swift",
-      "ios_platform_delta": "Prove the equivalent iOS shipping owner through native behavior/composition contracts, not copied Desktop string assertions.",
+      "ios_platform_delta": "Prove native iOS Host/Runner lifecycle ownership with behavior contracts; do not substitute Desktop string matching.",
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Revalidated against Desktop PR #20 2126a60a388b9bc44545f11eaa22889861314d39; ownership expanded again and current iOS parity is not inherited. Shipping-path audit plus same-head evidence required."
+      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required."
     },
     {
       "desktop_path": "source/host/tests/host_secret_store_contract.rs",
