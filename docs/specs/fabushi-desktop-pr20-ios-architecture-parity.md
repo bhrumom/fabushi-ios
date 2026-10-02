@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `a8cc75d1917ae8aa8c81d241f17cba57589bb4db`
+- pinned source commit for this baseline: `cbed42883dec4dbd12af2d54bd60d5855b3c0327`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -413,6 +413,25 @@ Desktop PR #20 advanced from `3e735e6e5b7253713815ee1d034bd8ec446fb5a7` to `a8cc
 The change does not alter the recovery/supersession state machine introduced at `3e735e6e`. `runner/mod.rs` now publicly re-exports `is_recovery_shaped_turn`, while `host/app/src/main.rs` imports that helper through the public `runner` surface instead of the private `runner::turn_run_shell` path. Shipping composition still registers recovery shape before dispatch and marks the same routed stream dispatched; request/run identity, terminal settlement, targeted cancellation, recovery classification, and failure semantics are unchanged.
 
 For iOS this export shape is not itself a required mechanism because the iOS Host/Runner boundary is iOS-owned and in-process. The applicable product responsibility remains the pre-dispatch `dispatched + recovery_shaped` supersession fence identified in section 11.6. The two changed Desktop rows are revalidated against `a8cc75d1`; no previous exact-HEAD CI is promoted to current parity evidence.
+
+
+
+### 11.8 Deferred windowed Session activation rebaseline
+
+Desktop PR #20 advanced from `a8cc75d1917ae8aa8c81d241f17cba57589bb4db` to `cbed42883dec4dbd12af2d54bd60d5855b3c0327` in two commits. Four selected Host blobs changed: `source/host/app/src/main.rs`, `source/host/src/extensions/transcript/roster_emit.rs`, `source/host/src/extensions/transcript/session_runtime.rs`, and `source/host/tests/transcript_session_runtime_contract.rs`.
+
+The normative product responsibility added by this delta is Session activation after a bounded/windowed transcript read:
+
+- the bounded response settles before a cold Session becomes the canonical active Agent;
+- SessionRuntime assigns a monotonically supersedable activation generation and retains the target Agent plus the last transcript entry already shipped in the bounded response;
+- only the latest matching generation/Agent may claim activation; explicit Agent switch and Agent deletion invalidate pending activation;
+- after the claim, Host switches the canonical active Agent and emits only transcript entries strictly after the retained `shippedThroughId`; if that anchor is missing, it does not guess a catch-up range;
+- roster projection is refreshed for the newly active Agent and the previously active Agent when they differ;
+- ordinary gateway contact refreshes focus freshness only while the desktop window is focused, preserving the existing focus/staleness state machine.
+
+iOS must preserve this responsibility but need not reproduce a desktop window or background thread. The iOS-native replacement should keep a generation-fenced pending conversation/Agent activation owner at the canonical session/runtime boundary, settle any bounded snapshot first, then apply the latest activation and delta catch-up through structured concurrency. iOS scene activity replaces desktop focus freshness where that product effect applies. The current iOS UI's local `selectedConversation` state and `markRead` call are only presentation state and are not accepted as a replacement canonical Session activation owner.
+
+Because this is a new upstream responsibility, these four Host rows are `unreviewed` on this baseline. It is now the earliest upstream delta and must be dispositioned before the pre-dispatch supersession work from section 11.6 can be accepted. Existing supersession implementation work remains migration material because its Desktop source semantics are unchanged by this delta.
 
 
 ## 12. Frontend requirements

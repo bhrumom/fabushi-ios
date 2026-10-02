@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "a8cc75d1917ae8aa8c81d241f17cba57589bb4db",
+  "sourceCommit": "cbed42883dec4dbd12af2d54bd60d5855b3c0327",
   "group": "source-host",
   "fileCount": 955,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "eb0095336c624a6f04887adcabd7361ca22a3082",
-      "size": 509773
+      "blobSha": "fe748c4be3045d2ccf24808d2628f01752a6209e",
+      "size": 514109
     },
     {
       "path": "source/host/build.rs",
@@ -1890,8 +1890,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/roster_emit.rs",
-      "blobSha": "997422281defa9bf77be918fb152fc5199981365",
-      "size": 15853
+      "blobSha": "8f895f594080fa1d191602541ba14d4bf201e9d8",
+      "size": 16495
     },
     {
       "path": "source/host/src/extensions/transcript/roster_projection.rs",
@@ -1980,8 +1980,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/session_runtime.rs",
-      "blobSha": "4a059aedce8f04da506fa95e7b8cc50b6848cf3d",
-      "size": 9521
+      "blobSha": "fb41f583a5d1dd0af656c6a2ccdc3c005bbf4762",
+      "size": 12394
     },
     {
       "path": "source/host/src/extensions/transcript/shared_rooms.rs",
@@ -4650,8 +4650,8 @@
     },
     {
       "path": "source/host/tests/transcript_session_runtime_contract.rs",
-      "blobSha": "f3577da75cc0c9b6e10db026c28390d494669eae",
-      "size": 11631
+      "blobSha": "54464477fd6264744617b613f33066ea5c5d49d0",
+      "size": 14968
     },
     {
       "path": "source/host/tests/transcript_store_contract.rs",
