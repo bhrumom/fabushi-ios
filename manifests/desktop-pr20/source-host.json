@@ -16,7 +16,7 @@
     {
       "path": "source/host/app/src/main.rs",
       "blobSha": "eb0095336c624a6f04887adcabd7361ca22a3082",
-      "size": 509789
+      "size": 509773
     },
     {
       "path": "source/host/build.rs",
@@ -2391,7 +2391,7 @@
     {
       "path": "source/host/src/runner/mod.rs",
       "blobSha": "64c306ba6d6ae2a2885b1d27fd237fa72501fb28",
-      "size": 3567
+      "size": 3592
     },
     {
       "path": "source/host/src/runner/production_agent_checkpoint.rs",
