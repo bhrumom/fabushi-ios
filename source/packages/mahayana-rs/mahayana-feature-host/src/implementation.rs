@@ -437,6 +437,40 @@ impl Default for FeatureState {
     }
 }
 
+fn active_agent_id_for_state(state: &FeatureState) -> Option<String> {
+    let conversation_id = state
+        .conversation_session
+        .active_conversation_id
+        .as_deref()?;
+    state
+        .bots
+        .values()
+        .find(|bot| bot.conversation_id.as_deref() == Some(conversation_id))
+        .map(|bot| bot.id.clone())
+}
+
+fn queue_active_agent_automation_projection(state: &mut FeatureState, agent_id: &str) -> bool {
+    if active_agent_id_for_state(state).as_deref() != Some(agent_id) {
+        return false;
+    }
+
+    let mut automations = state
+        .automations
+        .values()
+        .filter(|automation| automation.agent_id.as_deref() == Some(agent_id))
+        .cloned()
+        .collect::<Vec<_>>();
+    automations.sort_by_key(|item| item.created_at_ms);
+    state.events.push_back(HostEvent::TransportEvent {
+        channel: "automations".into(),
+        payload: json!({
+            "agentId": agent_id,
+            "automations": automations,
+        }),
+    });
+    true
+}
+
 pub struct FeatureHostController {
     config: HostConfig,
     info: HostInfo,
@@ -6929,11 +6963,14 @@ impl FeatureHostController {
                 } else {
                     let mut state = self.state()?;
                     state.operations.remove(&operation_id);
-                    state.operation_agents.remove(&operation_id);
+                    let terminal_agent_id = state.operation_agents.remove(&operation_id);
                     if state.awaited_operations.contains(&operation_id) {
                         state
                             .operation_terminals
                             .insert(operation_id.clone(), json!({"status": "completed"}));
+                    }
+                    if let Some(agent_id) = terminal_agent_id {
+                        let _ = queue_active_agent_automation_projection(&mut state, &agent_id);
                     }
                     Some(HostEvent::OperationCompleted {
                         timestamp: timestamp(),
@@ -13606,7 +13643,7 @@ mod tests {
             "weekly-review".into(),
             AutomationSummary {
                 id: "weekly-review".into(),
-                agent_id: None,
+                agent_id: Some("research-bot".into()),
                 name: "每周复盘".into(),
                 prompt: "整理本周工作。".into(),
                 schedule: "@weekly".into(),
@@ -14477,6 +14514,193 @@ mod tests {
                 && code == "provider_error"
                 && message == "provider unavailable"
         ));
+    }
+
+    #[cfg(feature = "production")]
+    #[test]
+    fn settled_turn_projects_canonical_automations_only_for_the_still_active_agent() {
+        let controller = FeatureHostController::create_with_host_config(
+            HostConfig {
+                profile_id: "production-automation-projection".into(),
+                mode: HostMode::Production,
+            },
+            SurfacePlatform::Electron,
+            isolated_host_config("production-automation-projection"),
+        )
+        .expect("create production automation projection Host");
+
+        let automation = AutomationSummary {
+            id: "research-digest".into(),
+            agent_id: Some("research-bot".into()),
+            name: "Research digest".into(),
+            prompt: "Summarize the current research.".into(),
+            schedule: "@daily".into(),
+            trigger: Some(AutomationTrigger::Schedule {
+                schedule: "@daily".into(),
+            }),
+            enabled: true,
+            created_at_ms: 1,
+            last_run_at_ms: None,
+            next_run_at_ms: None,
+        };
+
+        let completed_id = OperationId("operation-automation-active".into());
+        {
+            let mut state = controller.state().expect("feature state");
+            state.events.clear();
+            state.operations.insert(completed_id.to_string());
+            state
+                .operation_agents
+                .insert(completed_id.to_string(), "research-bot".into());
+            state
+                .conversation_session
+                .active_conversation_id = Some("codex:agent:research".into());
+            state
+                .automations
+                .insert(automation.id.clone(), automation.clone());
+        }
+
+        let terminal = controller
+            .translate_runtime_event(RuntimeEvent::OperationCompleted {
+                operation_id: completed_id.clone(),
+            })
+            .expect("translate successful terminal")
+            .expect("successful terminal event");
+        assert!(matches!(
+            terminal,
+            HostEvent::OperationCompleted {
+                operation_id,
+                ..
+            } if operation_id == completed_id.to_string()
+        ));
+
+        let projection = controller
+            .state()
+            .expect("feature state")
+            .events
+            .pop_front()
+            .expect("active Agent automation projection");
+        match projection {
+            HostEvent::TransportEvent { channel, payload } => {
+                assert_eq!(channel, "automations");
+                assert_eq!(payload["agentId"], "research-bot");
+                assert_eq!(payload["automations"][0]["id"], "research-digest");
+                assert_eq!(payload["automations"][0]["agentId"], "research-bot");
+            }
+            other => panic!("unexpected automation projection: {other:?}"),
+        }
+
+        controller
+            .translate_runtime_event(RuntimeEvent::OperationCompleted {
+                operation_id: completed_id,
+            })
+            .expect("translate duplicate successful terminal")
+            .expect("duplicate terminal remains observable");
+        assert!(
+            !controller
+                .state()
+                .expect("feature state")
+                .events
+                .iter()
+                .any(|event| matches!(
+                    event,
+                    HostEvent::TransportEvent { channel, .. } if channel == "automations"
+                )),
+            "consumed operation-to-Agent identity must suppress duplicate automation projection"
+        );
+
+        let switched_id = OperationId("operation-automation-inactive".into());
+        {
+            let mut state = controller.state().expect("feature state");
+            state.events.clear();
+            state.operations.insert(switched_id.to_string());
+            state
+                .operation_agents
+                .insert(switched_id.to_string(), "research-bot".into());
+            state
+                .conversation_session
+                .active_conversation_id = Some("codex:agent:incident".into());
+        }
+        controller
+            .translate_runtime_event(RuntimeEvent::OperationCompleted {
+                operation_id: switched_id,
+            })
+            .expect("translate switched-Agent terminal")
+            .expect("switched-Agent terminal event");
+        assert!(
+            !controller
+                .state()
+                .expect("feature state")
+                .events
+                .iter()
+                .any(|event| matches!(
+                    event,
+                    HostEvent::TransportEvent { channel, .. } if channel == "automations"
+                )),
+            "inactive Agent must not project automations after a Session switch"
+        );
+
+        let interrupted_id = OperationId("operation-automation-interrupted".into());
+        {
+            let mut state = controller.state().expect("feature state");
+            state.events.clear();
+            state.operations.insert(interrupted_id.to_string());
+            state
+                .operation_agents
+                .insert(interrupted_id.to_string(), "research-bot".into());
+            state
+                .conversation_session
+                .active_conversation_id = Some("codex:agent:research".into());
+        }
+        controller
+            .translate_runtime_event(RuntimeEvent::OperationInterrupted {
+                operation_id: interrupted_id,
+                reason: "cancelled".into(),
+            })
+            .expect("translate interrupted terminal")
+            .expect("interrupted terminal event");
+        assert!(
+            !controller
+                .state()
+                .expect("feature state")
+                .events
+                .iter()
+                .any(|event| matches!(
+                    event,
+                    HostEvent::TransportEvent { channel, .. } if channel == "automations"
+                )),
+            "interrupted turn must not project a success automation snapshot"
+        );
+
+        let failed_id = OperationId("operation-automation-failed".into());
+        {
+            let mut state = controller.state().expect("feature state");
+            state.events.clear();
+            state.operations.insert(failed_id.to_string());
+            state
+                .operation_agents
+                .insert(failed_id.to_string(), "research-bot".into());
+        }
+        controller
+            .translate_runtime_event(RuntimeEvent::OperationFailed {
+                operation_id: failed_id,
+                code: "provider_error".into(),
+                message: "provider unavailable".into(),
+            })
+            .expect("translate failed terminal")
+            .expect("failed terminal event");
+        assert!(
+            !controller
+                .state()
+                .expect("feature state")
+                .events
+                .iter()
+                .any(|event| matches!(
+                    event,
+                    HostEvent::TransportEvent { channel, .. } if channel == "automations"
+                )),
+            "failed turn must not project a success automation snapshot"
+        );
     }
 
     #[cfg(feature = "production")]
