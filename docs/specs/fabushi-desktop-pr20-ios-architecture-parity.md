@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `612a075e7a7de5d845f765ade4eb51c7c318e3c8`
+- pinned source commit for this baseline: `9f22a1974f02683f4ad27a2fe856987b7dd1d20f`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -229,6 +229,12 @@ The closure must therefore provide a real Host-owned composition object used by 
 Desktop PR #20 advanced one commit from `1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef` to `612a075e7a7de5d845f765ade4eb51c7c318e3c8`. The selected inventory remains **7,927** and `source-host` remains 957; only `source/host/app/src/main.rs` changed. The production delta is a worker-closure capture correction: the asynchronous turn worker now calls the cloned `worker_host_runner_composition` for `compose_production_turn` and `compose_production_runner` rather than referencing the outer binding. No Host/Runner ownership, lifecycle state machine, or product effect changed.
 
 The iOS native Runner composition closure defined in Section 1.22 therefore remains the correct adaptation. This rebaseline only refreshes Desktop authority/blob identity; it does not promote the affected row. Same-iOS-HEAD production/test evidence remains required.
+
+### 1.24 Exact-HEAD rebaseline: 2026-10-03 / `9f22a1974f02683f4ad27a2fe856987b7dd1d20f`
+
+Desktop PR #20 advanced one contract-only commit from `612a075e7a7de5d845f765ade4eb51c7c318e3c8` to `9f22a1974f02683f4ad27a2fe856987b7dd1d20f`. The selected inventory remains exactly **7,927** blobs and `source-host` remains 957 rows. The only selected blob change is `source/host/tests/host_runner_composition_production_wiring_contract.rs`.
+
+The strengthened contract now explicitly requires the asynchronous shipping turn worker to consume the same `HostRunnerComposition` owner through `Arc::clone(&host_runner_composition)`, then invoke `worker_host_runner_composition.compose_production_turn(...)`. No shipping source, owner, state machine, or product effect changed. The iOS `MahayanaHost::build_runtime -> NativeRunnerComposition` implementation remains the reviewed platform adaptation because it likewise constructs one shared native Runner graph and passes the same `NativeEngine` ownership into Runtime and NativeAgent. The affected contract row remains `implemented`, never `verified`, until the same iOS exact HEAD completes required CI.
 
 ## 2. Product goal
 
