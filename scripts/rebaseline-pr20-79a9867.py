@@ -39,6 +39,23 @@ for ch in li["chunks"]:
     rows["source/host/tests/host_upgrade_production_contract.rs"]["desktop_visible_effect"]="Regression evidence prevents upgrade/recreate from silently dropping pending wake work or bypassing the canonical Host resume path."
   dump(p,o)
 li["source"]["commit"]=NEW; dump("docs/parity/desktop-pr20-index.json",li)
+# Complete the iOS-adapted target metadata for the 61f NativeEngine Runner rows
+host_path=Path("docs/parity/desktop-pr20/source-host.json")
+host=json.loads(host_path.read_text())
+host_rows={r["desktop_path"]:r for r in host["rows"]}
+for source_path in [
+  "source/host/src/runner/production_turn_agent_owner.rs",
+  "source/host/src/runner/turn_agent_composition.rs",
+  "source/host/src/runner/turn_shape.rs",
+  "source/host/tests/runner_delivery_parity_contract.rs",
+]:
+  row=host_rows[source_path]
+  assert row["implementation_status"]=="implemented"
+  row["ios_disposition"]="ios-adapted"
+  row["ios_target_path"]="source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs"
+  row["ios_language"]="Rust"
+dump(host_path,host)
+
 cp=Path("scripts/check-desktop-pr20-ios-architecture.py"); s=cp.read_text(); old=f'EXPECTED_DESKTOP_COMMIT = "{OLD}"'; assert old in s; cp.write_text(s.replace(old,f'EXPECTED_DESKTOP_COMMIT = "{NEW}"',1))
 sp=Path("docs/specs/fabushi-desktop-pr20-ios-architecture-parity.md"); s=sp.read_text(); bt=chr(96); old=f"- pinned source commit for this baseline: {bt}{OLD}{bt}"; assert old in s; s=s.replace(old,f"- pinned source commit for this baseline: {bt}{NEW}{bt}",1); assert "### 1.12 Exact-HEAD rebaseline" not in s
 sec="""### 1.12 Exact-HEAD rebaseline: 2026-10-03 / 79a9867ac6cbfecc5af9fcc9ac81225890c20245
