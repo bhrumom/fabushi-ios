@@ -388,7 +388,11 @@ mod tests {
                     conversation_id: conversation_id(42),
                     operation_id: OperationId("operation:test".into()),
                     text: "收到".into(),
+                    display_text: None,
                     client_message_id: Some("client:test".into()),
+                    hidden: false,
+                    recovery_eligible: false,
+                    selected_image_data_urls: Vec::new(),
                 },
                 events.clone(),
             )

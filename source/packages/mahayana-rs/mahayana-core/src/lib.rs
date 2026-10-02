@@ -318,10 +318,14 @@ pub enum RuntimeCommand {
         #[serde(rename = "conversationId")]
         conversation_id: ConversationId,
         text: String,
+        #[serde(rename = "displayText", default, skip_serializing_if = "Option::is_none")]
+        display_text: Option<String>,
         #[serde(rename = "clientMessageId")]
         client_message_id: Option<String>,
         #[serde(default)]
         hidden: bool,
+        #[serde(rename = "recoveryEligible", default)]
+        recovery_eligible: bool,
         #[serde(
             rename = "selectedImageDataUrls",
             default,
@@ -602,15 +606,19 @@ mod tests {
     fn command_wire_contract_uses_stable_type_and_camel_case_ids() {
         let command = RuntimeCommand::SendMessage {
             conversation_id: ConversationId(CODEX_ASSISTANT_CONVERSATION_ID.to_string()),
-            text: "你好".to_string(),
+            text: "[runtime context]\n你好".to_string(),
+            display_text: Some("你好".to_string()),
             client_message_id: Some("client-1".to_string()),
             hidden: false,
+            recovery_eligible: true,
             selected_image_data_urls: Vec::new(),
         };
         let json = serde_json::to_value(command).expect("serialize command");
         assert_eq!(json["@type"], "mahayana.conversation.send");
         assert_eq!(json["conversationId"], CODEX_ASSISTANT_CONVERSATION_ID);
         assert_eq!(json["clientMessageId"], "client-1");
+        assert_eq!(json["displayText"], "你好");
+        assert_eq!(json["recoveryEligible"], true);
     }
 
     #[test]

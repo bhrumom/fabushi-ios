@@ -30,6 +30,7 @@ use mahayana_core::RuntimeEvent;
 use mahayana_core::RuntimeResponse;
 use mahayana_core::RuntimeStatus;
 use mahayana_core::capability::CapabilityRegistry;
+use mahayana_conversation::select_history_window;
 use serde::Deserialize;
 use serde_json::Value;
 use serde_json::json;
@@ -230,8 +231,10 @@ impl MahayanaWebRuntime {
                 let send_command = RuntimeCommand::SendMessage {
                     conversation_id: conversation_id.clone(),
                     text,
+                    display_text: None,
                     client_message_id,
                     hidden: false,
+                    recovery_eligible: false,
                     selected_image_data_urls: Vec::new(),
                 };
                 let send_command = serde_json::to_string(&send_command).map_err(js_error)?;
@@ -370,11 +373,35 @@ impl MahayanaWebRuntime {
                     data: history[start..].to_vec(),
                 }
             }
+            RuntimeCommand::ConversationHistoryWindow {
+                conversation_id,
+                before_message_id,
+                after_message_id,
+                limit,
+            } => {
+                ensure_browser_conversation(&self.state.borrow().plugins, &conversation_id)?;
+                let state = self.state.borrow();
+                let history = state
+                    .histories
+                    .get(&conversation_id)
+                    .cloned()
+                    .unwrap_or_default();
+                let data = select_history_window(
+                    &history,
+                    before_message_id.as_deref(),
+                    after_message_id.as_deref(),
+                    limit,
+                )
+                .map_err(|error| JsValue::from_str(&error.to_string()))?;
+                RuntimeResponse::History { data }
+            }
             RuntimeCommand::SendMessage {
                 conversation_id,
                 text,
+                display_text: _,
                 client_message_id,
                 hidden,
+                recovery_eligible: _,
                 selected_image_data_urls: _,
             } => {
                 ensure_browser_conversation(&self.state.borrow().plugins, &conversation_id)?;

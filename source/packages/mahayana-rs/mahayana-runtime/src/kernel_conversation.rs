@@ -20,7 +20,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::sync::Mutex as AsyncMutex;
+use tokio::sync::{Mutex as AsyncMutex, Notify};
 
 // FeatureHost's explicit conversation.open contract requests 200 messages. The
 // background search/index path asks for 2,000 and Runtime clamps that request to
@@ -91,6 +91,84 @@ fn history_request_marks_read(limit: u32) -> bool {
     limit == OPEN_CONVERSATION_HISTORY_LIMIT
 }
 
+
+#[derive(Debug, Default)]
+struct DirectOperationGate {
+    dispatched: bool,
+    cancellation: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+struct DirectOperationState {
+    operation_id: KernelOperationId,
+    recovery_shaped: bool,
+    gate: Arc<Mutex<DirectOperationGate>>,
+    changed: Arc<Notify>,
+}
+
+impl DirectOperationState {
+    fn new(operation_id: KernelOperationId, recovery_shaped: bool) -> Self {
+        Self {
+            operation_id,
+            recovery_shaped,
+            gate: Arc::new(Mutex::new(DirectOperationGate::default())),
+            changed: Arc::new(Notify::new()),
+        }
+    }
+
+    fn snapshot(&self) -> Result<(bool, Option<String>), ConversationError> {
+        let gate = self.gate.lock().map_err(|_| {
+            ConversationError::Provider("direct operation gate mutex poisoned".into())
+        })?;
+        Ok((gate.dispatched, gate.cancellation.clone()))
+    }
+
+    fn pre_dispatch_supersede_allowed(
+        &self,
+        carries_recovery: bool,
+    ) -> Result<bool, ConversationError> {
+        let gate = self.gate.lock().map_err(|_| {
+            ConversationError::Provider("direct operation gate mutex poisoned".into())
+        })?;
+        Ok(!gate.dispatched
+            && gate.cancellation.is_none()
+            && carries_recovery
+            && self.recovery_shaped)
+    }
+
+    fn cancel_before_dispatch(&self, reason: &str) -> Result<bool, ConversationError> {
+        let mut gate = self.gate.lock().map_err(|_| {
+            ConversationError::Provider("direct operation gate mutex poisoned".into())
+        })?;
+        if gate.dispatched {
+            return Ok(false);
+        }
+        if gate.cancellation.is_none() {
+            gate.cancellation = Some(reason.to_string());
+        }
+        drop(gate);
+        self.changed.notify_waiters();
+        Ok(true)
+    }
+
+    fn mark_dispatched_or_cancelled(&self) -> Result<Option<String>, ConversationError> {
+        let mut gate = self.gate.lock().map_err(|_| {
+            ConversationError::Provider("direct operation gate mutex poisoned".into())
+        })?;
+        if let Some(reason) = gate.cancellation.clone() {
+            return Ok(Some(reason));
+        }
+        gate.dispatched = true;
+        drop(gate);
+        self.changed.notify_waiters();
+        Ok(None)
+    }
+
+    fn finish(&self) {
+        self.changed.notify_waiters();
+    }
+}
+
 pub struct KernelConversationProvider {
     backend: Arc<dyn EngineBackend>,
     profile: BuildProfile,
@@ -99,7 +177,7 @@ pub struct KernelConversationProvider {
     session_id: AsyncMutex<Option<SessionId>>,
     state: Arc<Mutex<ConversationState>>,
     history_path: Option<PathBuf>,
-    direct_operations: AsyncMutex<BTreeMap<String, KernelOperationId>>,
+    direct_operations: AsyncMutex<BTreeMap<String, DirectOperationState>>,
     interrupt_reasons: AsyncMutex<BTreeMap<String, String>>,
 }
 
@@ -125,6 +203,72 @@ impl KernelConversationProvider {
             history_path,
             direct_operations: AsyncMutex::new(BTreeMap::new()),
             interrupt_reasons: AsyncMutex::new(BTreeMap::new()),
+        }
+    }
+
+    async fn admit_direct_operation(
+        &self,
+        conversation_key: &str,
+        current: DirectOperationState,
+        carries_recovery: bool,
+    ) -> Result<(), ConversationError> {
+        const SUPERSEDE_REASON: &str = "superseded by a new user message";
+        loop {
+            let mut operations = self.direct_operations.lock().await;
+            let Some(previous) = operations.get(conversation_key).cloned() else {
+                operations.insert(conversation_key.to_string(), current.clone());
+                return Ok(());
+            };
+            if previous.operation_id == current.operation_id {
+                return Ok(());
+            }
+
+            let changed = Arc::clone(&previous.changed);
+            let notified = changed.notified();
+            let (dispatched, cancellation) = previous.snapshot()?;
+            if cancellation.is_some() {
+                drop(operations);
+                notified.await;
+                continue;
+            }
+            if !dispatched {
+                if previous.pre_dispatch_supersede_allowed(carries_recovery)? {
+                    if previous.cancel_before_dispatch(SUPERSEDE_REASON)? {
+                        operations.insert(conversation_key.to_string(), current.clone());
+                        return Ok(());
+                    }
+                    continue;
+                }
+                drop(operations);
+                notified.await;
+                continue;
+            }
+
+            self.interrupt_reasons
+                .lock()
+                .await
+                .insert(previous.operation_id.as_str().to_string(), SUPERSEDE_REASON.to_string());
+            match self.backend.interrupt(&previous.operation_id).await {
+                Ok(()) => {
+                    operations.insert(conversation_key.to_string(), current.clone());
+                    return Ok(());
+                }
+                Err(KernelError::OperationNotFound(_)) => {
+                    self.interrupt_reasons
+                        .lock()
+                        .await
+                        .remove(previous.operation_id.as_str());
+                    operations.insert(conversation_key.to_string(), current.clone());
+                    return Ok(());
+                }
+                Err(error) => {
+                    self.interrupt_reasons
+                        .lock()
+                        .await
+                        .remove(previous.operation_id.as_str());
+                    return Err(kernel_error(error));
+                }
+            }
         }
     }
 
@@ -251,6 +395,7 @@ impl ConversationProvider for KernelConversationProvider {
         events: SharedConversationEventSink,
     ) -> Result<(), ConversationError> {
         let session_id = self.session_id(&request.conversation_id).await?;
+        let visible_text = visible_user_text(&request);
         let user_message = Message {
             id: request
                 .client_message_id
@@ -259,7 +404,7 @@ impl ConversationProvider for KernelConversationProvider {
                 .unwrap_or_else(|| MessageId::generated("message")),
             conversation_id: request.conversation_id.clone(),
             role: MessageRole::User,
-            text: request.text.clone(),
+            text: visible_text,
             created_at_ms: now_ms(),
             metadata: json!({"runtime": "mahayana-kernel"}),
         };
@@ -276,37 +421,34 @@ impl ConversationProvider for KernelConversationProvider {
 
         let kernel_operation_id = KernelOperationId::from_string(request.operation_id.as_str());
         let conversation_key = request.conversation_id.as_str().to_string();
+        let carries_recovery = !request.hidden
+            && request
+                .client_message_id
+                .as_deref()
+                .is_some_and(|value| !value.trim().is_empty());
+        let recovery_shaped = carries_recovery
+            && request.recovery_eligible
+            && request.selected_image_data_urls.is_empty();
+        let direct_operation = DirectOperationState::new(kernel_operation_id.clone(), recovery_shaped);
         if !request.hidden {
-            let previous = self
-                .direct_operations
-                .lock()
-                .await
-                .insert(conversation_key.clone(), kernel_operation_id.clone());
-            if let Some(previous) = previous
-                && previous != kernel_operation_id
-            {
-                self.interrupt_reasons.lock().await.insert(
-                    previous.as_str().to_string(),
-                    "superseded by a new user message".to_string(),
-                );
-                match self.backend.interrupt(&previous).await {
-                    Ok(()) => {}
-                    Err(KernelError::OperationNotFound(_)) => {
-                        self.interrupt_reasons.lock().await.remove(previous.as_str());
-                    }
-                    Err(error) => {
-                        self.interrupt_reasons.lock().await.remove(previous.as_str());
-                        clear_current_direct_operation(
-                            &self.direct_operations,
-                            &conversation_key,
-                            &kernel_operation_id,
-                        )
-                        .await;
-                        return Err(kernel_error(error));
-                    }
-                }
+            self.admit_direct_operation(
+                &conversation_key,
+                direct_operation.clone(),
+                carries_recovery,
+            )
+            .await?;
+            if let Some(reason) = direct_operation.mark_dispatched_or_cancelled()? {
+                direct_operation.finish();
+                clear_current_direct_operation(
+                    &self.direct_operations,
+                    &conversation_key,
+                    &kernel_operation_id,
+                )
+                .await;
+                return Err(ConversationError::Interrupted(reason));
             }
         }
+
         let sink: SharedKernelEventSink = Arc::new(RuntimeKernelEventBridge {
             conversation_id: request.conversation_id,
             operation_id: request.operation_id,
@@ -333,6 +475,7 @@ impl ConversationProvider for KernelConversationProvider {
             )
             .await;
         if !request.hidden {
+            direct_operation.finish();
             clear_current_direct_operation(
                 &self.direct_operations,
                 &conversation_key,
@@ -404,13 +547,23 @@ impl ConversationProvider for KernelConversationProvider {
 }
 
 
+fn visible_user_text(request: &SendMessageRequest) -> String {
+    request
+        .display_text
+        .clone()
+        .unwrap_or_else(|| request.text.clone())
+}
+
 async fn clear_current_direct_operation(
-    operations: &AsyncMutex<BTreeMap<String, KernelOperationId>>,
+    operations: &AsyncMutex<BTreeMap<String, DirectOperationState>>,
     conversation_key: &str,
     operation_id: &KernelOperationId,
 ) {
     let mut operations = operations.lock().await;
-    if operations.get(conversation_key) == Some(operation_id) {
+    if operations
+        .get(conversation_key)
+        .is_some_and(|current| &current.operation_id == operation_id)
+    {
         operations.remove(conversation_key);
     }
 }
@@ -858,11 +1011,82 @@ mod tests {
         assert_eq!(state.unread_count(&assistant), 1);
     }
 
+    #[test]
+    fn pre_dispatch_supersession_requires_recovery_on_both_turns() {
+        let ordinary = DirectOperationState::new(
+            KernelOperationId::from_string("ordinary"),
+            false,
+        );
+        assert!(!ordinary
+            .pre_dispatch_supersede_allowed(false)
+            .expect("ordinary gate"));
+        assert!(!ordinary
+            .pre_dispatch_supersede_allowed(true)
+            .expect("ordinary gate with incoming recovery"));
+
+        let recovery = DirectOperationState::new(
+            KernelOperationId::from_string("recovery"),
+            true,
+        );
+        assert!(!recovery
+            .pre_dispatch_supersede_allowed(false)
+            .expect("recovery gate without incoming recovery"));
+        assert!(recovery
+            .pre_dispatch_supersede_allowed(true)
+            .expect("recovery gate"));
+        assert!(recovery
+            .cancel_before_dispatch("superseded by a new user message")
+            .expect("cancel recovery before dispatch"));
+        assert_eq!(
+            recovery
+                .mark_dispatched_or_cancelled()
+                .expect("observe pre-dispatch cancellation")
+                .as_deref(),
+            Some("superseded by a new user message")
+        );
+    }
+
+    #[test]
+    fn dispatched_direct_operation_leaves_pre_dispatch_fence() {
+        let recovery = DirectOperationState::new(
+            KernelOperationId::from_string("dispatched"),
+            true,
+        );
+        assert_eq!(
+            recovery
+                .mark_dispatched_or_cancelled()
+                .expect("mark dispatched"),
+            None
+        );
+        assert!(!recovery
+            .pre_dispatch_supersede_allowed(true)
+            .expect("dispatched gate"));
+        assert!(!recovery
+            .cancel_before_dispatch("too late")
+            .expect("dispatch fence blocks local cancellation"));
+    }
+
+    #[test]
+    fn visible_user_text_is_separate_from_expanded_provider_input() {
+        let request = SendMessageRequest {
+            conversation_id: ConversationId("mahayana-ai:agent:workflow".into()),
+            operation_id: OperationId("operation-workflow".into()),
+            text: "[Persistent agent memory]\nexpanded provider input".into(),
+            display_text: Some("visible user turn".into()),
+            client_message_id: Some("visible-message-1".into()),
+            hidden: false,
+            recovery_eligible: true,
+            selected_image_data_urls: Vec::new(),
+        };
+        assert_eq!(visible_user_text(&request), "visible user turn");
+        assert!(request.text.contains("expanded provider input"));
+    }
+
     #[tokio::test]
     async fn direct_operation_identity_fences_stale_settlement() {
         let operations = AsyncMutex::new(BTreeMap::new());
-        let first = KernelOperationId::from_string("first");
-        let second = KernelOperationId::from_string("second");
+        let first = DirectOperationState::new(KernelOperationId::from_string("first"), true);
+        let second = DirectOperationState::new(KernelOperationId::from_string("second"), true);
         operations
             .lock()
             .await
@@ -871,12 +1095,22 @@ mod tests {
             .lock()
             .await
             .insert("conversation-a".into(), second.clone());
-        assert_eq!(previous, Some(first.clone()));
+        assert_eq!(
+            previous.as_ref().map(|state| state.operation_id.as_str()),
+            Some(first.operation_id.as_str())
+        );
 
-        clear_current_direct_operation(&operations, "conversation-a", &first).await;
-        assert_eq!(operations.lock().await.get("conversation-a"), Some(&second));
+        clear_current_direct_operation(&operations, "conversation-a", &first.operation_id).await;
+        assert_eq!(
+            operations
+                .lock()
+                .await
+                .get("conversation-a")
+                .map(|state| state.operation_id.as_str()),
+            Some(second.operation_id.as_str())
+        );
 
-        clear_current_direct_operation(&operations, "conversation-a", &second).await;
+        clear_current_direct_operation(&operations, "conversation-a", &second.operation_id).await;
         assert!(!operations.lock().await.contains_key("conversation-a"));
     }
 

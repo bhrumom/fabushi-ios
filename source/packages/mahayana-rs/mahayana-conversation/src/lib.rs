@@ -22,8 +22,10 @@ pub struct SendMessageRequest {
     pub conversation_id: ConversationId,
     pub operation_id: OperationId,
     pub text: String,
+    pub display_text: Option<String>,
     pub client_message_id: Option<String>,
     pub hidden: bool,
+    pub recovery_eligible: bool,
     pub selected_image_data_urls: Vec<String>,
 }
 

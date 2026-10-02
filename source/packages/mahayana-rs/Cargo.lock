@@ -9589,6 +9589,7 @@ name = "mahayana-web"
 version = "0.1.0"
 dependencies = [
  "js-sys",
+ "mahayana-conversation",
  "mahayana-core",
  "serde",
  "serde_json",

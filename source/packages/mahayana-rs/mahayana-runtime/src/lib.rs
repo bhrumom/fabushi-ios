@@ -306,7 +306,9 @@ impl MahayanaRuntime {
                     self.start_message(
                         conversation_id.clone(),
                         text,
+                        None,
                         client_message_id,
+                        false,
                         false,
                         Vec::new(),
                     )?;
@@ -556,15 +558,19 @@ impl MahayanaRuntime {
             RuntimeCommand::SendMessage {
                 conversation_id,
                 text,
+                display_text,
                 client_message_id,
                 hidden,
+                recovery_eligible,
                 selected_image_data_urls,
             } => Ok(RuntimeResponse::Accepted {
                 operation_id: self.start_message(
                     conversation_id,
                     text,
+                    display_text,
                     client_message_id,
                     hidden,
+                    recovery_eligible,
                     selected_image_data_urls,
                 )?,
             }),
@@ -638,8 +644,10 @@ impl MahayanaRuntime {
         &self,
         conversation_id: ConversationId,
         text: String,
+        display_text: Option<String>,
         client_message_id: Option<String>,
         hidden: bool,
+        recovery_eligible: bool,
         selected_image_data_urls: Vec<String>,
     ) -> Result<OperationId, RuntimeError> {
         if text.trim().is_empty() {
@@ -653,8 +661,10 @@ impl MahayanaRuntime {
             conversation_id,
             operation_id: operation_id.clone(),
             text,
+            display_text,
             client_message_id,
             hidden,
+            recovery_eligible,
             selected_image_data_urls,
         };
         let sink: SharedConversationEventSink = Arc::new(RuntimeEventSink {
@@ -916,8 +926,10 @@ mod tests {
             .execute(RuntimeCommand::SendMessage {
                 conversation_id: ConversationId(CODEX_ASSISTANT_CONVERSATION_ID.to_string()),
                 text: "你好".to_string(),
+                display_text: None,
                 client_message_id: None,
                 hidden: false,
+                recovery_eligible: false,
                 selected_image_data_urls: Vec::new(),
             })
             .expect("send message");
@@ -1031,8 +1043,10 @@ mod tests {
             .execute(RuntimeCommand::SendMessage {
                 conversation_id,
                 text: "first visible prompt".to_string(),
+                display_text: None,
                 client_message_id: Some("first-visible-prompt".to_string()),
                 hidden: false,
+                recovery_eligible: true,
                 selected_image_data_urls: Vec::new(),
             })
             .expect("send first message");

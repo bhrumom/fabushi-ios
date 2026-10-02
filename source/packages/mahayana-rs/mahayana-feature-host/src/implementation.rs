@@ -2178,8 +2178,10 @@ impl FeatureHostController {
             let response = self.runtime()?.execute(RuntimeCommand::SendMessage {
                 conversation_id: ConversationId(conversation_id),
                 text: prompt,
+                display_text: None,
                 client_message_id: Some(format!("teach:{}:{}", bot.id, now_millis())),
                 hidden: true,
+                recovery_eligible: false,
                 selected_image_data_urls: Vec::new(),
             })?;
             let operation_id = match response {
@@ -2635,8 +2637,10 @@ impl FeatureHostController {
             let response = self.runtime()?.execute(RuntimeCommand::SendMessage {
                 conversation_id: ConversationId(conversation_id),
                 text: prompt,
+                display_text: None,
                 client_message_id: Some(client_message_id),
                 hidden: true,
+                recovery_eligible: false,
                 selected_image_data_urls,
             })?;
             let operation_id = match response {
@@ -3605,8 +3609,10 @@ impl FeatureHostController {
                                 self.runtime()?.execute(RuntimeCommand::SendMessage {
                                     conversation_id: ConversationId(conversation_id),
                                     text: runtime_text,
+                                    display_text: None,
                                     client_message_id: Some(request_id.clone()),
                                     hidden: true,
+                                    recovery_eligible: false,
                                     selected_image_data_urls: Vec::new(),
                                 })?;
                             let operation_id = match response {
@@ -6330,11 +6336,13 @@ impl FeatureHostController {
         let response = self.runtime()?.execute(RuntimeCommand::SendMessage {
             conversation_id: ConversationId(conversation_id),
             text: runtime_text,
+            display_text: None,
             client_message_id: Some(format!(
                 "{}:{}:{}",
                 context.run_id, context.group_id, context.member_id
             )),
             hidden: true,
+            recovery_eligible: false,
             selected_image_data_urls: Vec::new(),
         })?;
         let operation_id = match response {
@@ -7413,8 +7421,10 @@ impl FeatureHostController {
         let response = self.runtime()?.execute(RuntimeCommand::SendMessage {
             conversation_id,
             text: runtime_text,
+            display_text: Some(text.clone()),
             client_message_id: Some(request_id.clone()),
             hidden: false,
+            recovery_eligible: attachments.is_empty(),
             selected_image_data_urls,
         })?;
         let operation_id = match response {
@@ -7525,11 +7535,14 @@ impl FeatureHostController {
         conversation_id: &str,
         limit: usize,
     ) -> Result<Vec<ConversationMessage>, FeatureHostError> {
+        let limit = u32::try_from(limit.clamp(1, 500)).map_err(|_| {
+            FeatureHostError::Contract("conversation history limit exceeds u32".into())
+        })?;
         let messages = match self
             .runtime()?
             .execute(RuntimeCommand::ConversationHistory {
                 conversation_id: ConversationId(conversation_id.to_string()),
-                limit: Some(limit.clamp(1, 500)),
+                limit: Some(limit),
             })? {
             RuntimeResponse::History { data } => data,
             other => return Err(unexpected_response("conversation.history", other)),
@@ -14092,8 +14105,10 @@ mod tests {
             .execute(RuntimeCommand::SendMessage {
                 conversation_id: assistant.clone(),
                 text: "visible assistant completion".into(),
+                display_text: None,
                 client_message_id: Some("visible-completion".into()),
                 hidden: false,
+                recovery_eligible: false,
                 selected_image_data_urls: Vec::new(),
             })
             .expect("visible production runtime send");
@@ -14140,8 +14155,10 @@ mod tests {
             .execute(RuntimeCommand::SendMessage {
                 conversation_id: assistant.clone(),
                 text: "hidden background completion".into(),
+                display_text: None,
                 client_message_id: Some("hidden-completion".into()),
                 hidden: true,
+                recovery_eligible: false,
                 selected_image_data_urls: Vec::new(),
             })
             .expect("hidden production runtime send");
