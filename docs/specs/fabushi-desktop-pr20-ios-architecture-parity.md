@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `79a9867ac6cbfecc5af9fcc9ac81225890c20245`
+- pinned source commit for this baseline: `cb2267d52ad816287ad97a357e6e7d4135e79083`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -139,6 +139,14 @@ Desktop PR #20 adds one shipping lifecycle slice across five source/host files w
 Only CloudAgent and Shell pending-wake kinds may cross recreate, and carry can be disabled. Restore is canonical-Host owned: values are coerced/validated, ineligible kinds ignored, existing durable identities deduplicated, Shell markers flagged interrupted-by-recreate, newly persisted through the pending-wake runtime owner, then rearmed with recreate provenance. No renderer replay owns this state.
 
 Current iOS source has no resumeAfterRecreate/pending-wake carry equivalent by name and must be audited by responsibility rather than copied gateway syntax. The immediately preceding NativeEngine closing-send/empty-delivery implementation remains real production work, but main.rs is mapped again because its upstream responsibility expanded. TranscriptManager's automation projection also remains a valid implemented sub-responsibility while its changed row returns to mapped for the new recreate carry gap. The iOS implementation must locate or add one durable lifecycle/wake owner below SwiftUI, preserve identity/idempotency across scene/app recreation, and resume interrupted work only after durable wake state has been restored.
+
+### 1.13 Exact-HEAD rebaseline: 2026-10-03 / cb2267d52ad816287ad97a357e6e7d4135e79083
+
+Desktop PR #20 adds the shipping quiesce half of the recreate lifecycle across eight source/host files while the selected inventory remains exactly 7,926 blobs. The runner registry now owns one shared upgrade-quiescing signal. Forced upgrade sets the signal and cancels active routed/group tasks; the signal is injected into production turn owners and generated-Agent persistence so a turn that is cancelled while upgrade quiesce is active settles with quiesced_for_upgrade=true. The manager clears this runner quiesce only during resume-after-recreate.
+
+This extends, rather than replaces, the 79a recreate carry contract. Correct ordering is now: request quiesce, stop/settle active shipping runners with durable identity, carry pending durable work, recreate Host, restore/rearm carried work, then clear quiesce/resume. iOS cannot satisfy this by merely refreshing UI state or by restarting a Host generation with no work identity.
+
+The current iOS NativeEngine already has persisted NativeSession state containing active_prompt and operation attempts plus resume_operation, but ordinary run() persists only after execution returns. Therefore an active process recreation can still lose the exact work identity, and there is no canonical shared upgrade-quiesce fence across the current Coordinator/Host generation boundary. All eight changed rows remain mapped. The iOS adaptation must first durably checkpoint the active prompt/operation before inference, then wire one generation-safe quiesce/resume path through existing Host/Coordinator owners; SwiftUI remains a lifecycle trigger only, never the source of runnable work truth.
 
 ## 2. Product goal
 
