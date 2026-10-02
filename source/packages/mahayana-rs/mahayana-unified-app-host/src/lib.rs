@@ -474,6 +474,14 @@ impl UnifiedAppHost {
         Ok(result)
     }
 
+    /// Settle the single production AppHost owner before the outer mobile Host
+    /// thread exits. This is intentionally a delegation: cancellation, approval
+    /// cleanup, group-run settlement, and terminal Host state remain owned by the
+    /// underlying FeatureHostController rather than this compatibility facade.
+    pub fn close(&self) -> Result<(), AppHostError> {
+        self.app.close()
+    }
+
     fn delegate(&self, method: &str, params: Value) -> Result<Value, AppHostError> {
         let response = self.app.dispatch(HostRequest {
             id: None,
