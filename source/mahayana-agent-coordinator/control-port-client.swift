@@ -36,7 +36,7 @@ final class CoordinatorControlPortClient {
 
     func call(method: String, args: CoordinatorPayload = .object([:])) async throws -> CoordinatorPayload {
         guard settlement == nil else {
-            throw ControlPortCallError(code: "port-settled", message: "control port is no longer available")
+            throw ControlPortCallError(code: CoordinatorProtocol.disconnected, message: "control port is settled")
         }
         if !started { start() }
         nextRequestID += 1
@@ -80,10 +80,16 @@ final class CoordinatorControlPortClient {
             }
 
         case .shutdown(let reason, let detail):
+            let failure = disconnectedFailure(
+                detail ?? "coordinator shutdown: \(shutdownReasonName(reason))"
+            )
             if reason == .requested {
-                settle(.shutdownRequested)
+                settle(.shutdownRequested, failure: failure)
             } else {
-                settle(.protocolBreach(detail ?? "peer reported protocol breach"))
+                settle(
+                    .protocolBreach(detail ?? "coordinator shutdown: \(shutdownReasonName(reason))"),
+                    failure: failure
+                )
             }
 
         case .hello:
@@ -103,25 +109,35 @@ final class CoordinatorControlPortClient {
     }
 
     func portClosed() {
-        settle(.portClosed)
+        settle(.portClosed, failure: disconnectedFailure("control port closed"))
     }
 
     func shutdown() {
         guard settlement == nil else { return }
         port.post(.shutdown(reason: .requested, detail: nil))
-        settle(.shutdownRequested)
+        settle(.shutdownRequested, failure: disconnectedFailure("shutdown requested"))
     }
 
     private func protocolBreach(_ detail: String) {
         port.post(.shutdown(reason: .protocolError, detail: detail))
-        settle(.protocolBreach(detail))
+        settle(.protocolBreach(detail), failure: disconnectedFailure(detail))
     }
 
-    private func settle(_ value: Settlement) {
+    private func disconnectedFailure(_ message: String) -> ControlPortCallError {
+        ControlPortCallError(code: CoordinatorProtocol.disconnected, message: message)
+    }
+
+    private func shutdownReasonName(_ reason: CoordinatorShutdownReason) -> String {
+        switch reason {
+        case .requested: "Requested"
+        case .protocolError: "ProtocolError"
+        }
+    }
+
+    private func settle(_ value: Settlement, failure: ControlPortCallError) {
         guard settlement == nil else { return }
         settlement = value
-        let error = ControlPortCallError(code: "port-settled", message: "control port settled before reply")
-        for continuation in pending.values { continuation.resume(throwing: error) }
+        for continuation in pending.values { continuation.resume(throwing: failure) }
         pending.removeAll()
         port.close()
     }

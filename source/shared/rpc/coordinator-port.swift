@@ -4,6 +4,7 @@ enum CoordinatorProtocol {
     static let version = 1
     static let unknownMethod = "unknown-method"
     static let cancelled = "cancelled"
+    static let disconnected = "COORDINATOR_DISCONNECTED"
     static let transportStateFamily = "coordinator-transport-state"
 }
 

@@ -52,17 +52,17 @@
     {
       "desktop_path": "source/node-agent-coordinator/src/control_port_client.rs",
       "desktop_blob_sha": "5bdf7b4b90f294691c25914c86bdf9e444eabe63",
-      "desktop_responsibility": "pending-review",
+      "desktop_responsibility": "Own control-client handshake/version validation, c-N request identity, pending reply settlement, cancel/event emission, protocol-direction enforcement, shutdown/close settlement, and disconnected failure normalization.",
       "desktop_owner": "coordinator",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "desktop_visible_effect": "Control callers receive ordered request/reply behavior and deterministic COORDINATOR_DISCONNECTED failures with the causal close/shutdown/protocol detail; malformed server-direction frames fail the control session closed.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/mahayana-agent-coordinator/control-port-client.swift",
+      "ios_language": "Swift",
+      "ios_platform_delta": "Desktop mpsc waiters are replaced by MainActor CheckedContinuation calls over the in-process CoordinatorPort carrier; request identity, cancellation, direction checks, and settlement semantics remain Coordinator-owned.",
+      "implementation_status": "implemented",
+      "production_evidence": "source/mahayana-agent-coordinator/control-port-client.swift; source/shared/rpc/coordinator-port.swift; source/ios-main/coordinator/coordinator-launcher.swift; source/ios-main/coordinator/coordinator-main-port-client.swift",
+      "test_evidence": "mobile/ios/FabushiTests/CoordinatorContractTests.swift; exact-HEAD GitHub Actions pending",
+      "notes": "Re-read against Desktop PR #20 bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09, blob 5bdf7b4b90f294691c25914c86bdf9e444eabe63. iOS now preserves Desktop COORDINATOR_DISCONNECTED failure classification and causal settlement messages for pending calls on port close, peer/local shutdown, and protocol breach. Keep implemented until the post-change exact-HEAD Swift/architecture gates complete."
     },
     {
       "desktop_path": "source/node-agent-coordinator/src/gateway/box_vnc_proxy.rs",

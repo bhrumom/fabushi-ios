@@ -296,6 +296,12 @@ Desktop `source/node-agent-coordinator/src/client_side_tool_v2_relay.rs` at blob
 
 The iOS platform adaptation may receive Host events through the existing in-process Host/Coordinator boundary rather than Desktop stdio, but ownership may not move into SwiftUI. The shipping Coordinator must own the relay, route accepted events to the renderer event family, and replay accepted current-epoch state only from Coordinator-owned state. Host production of these events is a separate upstream responsibility: until the iOS Host turn-observation path can emit the same versioned `client-side-tool-v2` transport envelope, this Coordinator row may be implemented only for the Coordinator ingress/projection path and must not be represented as end-to-end verified.
 
+### 10.3 Control-port client settlement
+
+Desktop `source/node-agent-coordinator/src/control_port_client.rs` owns the Coordinator control-client handshake, monotonically allocated `c-N` request identity, pending request settlement, cancellation signaling, event posting, protocol-direction enforcement, and deterministic disconnect semantics. iOS may replace Desktop mpsc waiters with `@MainActor` Swift continuations over the in-process carrier, but it must preserve the same protocol effect: exactly one matching-version Ready transitions the client into service; repeated/mismatched Ready or any server-posted client-direction frame is a protocol breach; unknown/late replies are ignored; cancel is emitted only for a still-pending request; local shutdown posts Requested before closing; and no request/event is accepted once settled.
+
+Every terminal control-port path must reject all pending calls with the Desktop `COORDINATOR_DISCONNECTED` failure class while retaining the causal message. Port close uses `control port closed`; local shutdown uses `shutdown requested`; peer shutdown uses its detail when present or the normalized `coordinator shutdown: <reason>` fallback; protocol breach uses the breach detail. Settlement clears pending continuations and closes the carrier exactly once. Generic `port-settled` errors must not erase this failure normalization.
+
 It owns, as applicable:
 
 - renderer port lifecycle;

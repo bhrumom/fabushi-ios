@@ -111,6 +111,105 @@ final class CoordinatorContractTests: XCTestCase {
     }
 
     @MainActor
+    func testControlPortRejectsPendingCallWithDesktopDisconnectOnPortClose() async {
+        let port = TestCoordinatorPort()
+        let client = CoordinatorControlPortClient(port: port, autoStart: false)
+        client.start()
+        client.receive(.ready(protocolVersion: CoordinatorProtocol.version))
+
+        let pending = Task { @MainActor in
+            try await client.call(method: "pending", args: .object([:]))
+        }
+        await Task.yield()
+        client.portClosed()
+
+        do {
+            _ = try await pending.value
+            XCTFail("pending control call must fail when the port closes")
+        } catch let error as ControlPortCallError {
+            XCTAssertEqual(error, .init(code: CoordinatorProtocol.disconnected, message: "control port closed"))
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertEqual(client.settlement, .portClosed)
+        XCTAssertTrue(port.closed)
+    }
+
+    @MainActor
+    func testControlPortProtocolBreachPreservesDisconnectCauseForPendingCall() async {
+        let port = TestCoordinatorPort()
+        let client = CoordinatorControlPortClient(port: port, autoStart: false)
+        client.start()
+        client.receive(.ready(protocolVersion: CoordinatorProtocol.version))
+
+        let pending = Task { @MainActor in
+            try await client.call(method: "pending", args: .object([:]))
+        }
+        await Task.yield()
+        client.receive(.request(requestId: "server-r-1", method: "illegal", args: .object([:])))
+
+        do {
+            _ = try await pending.value
+            XCTFail("pending control call must fail on protocol breach")
+        } catch let error as ControlPortCallError {
+            XCTAssertEqual(
+                error,
+                .init(
+                    code: CoordinatorProtocol.disconnected,
+                    message: "main posted a client-direction request frame"
+                )
+            )
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertEqual(client.settlement, .protocolBreach("main posted a client-direction request frame"))
+        XCTAssertTrue(port.frames.contains(.shutdown(
+            reason: .protocolError,
+            detail: "main posted a client-direction request frame"
+        )))
+    }
+
+    @MainActor
+    func testControlPortPeerShutdownUsesDetailAndLocalShutdownUsesRequestedCause() async {
+        let peerPort = TestCoordinatorPort()
+        let peerClient = CoordinatorControlPortClient(port: peerPort, autoStart: false)
+        peerClient.start()
+        peerClient.receive(.ready(protocolVersion: CoordinatorProtocol.version))
+        let peerPending = Task { @MainActor in
+            try await peerClient.call(method: "pending-peer", args: .object([:]))
+        }
+        await Task.yield()
+        peerClient.receive(.shutdown(reason: .protocolError, detail: "peer protocol failure"))
+        do {
+            _ = try await peerPending.value
+            XCTFail("peer shutdown must reject pending calls")
+        } catch let error as ControlPortCallError {
+            XCTAssertEqual(error, .init(code: CoordinatorProtocol.disconnected, message: "peer protocol failure"))
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+
+        let localPort = TestCoordinatorPort()
+        let localClient = CoordinatorControlPortClient(port: localPort, autoStart: false)
+        localClient.start()
+        localClient.receive(.ready(protocolVersion: CoordinatorProtocol.version))
+        let localPending = Task { @MainActor in
+            try await localClient.call(method: "pending-local", args: .object([:]))
+        }
+        await Task.yield()
+        localClient.shutdown()
+        do {
+            _ = try await localPending.value
+            XCTFail("local shutdown must reject pending calls")
+        } catch let error as ControlPortCallError {
+            XCTAssertEqual(error, .init(code: CoordinatorProtocol.disconnected, message: "shutdown requested"))
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertTrue(localPort.frames.contains(.shutdown(reason: .requested, detail: nil)))
+    }
+
+    @MainActor
     func testIOSPreloadPortClientUsesRendererCoordinatorBoundary() async throws {
         let pair = InProcessCoordinatorPort.makePair(bootstrap: try validatedTestCoordinatorBootstrap())
         let server = RendererPortServer(port: pair.server) { method, args in
