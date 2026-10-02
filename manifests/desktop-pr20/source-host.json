@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "827f22da7c527ab22df0700303f356d589c2a0f4",
+  "sourceCommit": "b5f8855805ec1c0be3a821cf35a4cba047ee9d8b",
   "group": "source-host",
   "fileCount": 956,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "94369025faf1b1f14b8cf2c57d63aa4d078b0cec",
-      "size": 520445
+      "blobSha": "5aa020171b70db20da5b2ab423eb1b92020823a8",
+      "size": 520554
     },
     {
       "path": "source/host/build.rs",
@@ -1890,8 +1890,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/roster_emit.rs",
-      "blobSha": "95775b9bb5c8e1e7178ca9a68c8c836e121b77a7",
-      "size": 16807
+      "blobSha": "5fb7bb1e99b3a04f5e9617b0fade44025b99ca7b",
+      "size": 17420
     },
     {
       "path": "source/host/src/extensions/transcript/roster_projection.rs",
@@ -2000,8 +2000,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "fd92fe58f775376d33ccc7685042f8c7a68e1871",
-      "size": 31454
+      "blobSha": "404cb5e138cb577bcb6c1745c888ef35134428e5",
+      "size": 31838
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -2011,7 +2011,7 @@
     {
       "path": "source/host/src/extensions/transcript/turn_runtime.rs",
       "blobSha": "56d80023b9dff0d1e97f83772a8af27ccd6f12a1",
-      "size": 6834
+      "size": 8188
     },
     {
       "path": "source/host/src/extensions/transcript/upgrade_recreate_resume.rs",
@@ -3261,7 +3261,7 @@
     {
       "path": "source/host/tests/box_handoff_resume_contract.rs",
       "blobSha": "b69f4b6c1fca1a7330e8d45c60eafbaa2f6be8fb",
-      "size": 11102
+      "size": 11368
     },
     {
       "path": "source/host/tests/box_handoff_service_contract.rs",
@@ -4590,8 +4590,8 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "874975ad5b19bfc0c58f15cd94e9063b2d4cd524",
-      "size": 26445
+      "blobSha": "c7495806b7b3bd8720c5c7bb352cc999bd8a367b",
+      "size": 28945
     },
     {
       "path": "source/host/tests/transcript_mirror_contract.rs",
@@ -4676,7 +4676,7 @@
     {
       "path": "source/host/tests/turn_runtime_recovery_contract.rs",
       "blobSha": "d9c8b02e50b09292d7e12313c7c077f8d2b3fa05",
-      "size": 5536
+      "size": 7045
     },
     {
       "path": "source/host/tests/turn_settle_checkpoint_contract.rs",
