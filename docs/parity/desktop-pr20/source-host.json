@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "b49e4567abc101ee75a60b6bd635153fba292d25",
+  "sourceCommit": "f782c0c8fb6e2641c64d3daf25ebe0a9bcc3b110",
   "group": "source-host",
   "rowCount": 955,
   "rows": [
@@ -12711,7 +12711,7 @@
     },
     {
       "desktop_path": "source/host/tests/runner_routed_provider_contract.rs",
-      "desktop_blob_sha": "df92103defd4b6e3969a3aefb4641fbb703cf59f",
+      "desktop_blob_sha": "cc5ef858c2ecc9ee79746b56225c4b4ab9e9be16",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -12722,7 +12722,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Upstream blob changed at Desktop PR #20 b49e4567abc101ee75a60b6bd635153fba292d25; responsibility must be re-reviewed before promotion."
+      "notes": "Upstream test contract changed at Desktop PR #20 f782c0c8fb6e2641c64d3daf25ebe0a9bcc3b110; it strengthens current-stream watchdog cancellation evidence. Host/Runner production responsibility remains unreviewed for iOS until its owning production rows are reviewed."
     },
     {
       "desktop_path": "source/host/tests/runner_small_modules_contract.rs",
