@@ -3657,6 +3657,58 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn group_member_turn_runs_without_private_agent_checkpoint_binding() {
+        let root = std::env::temp_dir().join(format!(
+            "mahayana-group-member-no-private-checkpoint-{}",
+            Uuid::new_v4()
+        ));
+        let state_path = root.join("assistant.json");
+        let model = Arc::new(FakeModel {
+            outputs: Mutex::new(VecDeque::from([json!({
+                "output": [{"type":"message", "content":[{"type":"output_text", "text":"group member completed"}]}]
+            })])),
+        });
+        let mut config = NativeEngineConfig::embedded("group-model");
+        config.session_state_path = Some(state_path.clone());
+        let engine = NativeEngine::new(model, config).expect("create group engine");
+        let session = engine
+            .open_session(OpenSessionRequest {
+                profile: mahayana_kernel::RuntimeProfile::MobileEmbedded,
+                workspace_root: None,
+                model: None,
+                metadata: json!({"conversationId": "codex:agent:group-member"}),
+            })
+            .await
+            .expect("open group-member session");
+
+        engine
+            .run(
+                RunRequest {
+                    session_id: session.clone(),
+                    operation_id: OperationId::new(),
+                    input: "[MAHAYANA_HIDDEN_CONTEXT] group turn".into(),
+                    policy: ExecutionPolicy::mobile_default(),
+                    required_capabilities: CapabilitySet::new([Capability::Model]),
+                    metadata: json!({"hidden": true}),
+                },
+                Arc::new(Events::default()),
+            )
+            .await
+            .expect("group member generated lifecycle");
+
+        let snapshot = engine
+            .snapshot_session(&session)
+            .await
+            .expect("group member remains a normal generated session in memory");
+        assert!(snapshot.state.to_string().contains("group member completed"));
+        assert!(
+            !state_path.exists(),
+            "group-member conversation must not bind the private main-Agent checkpoint path"
+        );
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
     async fn main_assistant_history_survives_provider_engine_recreation() {
         let root =
             std::env::temp_dir().join(format!("mahayana-provider-session-{}", Uuid::new_v4()));
