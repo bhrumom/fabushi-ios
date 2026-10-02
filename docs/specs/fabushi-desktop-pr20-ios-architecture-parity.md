@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `61f8518a5e0b4bead224ec3c081da64523316908`
+- pinned source commit for this baseline: `ed06d2c96471d5e80b66cd3c4b09116e968a0e56`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -119,6 +119,12 @@ The first upstream commit restores a distinct closing-send nudge for a visible u
 The second upstream commit reports ordinary empty delivery after reply/closing recovery has settled when a visible user turn still owes delivery. The report is fail-closed unless the run succeeded, was not cancelled, is not WaitingUser, is still on the same turn epoch, and delivered neither a SendMessage nor reaction. It captures bounded reply-nudge attempts, observed tool-call count, stream-output presence, run duration, and outstanding acknowledgement state. Telemetry failure is non-fatal to settlement.
 
 The iOS active-Agent automation projection implemented immediately before this rebaseline remains an applicable Host-owned behavior. However, the broader Desktop main responsibility now includes closing-send recovery and ordinary empty-delivery reporting. Current iOS source has no corresponding closing-send prompt, durable silent-checkpoint terminal fact, or empty-delivery report path, so all eight changed rows are conservatively mapped. The next production slice must preserve Coordinator/Host/Runner ownership: checkpoint observation belongs with Runner/runtime, terminal recovery policy belongs in canonical Host/runtime code, telemetry is a projection of those facts, and SwiftUI/renderer must not synthesize them.
+
+### 1.10 Exact-HEAD rebaseline: 2026-10-03 / ed06d2c96471d5e80b66cd3c4b09116e968a0e56
+
+Desktop PR #20 advanced one evidence-only commit from 61f8518a5e0b4bead224ec3c081da64523316908. The selected frontend/** + source/** inventory remains exactly 7,926 blobs; the only selected source change is source/host/tests/turn_telemetry_production_wiring_contract.rs. The other change is Desktop's architecture manifest, which now marks the broader TurnRuntime responsibility implemented and explicitly documents that it is absorbed by existing canonical Host/Runner owners instead of a parallel TurnRuntime owner.
+
+The focused contract tightens one semantic point for iOS: closing-send delivery and terminal delivery share the same canonical delivery predicate, including successful reaction delivery as satisfying delivery debt. The current iOS NativeEngine already owns real send_message delivery and bounded reply nudges, but has not yet implemented the 61f closing-send/ordinary-empty-delivery slice or proved one shared delivery predicate. This changed evidence row therefore remains mapped. Unchanged automation rows keep their implemented status, and the next production change must extend the existing NativeEngine/Host composition rather than add renderer or duplicate runtime ownership.
 
 ## 2. Product goal
 

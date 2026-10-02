@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "61f8518a5e0b4bead224ec3c081da64523316908",
+  "sourceCommit": "ed06d2c96471d5e80b66cd3c4b09116e968a0e56",
   "group": "source-host",
   "rowCount": 956,
   "rows": [
@@ -14061,18 +14061,18 @@
     },
     {
       "desktop_path": "source/host/tests/turn_telemetry_production_wiring_contract.rs",
-      "desktop_blob_sha": "210c15ac3a9419cbcc8de74a07dbcd29de2fc6ef",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "91ae76ed3f0fc6d8992ca9b03ba039ca80bf62f2",
+      "desktop_responsibility": "Focused production-wiring evidence that closing-send telemetry and terminal projection use the same canonical SendMessage-or-reaction delivery-debt predicate through existing shipping Host owners.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "Reaction delivery and SendMessage delivery cannot disagree between terminal state and closing-send telemetry, and no parallel telemetry/TurnRuntime owner may synthesize delivery.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "implementation_status": "mapped",
       "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "test_evidence": "Desktop ed06d2c changes this exact production-wiring contract. iOS must prove the platform-adapted NativeEngine/Host closing-send and empty-delivery behavior from one canonical delivery state on an exact iOS HEAD.",
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebased to ed06d2c. Desktop also marks the broader TurnRuntime responsibility implemented in its architecture manifest by explicitly composing existing Host/Runner owners; this row stays mapped until the iOS canonical runtime proves the equivalent behavior."
     },
     {
       "desktop_path": "source/host/tests/turn_toolset_contract.rs",
