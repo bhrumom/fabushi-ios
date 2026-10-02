@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `69401d853cc251666a8d5a65e93d9a18bad27c8d`
+- pinned source commit for this baseline: `885f9e0c5ead351bd6b18b52a781633a8862df04`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -492,6 +492,14 @@ Desktop PR #20 advanced from `5523b564ff16ee8be6f00fce64c4162a6c07b35d` to `6940
 iOS already has the downstream Coordinator relay and renderer projection, with `(agentId, epoch, sequence, protobuf toolCallId)` fencing, replay, reset, and shutdown clearing. The remaining applicable Host responsibility is upstream production of the versioned transport envelopes from the canonical Runtime tool-observation path. That producer must be owned by the existing canonical iOS Host/Runtime composition (the single `FeatureHostController`/Runtime line), not SwiftUI and not a second global/static producer. Call and Result must carry the real tool-call identity, Result without a matching open Call must fail closed, sequence must remain monotonic per Agent within one producer epoch, and Host lifecycle settlement must clear/reset producer state.
 
 The three changed Desktop rows are invalidated from prior exact-HEAD evidence until this ownership is wired. The adjacent Desktop `client_side_tool_v2_{inventory,producer,projection}` responsibilities and focused contracts must be reviewed as one behavior slice because the current iOS ledger already records the Coordinator relay as implemented but explicitly blocks end-to-end verification on the missing mobile Rust Host producer. PR #26 is observation-only even when rebased; it is not an iOS migration authority until merged into PR #20.
+
+### 11.14 FBCP/TDRP governance-only exact-HEAD rebaseline
+
+Desktop PR #20 advanced from `69401d853cc251666a8d5a65e93d9a18bad27c8d` to `885f9e0c5ead351bd6b18b52a781633a8862df04` in 13 commits. No selected `frontend/**` or `source/**` file changed, so the 7,925 source-bearing paths and their blob identities are unchanged. The delta adds/updates repository governance and active specifications for FBCP-001 and TDRP-001, including `docs/specs/fabushi-bot-communication-platform.md`, `docs/specs/telegram-desktop-rust-equivalence-migration.md`, project source-of-truth/status files, and root AI instructions.
+
+These documents are product-direction authority but explicitly do **not** claim implemented communication capability at this HEAD: FBCP marks implementation as not implemented/not accepted, and its status still blocks native messaging infrastructure, Human messaging in the existing workspace, Human+Agent unified flow, full feature absorption, packaged acceptance, and release. TDRP likewise remains research/owner-resolution work. Therefore this rebaseline does not import PR #26 production code and does not create a second iOS upstream. iOS records the direction: Telegram remains research-only; current PR #20 owners remain the target; future Human/groups/channels/replies/media/calls/etc. enter iOS only after production implementation lands in PR #20 and the exact HEAD changes again.
+
+All Desktop-bound authority tokens/sourceCommit values are nevertheless rebound to `885f9e0c5ead351bd6b18b52a781633a8862df04` as required. Prior exact-HEAD CI evidence tied to `69401d853cc251666a8d5a65e93d9a18bad27c8d` cannot prove current parity, while unchanged source responsibility judgments may be re-used only after this explicit revalidation. The manager-owned client-side-tool-v2 Host producer implementation remains applicable because none of its Desktop source files changed in this docs-only advance; it still requires current iOS exact-HEAD CI before any row can become `verified`.
 
 ## 12. Frontend requirements
 
