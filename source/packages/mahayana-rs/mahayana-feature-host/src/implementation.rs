@@ -12296,6 +12296,45 @@ mod tests {
     }
 
     #[test]
+    fn feature_host_is_single_owner_for_session_group_and_permission_state() {
+        let controller = controller();
+        drain(&controller);
+
+        controller
+            .set_scene_active(true)
+            .expect("activate canonical scene state");
+
+        let mut settings = ProductHostSettings::default();
+        settings.local_tool_permission = LocalToolPermission::Always;
+        controller
+            .execute(FeatureCommand::SettingsUpdate {
+                request_id: "single-owner-settings".into(),
+                settings,
+            })
+            .expect("update Host-owned permission settings");
+
+        controller
+            .execute(FeatureCommand::GroupCreate {
+                request_id: "single-owner-group".into(),
+                name: "Single owner room".into(),
+                description: "Transcript owner contract".into(),
+                member_ids: vec!["mahayana-assistant".into(), "research-bot".into()],
+            })
+            .expect("create group through canonical Host");
+
+        let state = controller.state().expect("canonical FeatureHost state");
+        assert!(state.conversation_session.scene_active);
+        assert_eq!(
+            state.settings.local_tool_permission,
+            LocalToolPermission::Always
+        );
+        assert!(state
+            .groups
+            .values()
+            .any(|group| group.name == "Single owner room"));
+    }
+
+    #[test]
     fn group_chat_handles_mentions_round_order_and_pass_rules() {
         let bots = BTreeMap::from([
             (

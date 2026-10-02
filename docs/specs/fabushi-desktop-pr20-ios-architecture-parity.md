@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `e891086964e08a5747a056d790dfd545b12a1a43`
+- pinned source commit for this baseline: `f55175300404b20c6c50dd815601ef89ec233c49`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -418,7 +418,7 @@ For iOS this export shape is not itself a required mechanism because the iOS Hos
 
 ### 11.8 Deferred windowed Session activation rebaseline
 
-Desktop PR #20 advanced from `a8cc75d1917ae8aa8c81d241f17cba57589bb4db` to `e891086964e08a5747a056d790dfd545b12a1a43` in two commits. Four selected Host blobs changed: `source/host/app/src/main.rs`, `source/host/src/extensions/transcript/roster_emit.rs`, `source/host/src/extensions/transcript/session_runtime.rs`, and `source/host/tests/transcript_session_runtime_contract.rs`.
+Desktop PR #20 advanced from `a8cc75d1917ae8aa8c81d241f17cba57589bb4db` to `cbed42883dec4dbd12af2d54bd60d5855b3c0327` in two commits. Four selected Host blobs changed: `source/host/app/src/main.rs`, `source/host/src/extensions/transcript/roster_emit.rs`, `source/host/src/extensions/transcript/session_runtime.rs`, and `source/host/tests/transcript_session_runtime_contract.rs`.
 
 The normative product responsibility added by this delta is Session activation after a bounded/windowed transcript read:
 
@@ -453,6 +453,17 @@ The first commit (`a5386793`) closes Desktop's own SessionRuntime parity status 
 iOS preserves the ownership effect without reproducing Desktop's type graph. The native shipping composition has one `AppHost`-owned `FeatureHostController`. The same controller owns `FeatureState` group/group-run/group-operation state and pending approvals, and owns one `MahayanaHost` Runtime used by group member turns and approval resolution. AppHost does not construct an alternate group/widget/session owner. Existing group behavior contracts exercise continuity through this canonical controller. Therefore the changed `transcript_manager.rs` and manager-contract responsibilities are `ios-adapted` / `implemented`, while the existing deferred Session activation rows remain implemented after revalidation against the new upstream blobs.
 
 No CI or acceptance result tied to `cbed4288` is promoted to current parity evidence. PR #26 may currently be based on `e8910869`, but it remains observation-only until merged into PR #20 and never becomes a second formal iOS upstream. Current exact-head GitHub Actions are still required before any affected row can become `verified`.
+
+
+### 11.10 Transcript delegate routing closure rebaseline
+
+Desktop PR #20 advanced from `e891086964e08a5747a056d790dfd545b12a1a43` to `f55175300404b20c6c50dd815601ef89ec233c49` in one source-bearing commit. The selected inventory remains 7,925 files. Two selected Host blobs changed: `source/host/app/src/main.rs` and `source/host/tests/send_group_fanout_contract.rs`.
+
+This delta does not add a new group, shared-room, or widget-response product state machine. It closes the remaining production composition bypasses: routed Runner dependencies now carry the canonical `TranscriptManager`; local/agent-posted group turns use its stable group-chat delegate; local Agent messages to shared rooms use its stable shared-room delegate; channel inbound/failure revival reads widget-response context through its stable widget delegate; and shared-room/group fanout focused contracts explicitly reject fresh `GroupChatGlue::new(...)` construction.
+
+The iOS adaptation preserves the ownership effect without copying Desktop's Arc graph. `AppHost` owns one `FeatureHostController`, and that controller owns one `FeatureState` plus one production Runtime. Session activation, group lifecycle/run/operation state, approval/event state and Runtime dispatch therefore share one Host composition boundary. A focused behavioral contract must prove cross-flow state continuity on the same controller. This is an ownership contract only: the unchanged Desktop `shared_rooms.rs` and `widget_responses.rs` rows retain their independent review status and are not implicitly promoted by this rebaseline.
+
+The changed `main.rs`, `transcript_manager.rs` ownership responsibility and `send_group_fanout_contract.rs` may remain `implemented` on iOS after that focused contract lands, but none are `verified` until the same accepted iOS exact HEAD passes architecture, Rust Host, Swift Unit/UI, device archive and protected-session acceptance. After this upstream delta is dispositioned, the previously identified pre-dispatch `dispatched + recovery_shaped` supersession fence remains the next production implementation gap.
 
 
 ## 12. Frontend requirements

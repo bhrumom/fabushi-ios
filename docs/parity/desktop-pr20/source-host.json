@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "e891086964e08a5747a056d790dfd545b12a1a43",
+  "sourceCommit": "f55175300404b20c6c50dd815601ef89ec233c49",
   "group": "source-host",
   "rowCount": 955,
   "rows": [
@@ -36,18 +36,18 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "e4973b6ae0d154049ba04a1eaf94009264d9e294",
-      "desktop_responsibility": "Shipping Host composition for bounded/deferred Session activation plus single Transcript-owned delegated group/widget/shared-room owners; main must reuse those canonical owners instead of constructing parallel instances.",
+      "desktop_blob_sha": "698ba9f424ab67d65333ff2b615b7df1550a1987",
+      "desktop_responsibility": "Shipping Host composition for bounded/deferred Session activation and canonical Transcript delegate routing. All group-turn, shared-room and widget-response call sites must consume the stable TranscriptManager-owned delegates instead of constructing parallel instances.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "Bounded/tail activation preserves latest-generation Session semantics while group turns, permission widget responses, and shared-room turns all reuse the same canonical transcript/session composition.",
+      "desktop_visible_effect": "Session activation keeps its generation-fenced semantics while every shipping transcript-adjacent delegate path shares one canonical composition owner; no background revival, group fanout or shared-room path silently forks transcript/session state.",
       "ios_disposition": "ios-adapted",
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust + Swift",
       "ios_platform_delta": "iOS defers activation on the canonical Host event-pump boundary instead of spawning a desktop thread. Native scene activity replaces window focus. Activation-read failure emits conversation.activationFailed with conversation+generation identity. Provider-owned ConversationHistoryWindow resolves before/after anchors without changing ordinary read acknowledgement.",
       "implementation_status": "implemented",
-      "production_evidence": "FeatureHostController::production_open_conversation_windowed/advance_deferred_conversation_activation and ConversationSessionState are in the mobile AppHost shipping path; RuntimeCommand::ConversationHistoryWindow delegates to ConversationProvider::history_window; KernelConversationProvider slices its full current canonical transcript; AppHost::feature_session_activity is reached through MahayanaHostRuntime FFI; IOSMainRuntime forwards ScenePhase without owning Session truth.",
-      "test_evidence": "Focused Rust contracts in mahayana-feature-host, mahayana-host-protocol, and mahayana-conversation cover activation ordering/generation, invalidation, before/after anchor slicing, strict catch-up, focus freshness, and wire shapes; exact-HEAD GitHub Actions pending.",
-      "notes": "Revalidated for Desktop PR #20 e8910869. a538679 only closes Desktop's own SessionRuntime parity status; e891086 additionally centralizes GroupChatGlue/WidgetResponses/SharedRooms under TranscriptManager. iOS uses one AppHost-owned FeatureHostController as the replacement composition owner; its group state/runs, pending approvals and Runtime all live in that one controller, with no second group/widget/session-worker owner. Exact-head CI still required."
+      "production_evidence": "iOS AppHost owns exactly one FeatureHostController. That controller owns one FeatureState and one production MahayanaHost Runtime; Session activity/open, group lifecycle/run state, approval/event state and Runtime dispatch are reached through this controller. iOS does not create per-call group/widget/shared-room delegate owners.",
+      "test_evidence": "Focused single-controller Rust behavior contract covers Session + Group + permission/settings state continuity; existing group/deferred-activation contracts remain applicable. Exact-head GitHub Actions pending.",
+      "notes": "Revalidated at Desktop f5517530. f551 routes the remaining shipping group/shared-room/widget delegate call sites through TranscriptManager. This row proves composition ownership only; unchanged shared_rooms.rs and widget_responses.rs product-behavior rows remain independently unreviewed."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -5992,17 +5992,17 @@
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_manager.rs",
       "desktop_blob_sha": "950add9559d2a3dea6b01adecaa5e5e66853b81e",
-      "desktop_responsibility": "Single production composition owner for transcript delegated services, including group chat execution, widget/approval responses, shared rooms, runner registry, automation and transcript runtime.",
+      "desktop_responsibility": "Single production composition owner for stable transcript delegated services. The responsibility of this row is delegate identity/ownership and reuse, not a substitute for the separate product-behavior responsibilities owned by group_chat_glue.rs, widget_responses.rs, or shared_rooms.rs.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "All transcript-adjacent group/permission/shared-room flows reuse one canonical session/runtime owner rather than constructing parallel delegated owners with divergent state.",
+      "desktop_visible_effect": "Repeated group/widget/shared-room/runner/ack delegation cannot create independent transcript/session owners with divergent state.",
       "ios_disposition": "ios-adapted",
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust",
       "ios_platform_delta": "iOS has no Desktop TranscriptManager/session_workers object graph. The native replacement is the single AppHost-owned FeatureHostController: FeatureState owns groups/group runs/pending approvals and the controller owns one MahayanaHost Runtime. Group/approval flows dispatch through this same controller; AppHost does not construct a parallel group/widget owner.",
       "implementation_status": "implemented",
-      "production_evidence": "AppHost contains exactly one FeatureHostController production field created by create_feature_host; FeatureHostController::execute routes group commands to execute_group_chat, stores group runs/operations and pending approvals in the same FeatureState, and resolves Runtime approvals through its single MahayanaHost. Existing group/member turn execution reuses self.runtime().",
-      "test_evidence": "group_chat_handles_mentions_round_order_and_pass_rules and group_crud_uses_real_host_state_and_rejects_nested_groups exercise the production FeatureHost state model; exact-head architecture/rust-host acceptance pending.",
-      "notes": "New e8910869 ownership responsibility. Implemented as an iOS-native single-controller replacement, not by introducing a duplicate TranscriptManager type. Verification is withheld until current exact-head CI."
+      "production_evidence": "AppHost contains one FeatureHostController production field. FeatureHostController owns one canonical FeatureState and one MahayanaHost Runtime; all current iOS Session/group/approval/event paths are methods on that controller, with no alternate per-call delegated-owner construction in AppHost composition.",
+      "test_evidence": "New focused Rust cross-flow contract verifies Session, Group and permission/settings mutations remain observable through the same canonical FeatureHostController state; exact-head rust-host acceptance pending.",
+      "notes": "Ownership responsibility remains implemented after f5517530. This status does not promote the separate unchanged shared_rooms.rs/widget_responses.rs behavior rows, which remain unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -13176,18 +13176,18 @@
     },
     {
       "desktop_path": "source/host/tests/send_group_fanout_contract.rs",
-      "desktop_blob_sha": "60f65f5b100ccf94b9d02e46aaea15ad986c057e",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "6cab81eafc4c104f5e9411ff4e90a315d6265092",
+      "desktop_responsibility": "Focused shipping ownership contract proving group and shared-room fanout use TranscriptManager-owned GroupChatGlue rather than constructing an ad-hoc group delegate, while preserving the canonical Host Runner cursor.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
+      "desktop_visible_effect": "Group/shared-room fanout cannot split execution ownership away from the canonical transcript/session/Runner composition.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "iOS does not mirror Desktop Arc delegate identity. Group execution and operation settlement live in the single AppHost-owned FeatureHostController/FeatureState and dispatch through its one Runtime. Separate shared-room product behavior remains an independent row and is not claimed by this ownership contract.",
+      "implementation_status": "implemented",
+      "production_evidence": "FeatureHostController::execute_group_chat, group_runs/group_operations and Runtime event settlement all use the same controller/state; AppHost constructs no secondary group execution owner.",
+      "test_evidence": "group_chat_handles_mentions_round_order_and_pass_rules, group_crud_uses_real_host_state_and_rejects_nested_groups, plus the new single-controller cross-flow contract; exact-head GitHub Actions pending.",
+      "notes": "Rebaselined at f5517530. This focused row proves canonical group/fanout ownership only; it does not claim completion of unchanged shared_rooms.rs product semantics."
     },
     {
       "desktop_path": "source/host/tests/send_message_tool_contract.rs",
