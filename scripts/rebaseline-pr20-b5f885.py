@@ -128,7 +128,7 @@ checker_path.write_text(checker.replace(needle, f'EXPECTED_DESKTOP_COMMIT = "{NE
 
 spec_path = Path("docs/specs/fabushi-desktop-pr20-ios-architecture-parity.md")
 spec = spec_path.read_text()
-spec = spec.replace("Last updated: 2026-10-02", "Last updated: 2026-10-03", 1)
+spec = spec.replace("Last updated: 2026-10-02  ", "Last updated: 2026-10-03", 1)
 old_pin = f"- pinned source commit for this baseline: `{OLD}`"
 new_pin = f"- pinned source commit for this baseline: `{NEW}`"
 if old_pin not in spec:
