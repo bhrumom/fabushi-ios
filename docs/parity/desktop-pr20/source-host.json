@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09",
+  "sourceCommit": "dcb19a94383833fc1ec5074f10c4bbbd28c09036",
   "group": "source-host",
   "rowCount": 955,
   "rows": [
@@ -5287,17 +5287,17 @@
     {
       "desktop_path": "source/host/src/extensions/transcript/agent_to_agent_messaging.rs",
       "desktop_blob_sha": "89d33abcdbc7e37142c8d5fba918b6d46f4ad55c",
-      "desktop_responsibility": "pending-review",
+      "desktop_responsibility": "Own production Agent-to-Agent delivery admission and wake construction, including preserving inbound image metadata while materializing local file:// Agent images into recipient AgentWakeRequest selected-image inputs.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "desktop_visible_effect": "Generated Agent media sent to another Agent is retained in the inbound transcript envelope and local file images become actual selected image input for the recipient Runner wake instead of remaining metadata-only.",
+      "ios_disposition": "direct-port",
+      "ios_target_path": "source/host/extensions/transcript/agent-to-agent-messaging.rs",
+      "ios_language": "rust",
+      "ios_platform_delta": "Keep generated-Agent delivery and media materialization in the iOS-owned Host/Runner boundary; the iOS sandbox changes path access rules but not ownership, admission, or wake semantics.",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
+      "notes": "Desktop acceptance names ProductionAgentToAgentMessaging and direct_peer_wake_materializes_file_url_images_for_runner_selected_input as the exact generated-media consumer evidence. No equivalent iOS Host production owner exists at this exact HEAD; generic Codex multi-agent helpers do not prove this Desktop Host responsibility."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/async_task_union.rs",
@@ -5857,17 +5857,17 @@
     {
       "desktop_path": "source/host/src/extensions/transcript/send_message_shaping.rs",
       "desktop_blob_sha": "f43ed9960d4e0e42e9cc997b4921674adcda0cd2",
-      "desktop_responsibility": "pending-review",
+      "desktop_responsibility": "Own Host-side message/reaction/thread shaping and the pre-Runner media boundary, including attachment channel splitting, selected image/video materialization, MIME projection, inbound-image collection, and provider-facing send arguments.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "desktop_visible_effect": "A send preserves durable attachment metadata while dispatching images as selected image inputs, videos as selected video descriptors, and only non-media files through generic attachment paths before Runner/provider execution.",
+      "ios_disposition": "direct-port",
+      "ios_target_path": "source/host/extensions/transcript/send-message-shaping.rs",
+      "ios_language": "rust",
+      "ios_platform_delta": "Keep this responsibility in the iOS-owned Rust Host. iOS-native pickers may supply sandbox URLs, but SwiftUI/shared media helpers must not become the canonical send-shaping owner.",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Desktop PR #20 dcb19a94383833fc1ec5074f10c4bbbd28c09036 accepts this responsibility using send_message_shaping.rs plus selected_image_inputs.rs and ProductionAgentToAgentMessaging. iOS has no Host send-message-shaping module at this exact HEAD, so Desktop implemented status is not inherited. Required closure includes the real shipping attachment channel split before Runner dispatch."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/send_not_persisted_error.rs",
@@ -8332,17 +8332,17 @@
     {
       "desktop_path": "source/host/src/selected_image_inputs.rs",
       "desktop_blob_sha": "395d7446a31bcc6e5a93dbbea6d2779d8666e6d4",
-      "desktop_responsibility": "Own selected image MIME classification and byte-level dimension extraction, including primary-item ISO-BMFF HEIC/HEIF/AVIF dimensions and rotation handling.",
+      "desktop_responsibility": "Own selected-image MIME classification, byte loading, and byte-level image dimension extraction, including HEIC/HEIF/AVIF ISO-BMFF primary-item ispe dimensions and irot quarter-turn projection.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "Selected image attachments expose correct dimensions for supported formats, including rotated HEIC/HEIF/AVIF primary images, before transcript/provider shaping.",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "desktop_visible_effect": "Selected image inputs reaching the Runner/provider carry the correct media identity and orientation-aware dimensions for supported image formats, including rotated HEIC/HEIF/AVIF primary images.",
+      "ios_disposition": "direct-port",
+      "ios_target_path": "source/host/selected-image-inputs.rs",
+      "ios_language": "rust",
+      "ios_platform_delta": "The canonical owner remains the iOS-owned Rust Host so the same bytes used for Runner input determine dimensions. Swift ImageIO helpers may support presentation but cannot substitute for this Host contract.",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Desktop PR #20 bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09 changed this production owner from blob 305095f25c43e42dc3d7ffda9a7ae962f9270985 to 395d7446a31bcc6e5a93dbbea6d2779d8666e6d4 by adding native ISO-BMFF HEIC/HEIF/AVIF primary-image dimension and rotation parsing. This row remains unreviewed for iOS until the corresponding Host/media shipping owner is audited and ported; no stale acceptance is inherited."
+      "notes": "Current iOS source/host/selected-image-inputs.rs only loads bytes/path and extension-derived MIME, omits heic/heif MIME, carries no dimensions, and has no ISO-BMFF pitm/ispe/irot parser. source/shared/media/image-dimensions.swift is a shared Swift/ImageIO helper and is not Host production parity. This is an upstream-priority production gap."
     },
     {
       "desktop_path": "source/host/src/send_trace_host.rs",
