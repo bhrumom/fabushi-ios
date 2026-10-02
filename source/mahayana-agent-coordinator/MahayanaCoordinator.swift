@@ -128,9 +128,12 @@ final class MahayanaCoordinator {
 
     func setRendererEventSink(_ sink: ((String, CoordinatorPayload) -> Void)?) {
         rendererEventSink = sink
-        guard let sink else { return }
+    }
+
+    func replayClientSideToolEvents() {
+        guard let rendererEventSink else { return }
         for event in clientSideToolV2Relay.replay() {
-            sink(ClientSideToolV2Transport.family, event.coordinatorPayload)
+            rendererEventSink(ClientSideToolV2Transport.family, event.coordinatorPayload)
         }
     }
 

@@ -18,14 +18,20 @@ final class RendererPortServer {
 
     private let port: CoordinatorPort
     private let dispatch: RequestDispatcher
+    private let onServing: @MainActor () -> Void
     private var inFlight: [String: Task<Void, Never>] = [:]
 
     private(set) var phase: Phase = .awaitingHello
     private(set) var settlement: Settlement?
 
-    init(port: CoordinatorPort, dispatch: @escaping RequestDispatcher) {
+    init(
+        port: CoordinatorPort,
+        dispatch: @escaping RequestDispatcher,
+        onServing: @escaping @MainActor () -> Void = {}
+    ) {
         self.port = port
         self.dispatch = dispatch
+        self.onServing = onServing
     }
 
     func receive(_ frame: CoordinatorFrame) {
@@ -55,6 +61,7 @@ final class RendererPortServer {
             }
             phase = .serving
             port.post(.ready(protocolVersion: CoordinatorProtocol.version))
+            onServing()
 
         case .request(let requestId, let method, let args):
             guard phase == .serving else {

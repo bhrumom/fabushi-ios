@@ -45,6 +45,23 @@ final class IOSCoordinatorArchitectureTests: XCTestCase {
     }
 
     @MainActor
+    func testRendererServerReplaysOnlyAfterServingHandshake() {
+        let port = ArchitectureTestPort()
+        var servingCount = 0
+        let server = RendererPortServer(
+            port: port,
+            dispatch: { _, _ in .ok(.null) },
+            onServing: { servingCount += 1 }
+        )
+
+        XCTAssertEqual(servingCount, 0)
+        server.receive(.hello(protocolVersion: CoordinatorProtocol.version))
+        XCTAssertEqual(server.phase, .serving)
+        XCTAssertEqual(servingCount, 1)
+        XCTAssertEqual(port.frames.first, .ready(protocolVersion: CoordinatorProtocol.version))
+    }
+
+    @MainActor
     func testControlServerHandshakeAndExecutorReply() async {
         let port = ArchitectureTestPort()
         let executors = CoordinatorControlExecutors()
