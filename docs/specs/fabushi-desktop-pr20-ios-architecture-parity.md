@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `f55175300404b20c6c50dd815601ef89ec233c49`
+- pinned source commit for this baseline: `5523b564ff16ee8be6f00fce64c4162a6c07b35d`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -467,6 +467,22 @@ The iOS adaptation preserves the ownership effect without copying Desktop's Arc 
 
 The changed `main.rs`, `transcript_manager.rs` ownership responsibility and `send_group_fanout_contract.rs` may remain `implemented` on iOS after that focused contract lands, but none are `verified` until the same accepted iOS exact HEAD passes architecture, Rust Host, Swift Unit/UI, device archive and protected-session acceptance. After this upstream delta is dispositioned, the previously identified pre-dispatch `dispatched + recovery_shaped` supersession fence remains the next production implementation gap.
 
+
+
+### 11.11 Transcript lifecycle ownership rebaseline
+
+Desktop PR #20 advanced from `f55175300404b20c6c50dd815601ef89ec233c49` to `6ac2d23df5cdb45004d5c73c771f78de334d6b02` in one source-bearing lifecycle commit. The selected inventory remains 7,925 files; twelve selected Host blobs changed. This delta makes `TranscriptManager` responsible not only for constructing delegated transcript services but also for settling their process-local lifecycle before Session storage closes: deferred activation and runtime observers are invalidated, handoff state is cleared, ack redrive and automation wake/reporting state are disposed, workflow watchers are detached, turn-dispatch/scheduler state is disposed, Runner work is cancelled, and Session owners close with checkpoint semantics. `TranscriptExtension` is explicitly dropped before the Session extension.
+
+The iOS platform adaptation remains the single `AppHost -> FeatureHostController -> MahayanaHost/Runtime` composition rather than cloning Desktop's `TranscriptManager` type graph. Applicable product effects are mandatory. Host close/drop must invalidate deferred conversation activation and generation, settle in-flight operation identities before releasing Runtime ownership, clear process-local approval/await/background/group-operation/session state without deleting durable automations/workflows/transcript history, terminate any active teach capture, and leave no presentation-owned lifecycle truth. iOS workflow access is request-scoped rather than a long-lived file watcher, so Desktop watcher detachment maps to the absence of a second observer owner, not to a new watcher. Durable product state continues to be written by its existing canonical owners; shutdown may not erase it merely to satisfy lifecycle tests.
+
+Affected rows are re-bound to the new blob identities but no prior exact-HEAD verification is inherited. This migration slice reviews all twelve changed Host responsibilities: process-local lifecycle duties map to the canonical `FeatureHostController::close`/Drop path; Desktop-only checkpoint/watcher/redrive/scheduler mechanisms use documented iOS replacements where the product effect is preserved without a second owner. The affected rows are at most `implemented` until exact-HEAD CI proves the production build and focused contracts. The pre-dispatch `dispatched + recovery_shaped` fence remains part of the same iOS Host/Runtime line but requires this new exact-HEAD CI as well. PR #26 is currently rebased onto this PR #20 baseline, but remains observation-only until its work is merged into PR #20; it does not become a second formal iOS upstream.
+
+
+### 11.12 Durable ack-redrive contract rebaseline
+
+Desktop PR #20 advanced from `6ac2d23df5cdb45004d5c73c771f78de334d6b02` to `5523b564ff16ee8be6f00fce64c4162a6c07b35d` in one focused-contract-only commit. The selected inventory remains 7,925 files and only `source/host/tests/transcript_manager_contract.rs` changed. The production lifecycle implementation is unchanged. The strengthened contract now records a real durable acknowledgement obligation before arming the redrive timer, so TranscriptManager disposal is proven against non-empty durable redrive state rather than an empty scheduler.
+
+This does not create a new iOS transcript-ack owner. The iOS disposition from 11.11 remains: there is no parallel Transcript AckObligations/redrive scheduler; provider/service acknowledgement durability stays with its canonical provider owner, while native Host lifecycle settlement must not create or leave a second redrive callback. The changed Desktop test row is rebound to the new blob and cannot inherit exact-HEAD test verification from `6ac2d23...`; current iOS production and focused-contract evidence still require same-HEAD GitHub Actions before promotion to `verified`.
 
 ## 12. Frontend requirements
 

@@ -6211,14 +6211,54 @@ impl FeatureHostController {
     }
 
     pub fn close(&self) -> Result<(), FeatureHostError> {
-        let mut state = self.state()?;
-        if state.closed {
-            return Ok(());
+        let operation_ids = {
+            let mut state = self.state()?;
+            if state.closed {
+                return Ok(());
+            }
+            state.closed = true;
+            state.conversation_session.invalidate_deferred_activation();
+            state.conversation_session.active_conversation_id = None;
+            state.conversation_session.scene_active = false;
+            state.conversation_session.focused_at_ms = None;
+            state.pending_approvals.clear();
+            state.awaited_operations.clear();
+            state.operation_terminals.clear();
+            state.background_operations.clear();
+            state.remote_computer_sessions.clear();
+            state.group_runs.clear();
+            state.group_operations.clear();
+            let operation_ids = state.operations.iter().cloned().collect::<Vec<_>>();
+            state.operations.clear();
+            state.operation_agents.clear();
+            state.events.push_back(HostEvent::HostClosed {
+                timestamp: timestamp(),
+            });
+            operation_ids
+        };
+
+        if self.config.mode == HostMode::Production {
+            #[cfg(feature = "production")]
+            for operation_id in operation_ids {
+                if !operation_id.starts_with("host-task-") {
+                    let _ = self.runtime()?.interrupt(OperationId(operation_id));
+                }
+            }
+            #[cfg(not(feature = "production"))]
+            return Err(FeatureHostError::ProductionUnavailable);
         }
-        state.closed = true;
-        state.events.push_back(HostEvent::HostClosed {
-            timestamp: timestamp(),
-        });
+
+        let active_teach = self
+            .teach_recording
+            .lock()
+            .map_err(|_| FeatureHostError::StatePoisoned)?
+            .take();
+        if let Some(mut active) = active_teach {
+            if let Some(child) = active.child.as_mut() {
+                stop_teach_capture(child)?;
+            }
+            let _ = std::fs::remove_dir_all(&active.session_dir);
+        }
         Ok(())
     }
 
@@ -9035,6 +9075,12 @@ fn validate_draft(draft: &MessageDraft) -> Result<(), FeatureHostError> {
         }
     }
     Ok(())
+}
+
+impl Drop for FeatureHostController {
+    fn drop(&mut self) {
+        let _ = self.close();
+    }
 }
 
 #[cfg(feature = "production")]
@@ -12233,6 +12279,92 @@ mod tests {
             .await_operation_step("active-operation", Duration::ZERO)
             .expect_err("unregistered operation must fail closed");
         assert!(error.to_string().contains("not registered"));
+    }
+
+    #[test]
+    fn close_settles_process_local_host_lifecycle_without_erasing_durable_state() {
+        let controller = controller();
+        {
+            let mut state = controller.state().expect("state");
+            state
+                .conversation_session
+                .schedule_deferred_activation("agent-a", Some("message-1"));
+            state.conversation_session.active_conversation_id = Some("agent-a".into());
+            state.pending_approvals.insert(
+                "approval-1".into(),
+                PendingApproval {
+                    mini_app_id: "mini-app".into(),
+                    capability: "camera".into(),
+                    runtime_approval_id: None,
+                },
+            );
+            state.operations.insert("operation-1".into());
+            state
+                .operation_agents
+                .insert("operation-1".into(), "agent-a".into());
+            state.awaited_operations.insert("operation-1".into());
+            state
+                .operation_terminals
+                .insert("operation-1".into(), json!({"status": "pending"}));
+            state.background_operations.insert(
+                "operation-1".into(),
+                BackgroundOperationContext {
+                    agent_id: "agent-a".into(),
+                    agent_name: "Agent A".into(),
+                    source: "workflow".into(),
+                    teach_artifact: None,
+                },
+            );
+            state.group_operations.insert(
+                "operation-1".into(),
+                GroupOperationContext {
+                    run_id: "group-run-1".into(),
+                    group_id: "group-a".into(),
+                    member_id: "agent-a".into(),
+                    member_name: "Agent A".into(),
+                },
+            );
+            state.automations.insert(
+                "durable-automation".into(),
+                AutomationSummary {
+                    id: "durable-automation".into(),
+                    agent_id: Some("agent-a".into()),
+                    name: "Durable".into(),
+                    prompt: "persist me".into(),
+                    schedule: "".into(),
+                    trigger: None,
+                    enabled: true,
+                    created_at_ms: 1,
+                    last_run_at_ms: None,
+                    next_run_at_ms: None,
+                },
+            );
+        }
+
+        controller.close().expect("close");
+        controller.close().expect("idempotent close");
+
+        let state = controller.state().expect("state");
+        assert!(state.closed);
+        assert!(state.conversation_session.pending_activation.is_none());
+        assert!(state.conversation_session.active_conversation_id.is_none());
+        assert!(!state.conversation_session.scene_active);
+        assert!(state.pending_approvals.is_empty());
+        assert!(state.operations.is_empty());
+        assert!(state.operation_agents.is_empty());
+        assert!(state.awaited_operations.is_empty());
+        assert!(state.operation_terminals.is_empty());
+        assert!(state.background_operations.is_empty());
+        assert!(state.group_operations.is_empty());
+        assert!(state.automations.contains_key("durable-automation"));
+        assert_eq!(
+            state
+                .events
+                .iter()
+                .filter(|event| event.kind() == "host.closed")
+                .count(),
+            1
+        );
     }
 
     #[test]

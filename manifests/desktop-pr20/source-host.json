@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "f55175300404b20c6c50dd815601ef89ec233c49",
+  "sourceCommit": "5523b564ff16ee8be6f00fce64c4162a6c07b35d",
   "group": "source-host",
   "fileCount": 955,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "698ba9f424ab67d65333ff2b615b7df1550a1987",
-      "size": 514446
+      "blobSha": "1593837408936f16eb07963152ae1a3a63ff3526",
+      "size": 514469
     },
     {
       "path": "source/host/build.rs",
@@ -1340,8 +1340,8 @@
     },
     {
       "path": "source/host/src/extensions/session/box_handoff_service.rs",
-      "blobSha": "d1e67b628ecd285702886428bbf202302ca6f1e3",
-      "size": 11162
+      "blobSha": "d01f7108f3e3dc5d11103b9e6131e8f87ab7039e",
+      "size": 11917
     },
     {
       "path": "source/host/src/extensions/session/channel_store.rs",
@@ -1390,8 +1390,8 @@
     },
     {
       "path": "source/host/src/extensions/session/production.rs",
-      "blobSha": "902eef0492167b07c506cc2f7b8d1a3e2c6a7cda",
-      "size": 48102
+      "blobSha": "5266f87ba14b5a0e0652f2eefd5d1834cb7a5c11",
+      "size": 48286
     },
     {
       "path": "source/host/src/extensions/session/production_agent_store.rs",
@@ -1750,8 +1750,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/ack_obligations.rs",
-      "blobSha": "6aaf9a3e2c27ba3b1acf824721557866a2e2553e",
-      "size": 19381
+      "blobSha": "334d5f825331c8ab1d016c9731ca3e1723e5e83b",
+      "size": 19796
     },
     {
       "path": "source/host/src/extensions/transcript/agent_lifecycle.rs",
@@ -1785,8 +1785,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/automation_runtime.rs",
-      "blobSha": "01ab5ab0585ce6ec35444478dd6aacce96cd8b9e",
-      "size": 32341
+      "blobSha": "2a30406f2dd138a29a9bb90cf9f5324aa944e731",
+      "size": 32849
     },
     {
       "path": "source/host/src/extensions/transcript/automation_snapshot.rs",
@@ -1840,8 +1840,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/extension.rs",
-      "blobSha": "47aeed754ad43e25b05c9b1ca0cc994510cb8c7a",
-      "size": 11553
+      "blobSha": "4195c7208f5879f30ddc1ac56ad272a902a6ba6b",
+      "size": 11851
     },
     {
       "path": "source/host/src/extensions/transcript/group_chat_glue.rs",
@@ -1870,8 +1870,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/production_runtime.rs",
-      "blobSha": "bdaedb4882769496eb88a541ac8bda0dfd43f996",
-      "size": 59245
+      "blobSha": "78ed54b39479663cfd80d81a2c3623e2ce326af6",
+      "size": 60134
     },
     {
       "path": "source/host/src/extensions/transcript/profile_watch.rs",
@@ -1910,8 +1910,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/run_scheduler.rs",
-      "blobSha": "d4ab23b19f4e051e598edbe98cfe6e30f020363f",
-      "size": 15101
+      "blobSha": "eb8994dc45b3722e8bfcc672e9e610c662429650",
+      "size": 15223
     },
     {
       "path": "source/host/src/extensions/transcript/runner_registry.rs",
@@ -1975,8 +1975,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/send_turn_dispatch.rs",
-      "blobSha": "ce507240a5c5375888ac28ab36b634195ba85864",
-      "size": 10181
+      "blobSha": "3ebae343888e43406d0e1e077f486ebb062d63eb",
+      "size": 10254
     },
     {
       "path": "source/host/src/extensions/transcript/session_runtime.rs",
@@ -2000,8 +2000,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "950add9559d2a3dea6b01adecaa5e5e66853b81e",
-      "size": 11841
+      "blobSha": "cca4a19671033c7c28b9375c343e6e61c23dcb67",
+      "size": 13305
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -2025,8 +2025,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/workflow_commands.rs",
-      "blobSha": "d57a7835620ec70c81439f998b77ebcda1dc7791",
-      "size": 19656
+      "blobSha": "35d5863225b4de40e6f321873f33fba3e7a2e43d",
+      "size": 23389
     },
     {
       "path": "source/host/src/extensions/trays/extension.rs",
@@ -4590,8 +4590,8 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "30ab7b62cc8143454ec262f5b766b404909ed6b8",
-      "size": 5553
+      "blobSha": "0ea48892fab6c000badf458c5345fec1c0935b00",
+      "size": 7685
     },
     {
       "path": "source/host/tests/transcript_mirror_contract.rs",
