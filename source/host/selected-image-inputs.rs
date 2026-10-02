@@ -26,6 +26,8 @@ pub fn image_mime_from_path(file_path: &str) -> Option<&'static str> {
         ".avif" => Some("image/avif"),
         ".bmp" => Some("image/bmp"),
         ".gif" => Some("image/gif"),
+        ".heic" => Some("image/heic"),
+        ".heif" => Some("image/heif"),
         ".ico" => Some("image/x-icon"),
         ".jpeg" | ".jpg" => Some("image/jpeg"),
         ".png" => Some("image/png"),
@@ -515,6 +517,8 @@ mod ios_parity_tests {
     #[test]
     fn image_channel_classification_preserves_desktop_supported_extensions() {
         assert_eq!(image_mime_from_path("/tmp/image.avif"), Some("image/avif"));
+        assert_eq!(image_mime_from_path("/tmp/image.heic"), Some("image/heic"));
+        assert_eq!(image_mime_from_path("/tmp/image.heif"), Some("image/heif"));
         assert_eq!(image_mime_from_path("/tmp/image.png"), Some("image/png"));
         assert_eq!(image_mime_from_path("/tmp/video.mov"), None);
     }

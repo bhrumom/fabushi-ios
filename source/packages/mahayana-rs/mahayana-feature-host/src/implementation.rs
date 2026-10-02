@@ -8972,12 +8972,14 @@ fn clone_agent_display_name(name: &str) -> String {
     }
 }
 
-fn selected_input_data_url(input: crate::selected_image_inputs::SelectedImageInput) -> String {
-    format!(
-        "data:{};base64,{}",
-        input.mime_type,
+fn selected_input_data_url(
+    input: crate::selected_image_inputs::SelectedImageInput,
+) -> Option<String> {
+    let mime_type = input.mime_type?;
+    Some(format!(
+        "data:{mime_type};base64,{}",
         base64::engine::general_purpose::STANDARD.encode(input.data)
-    )
+    ))
 }
 
 fn load_agent_inbound_image_data_urls(images: &[AgentMessageImage]) -> Vec<String> {
@@ -8993,9 +8995,8 @@ fn load_agent_inbound_image_data_urls(images: &[AgentMessageImage]) -> Vec<Strin
         .map(|path| path.to_string_lossy().into_owned())
         .collect::<Vec<_>>();
     crate::selected_image_inputs::load_selected_image_inputs(&path_strings)
-        .unwrap_or_default()
         .into_iter()
-        .map(selected_input_data_url)
+        .filter_map(selected_input_data_url)
         .collect()
 }
 
@@ -9004,11 +9005,10 @@ fn selected_image_data_urls(attachments: &[AttachmentContext]) -> Vec<String> {
         .iter()
         .filter_map(|attachment| {
             let path = attachment.path.as_deref()?;
-            if let Ok(mut selected) =
-                crate::selected_image_inputs::load_selected_image_inputs(&[path.to_string()])
-                && let Some(input) = selected.pop()
-            {
-                return Some(selected_input_data_url(input));
+            let mut selected =
+                crate::selected_image_inputs::load_selected_image_inputs([path.to_string()]);
+            if let Some(data_url) = selected.pop().and_then(selected_input_data_url) {
+                return Some(data_url);
             }
 
             // iOS-native pickers can supply an explicit image MIME for formats
