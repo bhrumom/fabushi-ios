@@ -459,6 +459,22 @@ impl RuntimeProjection {
                 self.forget_turn(operation_id.0.as_str());
                 draft
             }
+            RuntimeEvent::OperationInterrupted { operation_id, reason } => {
+                let draft = self.turn_draft(
+                    operation_id.0.as_str(),
+                    timestamp_ms,
+                    GatewayEvent::MessageComplete(MessageCompletePayload {
+                        status: MessageCompletionStatus::Interrupted,
+                        text: None,
+                        partial: Some(true),
+                        recoverable: Some(true),
+                        error: Some(reason.clone()),
+                        usage: self.usage_by_turn.get(operation_id.0.as_str()).cloned(),
+                    }),
+                );
+                self.forget_turn(operation_id.0.as_str());
+                draft
+            }
             RuntimeEvent::OperationFailed {
                 operation_id,
                 code,
@@ -791,6 +807,25 @@ mod tests {
         fn resolve_approval(&mut self, approval_id: &str, decision: &str) -> Result<Value, String> {
             Ok(json!({ "approvalId": approval_id, "decision": decision }))
         }
+    }
+
+    #[test]
+    fn runtime_interruption_projects_reason_without_error_status() {
+        let mut state = GatewayState::with_epoch(ReplayLimits::default(), "epoch-interrupted");
+        state.register_turn("turn-interrupted", "session-interrupted");
+        let events = state.ingest_runtime_event(
+            &RuntimeEvent::OperationInterrupted {
+                operation_id: OperationId("turn-interrupted".into()),
+                reason: "superseded by a new user message".into(),
+            },
+            42,
+        );
+        assert_eq!(events.len(), 1);
+        let GatewayEvent::MessageComplete(payload) = &events[0].event else {
+            panic!("expected interrupted completion");
+        };
+        assert_eq!(payload.status, MessageCompletionStatus::Interrupted);
+        assert_eq!(payload.error.as_deref(), Some("superseded by a new user message"));
     }
 
     #[test]

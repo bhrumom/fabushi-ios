@@ -99,6 +99,7 @@ pub struct KernelConversationProvider {
     state: Arc<Mutex<ConversationState>>,
     history_path: Option<PathBuf>,
     direct_operations: AsyncMutex<BTreeMap<String, KernelOperationId>>,
+    interrupt_reasons: AsyncMutex<BTreeMap<String, String>>,
 }
 
 impl KernelConversationProvider {
@@ -122,6 +123,7 @@ impl KernelConversationProvider {
             state: Arc::new(Mutex::new(ConversationState::new(history))),
             history_path,
             direct_operations: AsyncMutex::new(BTreeMap::new()),
+            interrupt_reasons: AsyncMutex::new(BTreeMap::new()),
         }
     }
 
@@ -258,9 +260,17 @@ impl ConversationProvider for KernelConversationProvider {
             if let Some(previous) = previous
                 && previous != kernel_operation_id
             {
+                self.interrupt_reasons.lock().await.insert(
+                    previous.as_str().to_string(),
+                    "superseded by a new user message".to_string(),
+                );
                 match self.backend.interrupt(&previous).await {
-                    Ok(()) | Err(KernelError::OperationNotFound(_)) => {}
+                    Ok(()) => {}
+                    Err(KernelError::OperationNotFound(_)) => {
+                        self.interrupt_reasons.lock().await.remove(previous.as_str());
+                    }
                     Err(error) => {
+                        self.interrupt_reasons.lock().await.remove(previous.as_str());
                         clear_current_direct_operation(
                             &self.direct_operations,
                             &conversation_key,
@@ -305,20 +315,42 @@ impl ConversationProvider for KernelConversationProvider {
             )
             .await;
         }
-        result.map_err(kernel_error)
+        let interrupt_reason = self
+            .interrupt_reasons
+            .lock()
+            .await
+            .remove(kernel_operation_id.as_str());
+        match result {
+            Err(KernelError::Backend(message)) if message == "operation interrupted" => {
+                Err(ConversationError::Interrupted(
+                    interrupt_reason.unwrap_or_else(|| "operation interrupted".to_string()),
+                ))
+            }
+            Err(error) => Err(kernel_error(error)),
+            Ok(()) => Ok(()),
+        }
     }
 
     async fn interrupt(&self, operation_id: &OperationId) -> Result<(), ConversationError> {
-        self.backend
-            .interrupt(&KernelOperationId::from_string(operation_id.as_str()))
+        let kernel_operation_id = KernelOperationId::from_string(operation_id.as_str());
+        self.interrupt_reasons
+            .lock()
             .await
-            .map_err(kernel_error)
+            .insert(operation_id.as_str().to_string(), "interrupted by user".to_string());
+        match self.backend.interrupt(&kernel_operation_id).await {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                self.interrupt_reasons.lock().await.remove(operation_id.as_str());
+                Err(kernel_error(error))
+            }
+        }
     }
 
     async fn reset_session(&self) -> Result<(), ConversationError> {
         self.backend.reset_session().map_err(kernel_error)?;
         *self.session_id.lock().await = None;
         self.direct_operations.lock().await.clear();
+        self.interrupt_reasons.lock().await.clear();
         {
             let mut state = self.state.lock().map_err(|_| {
                 ConversationError::Provider("kernel conversation state mutex poisoned".into())

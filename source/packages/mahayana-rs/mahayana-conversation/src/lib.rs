@@ -178,6 +178,8 @@ pub enum ConversationError {
     ConversationNotFound(ConversationId),
     #[error("operation was not found: {0}")]
     OperationNotFound(OperationId),
+    #[error("operation interrupted: {0}")]
+    Interrupted(String),
     #[error("approval was not found: {0}")]
     ApprovalNotFound(ApprovalId),
     #[error("model usage limit exceeded: {0}")]

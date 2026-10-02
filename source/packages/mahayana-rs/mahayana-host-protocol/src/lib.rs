@@ -2655,6 +2655,8 @@ pub enum HostEvent {
         timestamp: String,
         #[serde(rename = "operationId")]
         operation_id: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        reason: Option<String>,
     },
     #[serde(rename = "operation.completed")]
     OperationCompleted {
@@ -2759,6 +2761,19 @@ impl HostEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn interrupted_operation_preserves_optional_reason() {
+        let event = HostEvent::OperationInterrupted {
+            timestamp: "2026-10-02T00:00:00Z".into(),
+            operation_id: "operation-1".into(),
+            reason: Some("superseded by a new user message".into()),
+        };
+        let value = serde_json::to_value(event).expect("encode interruption");
+        assert_eq!(value["type"], "operation.interrupted");
+        assert_eq!(value["operationId"], "operation-1");
+        assert_eq!(value["reason"], "superseded by a new user message");
+    }
 
     #[test]
     fn command_json_is_compatible_with_the_react_contract() {

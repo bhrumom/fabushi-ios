@@ -5889,6 +5889,7 @@ impl FeatureHostController {
         state.events.push_back(HostEvent::OperationInterrupted {
             timestamp: timestamp(),
             operation_id: operation_id.to_string(),
+            reason: Some("interrupted by user".into()),
         });
         Ok(())
     }
@@ -6311,6 +6312,20 @@ impl FeatureHostController {
                     Some(HostEvent::OperationCompleted {
                         timestamp: timestamp(),
                         operation_id,
+                    })
+                }
+            }
+            RuntimeEvent::OperationInterrupted { operation_id, reason } => {
+                let operation_id = operation_id.to_string();
+                let mut state = self.state()?;
+                if !state.operations.remove(&operation_id) {
+                    None
+                } else {
+                    state.operation_agents.remove(&operation_id);
+                    Some(HostEvent::OperationInterrupted {
+                        timestamp: timestamp(),
+                        operation_id,
+                        reason: Some(reason),
                     })
                 }
             }
@@ -13160,6 +13175,40 @@ mod tests {
                 ..
             } if current == "operation-1"
         ));
+
+        let interrupted_id = OperationId("operation-interrupted".into());
+        {
+            let mut state = controller.state().expect("feature state");
+            state.operations.insert(interrupted_id.to_string());
+            state.operation_agents.insert(
+                interrupted_id.to_string(),
+                "mahayana-assistant".into(),
+            );
+        }
+        let interrupted = controller
+            .translate_runtime_event(RuntimeEvent::OperationInterrupted {
+                operation_id: interrupted_id.clone(),
+                reason: "superseded by a new user message".into(),
+            })
+            .expect("translate interruption")
+            .expect("interruption event");
+        assert!(matches!(
+            interrupted,
+            HostEvent::OperationInterrupted {
+                operation_id: ref current,
+                reason: Some(ref reason),
+                ..
+            } if current == "operation-interrupted"
+                && reason == "superseded by a new user message"
+        ));
+        assert!(controller.state().expect("feature state").trays.is_empty());
+        assert!(controller
+            .translate_runtime_event(RuntimeEvent::OperationInterrupted {
+                operation_id: interrupted_id,
+                reason: "duplicate".into(),
+            })
+            .expect("translate duplicate interruption")
+            .is_none());
 
         let failed = controller
             .translate_runtime_event(RuntimeEvent::OperationFailed {

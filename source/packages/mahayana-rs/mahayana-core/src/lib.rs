@@ -538,6 +538,12 @@ pub enum RuntimeEvent {
         #[serde(rename = "operationId")]
         operation_id: OperationId,
     },
+    #[serde(rename = "mahayana.operation.interrupted")]
+    OperationInterrupted {
+        #[serde(rename = "operationId")]
+        operation_id: OperationId,
+        reason: String,
+    },
     #[serde(rename = "mahayana.operation.failed")]
     OperationFailed {
         #[serde(rename = "operationId")]

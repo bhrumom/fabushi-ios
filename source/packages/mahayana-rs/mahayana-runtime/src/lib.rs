@@ -656,6 +656,10 @@ impl MahayanaRuntime {
                 Ok(()) => RuntimeEvent::OperationCompleted {
                     operation_id: task_operation_id.clone(),
                 },
+                Err(ConversationError::Interrupted(reason)) => RuntimeEvent::OperationInterrupted {
+                    operation_id: task_operation_id.clone(),
+                    reason,
+                },
                 Err(error) => RuntimeEvent::OperationFailed {
                     operation_id: task_operation_id.clone(),
                     code: if matches!(error, ConversationError::UsageLimitExceeded(_)) {
