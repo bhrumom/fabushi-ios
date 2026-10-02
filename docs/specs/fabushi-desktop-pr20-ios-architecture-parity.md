@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `9f22a1974f02683f4ad27a2fe856987b7dd1d20f`
+- pinned source commit for this baseline: `cf0012e6bb5ddcd1669c747994af68a5055bf05d`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -235,6 +235,14 @@ The iOS native Runner composition closure defined in Section 1.22 therefore rema
 Desktop PR #20 advanced one contract-only commit from `612a075e7a7de5d845f765ade4eb51c7c318e3c8` to `9f22a1974f02683f4ad27a2fe856987b7dd1d20f`. The selected inventory remains exactly **7,927** blobs and `source-host` remains 957 rows. The only selected blob change is `source/host/tests/host_runner_composition_production_wiring_contract.rs`.
 
 The strengthened contract now explicitly requires the asynchronous shipping turn worker to consume the same `HostRunnerComposition` owner through `Arc::clone(&host_runner_composition)`, then invoke `worker_host_runner_composition.compose_production_turn(...)`. No shipping source, owner, state machine, or product effect changed. The iOS `MahayanaHost::build_runtime -> NativeRunnerComposition` implementation remains the reviewed platform adaptation because it likewise constructs one shared native Runner graph and passes the same `NativeEngine` ownership into Runtime and NativeAgent. The affected contract row remains `implemented`, never `verified`, until the same iOS exact HEAD completes required CI.
+
+### 1.25 Exact-HEAD rebaseline: 2026-10-03 / `cf0012e6bb5ddcd1669c747994af68a5055bf05d`
+
+Desktop PR #20 advanced two production commits from `9f22a1974f02683f4ad27a2fe856987b7dd1d20f` to `cf0012e6bb5ddcd1669c747994af68a5055bf05d`. The selected inventory remains exactly **7,927** blobs. Five `source-host` blobs changed: shipping `main.rs`, `host_runner_composition.rs`, `generated_agent_turn_stream.rs`, `production_turn_agent_owner.rs`, and the focused production wiring contract.
+
+The new responsibility is behavioral, not merely structural. A group-member turn must still execute through the canonical generated-Agent lifecycle and terminal owner, while private per-Agent state is deliberately absent: no private checkpoint sink, no private turn-state surface, and no private browser/computer image-persistence callback. `HostRunnerComposition` is the sole composition owner that decides those omissions before the Runner is constructed. The shipping Host may supply group-member identity and request-specific hooks but may not create a parallel raw-provider path or private-state fallback.
+
+The current iOS `NativeRunnerComposition` proves a single shared `NativeEngine` owner for Runtime and NativeAgent, but it has no group-member composition input and therefore cannot yet prove the required generated-lifecycle-without-private-state behavior. All five affected ledger rows are intentionally reset to `mapped`; prior `implemented` evidence remains historical and cannot satisfy this upstream identity. The iOS closure must be a native Host/Runner composition rule, not SwiftUI/Coordinator state and not a test-only facade. Same-iOS-HEAD GitHub Actions evidence is required before promotion.
 
 ## 2. Product goal
 

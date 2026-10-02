@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "9f22a1974f02683f4ad27a2fe856987b7dd1d20f",
+  "sourceCommit": "cf0012e6bb5ddcd1669c747994af68a5055bf05d",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "eaf198bd91f46b79b042fe6a58728766715ffe2a",
-      "size": 522004
+      "blobSha": "5a41e5a5515cfc241b50289fdbb3234243b5c24b",
+      "size": 523062
     },
     {
       "path": "source/host/build.rs",
@@ -2200,8 +2200,8 @@
     },
     {
       "path": "source/host/src/host_runner_composition.rs",
-      "blobSha": "d25a85497bbd61ae7c7568b9a4b3feca09d0a56e",
-      "size": 15614
+      "blobSha": "b87a9df8b50318739701effd044b4a2f9a0f3b17",
+      "size": 16169
     },
     {
       "path": "source/host/src/host_secret_store.rs",
@@ -2360,8 +2360,8 @@
     },
     {
       "path": "source/host/src/runner/generated_agent_turn_stream.rs",
-      "blobSha": "6d9003d34b1f07ec8ec45ddd5ff3eaa040bb6ee4",
-      "size": 8088
+      "blobSha": "743136dd1bc4388ec78be44ed01329a51e2977b6",
+      "size": 8938
     },
     {
       "path": "source/host/src/runner/host_computer_tool_dependencies.rs",
@@ -2400,8 +2400,8 @@
     },
     {
       "path": "source/host/src/runner/production_turn_agent_owner.rs",
-      "blobSha": "d0246e203a83ec68c46c6b24ef798c1d86e2e3b2",
-      "size": 9692
+      "blobSha": "4ee30b2ee740a0d812563d152da85080c75e766f",
+      "size": 9456
     },
     {
       "path": "source/host/src/runner/production_turn_input_projection.rs",
@@ -3830,8 +3830,8 @@
     },
     {
       "path": "source/host/tests/host_runner_composition_production_wiring_contract.rs",
-      "blobSha": "20e552bc4404ade4c96e5d1e9315fa55bf99dbe8",
-      "size": 7341
+      "blobSha": "03e513eb4dbbc6e0d02f91b37a59767a828617f1",
+      "size": 9611
     },
     {
       "path": "source/host/tests/host_secret_store_contract.rs",
