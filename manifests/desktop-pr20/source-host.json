@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef",
+  "sourceCommit": "d7b12fe6486909b8738d97159c8ff4c8fea50845",
   "group": "source-host",
   "fileCount": 956,
   "files": [
@@ -15,7 +15,7 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "6cc6a442664ce3ddf7b67e2ecf2a1794e0a1234a",
+      "blobSha": "63fe4e8450f2ef3e2b79ad01774a51ae9c4f8757",
       "size": 517689
     },
     {
@@ -945,7 +945,7 @@
     },
     {
       "path": "source/host/src/extensions/forever_box/forever_box_service.rs",
-      "blobSha": "362ebb0ac5f5db2348887f39a19c217ff425f280",
+      "blobSha": "77f4c74a76ea00418f7ed547fbec05473895b6ea",
       "size": 16685
     },
     {
@@ -1755,7 +1755,7 @@
     },
     {
       "path": "source/host/src/extensions/transcript/agent_lifecycle.rs",
-      "blobSha": "650c4a7facb6e825d21c1e1d7a78b5ac741dcb0a",
+      "blobSha": "bd9e266d862b012aa63d97fb829bec1c48b17042",
       "size": 34479
     },
     {
@@ -2000,7 +2000,7 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "66a42554f9c7cd2072925942bf042d5c857cd263",
+      "blobSha": "a35aa30edad7007e42eed5e0a3815a28d8ebdd14",
       "size": 24826
     },
     {
@@ -2980,12 +2980,12 @@
     },
     {
       "path": "source/host/tests/agent_lifecycle_contract.rs",
-      "blobSha": "f68dedbc68bf838dabc00f7988cfdbf32a5d7839",
+      "blobSha": "405cffce0d1d0364228b7eb17ed60fe8c5f7e6fc",
       "size": 23292
     },
     {
       "path": "source/host/tests/agent_lifecycle_kickstart_production_contract.rs",
-      "blobSha": "39c5579d27e73cc919b30d80107af29cf537329c",
+      "blobSha": "3bb75d53a91279a5b788410593c46051b7048bb1",
       "size": 15753
     },
     {
@@ -3660,7 +3660,7 @@
     },
     {
       "path": "source/host/tests/extensions_forever_box_disk_pressure_contract.rs",
-      "blobSha": "8d56527a9dd2a70580c5255e31f8eb406b25488b",
+      "blobSha": "372e42e6e1b11be4206d3a9d7fd3362f3deed845",
       "size": 6117
     },
     {
@@ -4590,7 +4590,7 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "0f34753b4140a185f3f107a42ad12b8748635978",
+      "blobSha": "a465f4b6c976340fceb1940becde5fae0825dd9f",
       "size": 15121
     },
     {

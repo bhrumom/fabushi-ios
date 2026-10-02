@@ -2650,10 +2650,14 @@ impl FeatureHostController {
                 conversation_id: ConversationId(conversation_id),
                 text: prompt,
                 display_text: None,
-                client_message_id: Some(client_message_id),
+                client_message_id: Some(client_message_id.clone()),
                 hidden: true,
                 show_assistant_output: false,
                 recovery_eligible: false,
+                reply_to_message_id: None,
+                is_fork: false,
+                attachment_batch_id: (!selected_image_data_urls.is_empty())
+                    .then(|| format!("attachment-batch:{client_message_id}")),
                 selected_image_data_urls,
             })?;
             let operation_id = match response {
@@ -3668,6 +3672,7 @@ impl FeatureHostController {
                                 message_id: None,
                                 reply_to_message_id: None,
                                 attachment_batch_id: None,
+                                attachment: None,
                                 branched: false,
                             });
                             state.events.push_back(HostEvent::OperationStarted {
@@ -7486,6 +7491,7 @@ impl FeatureHostController {
                 message_id: None,
                 reply_to_message_id: None,
                 attachment_batch_id: None,
+                attachment: None,
                 branched: false,
             });
             state.events.push_back(HostEvent::ChatMessage {
@@ -7496,6 +7502,7 @@ impl FeatureHostController {
                 message_id: None,
                 reply_to_message_id: None,
                 attachment_batch_id: None,
+                attachment: None,
                 branched: false,
             });
             return Ok(CommandAccepted {
@@ -7598,6 +7605,7 @@ impl FeatureHostController {
             message_id: None,
             reply_to_message_id: None,
             attachment_batch_id: None,
+            attachment: None,
             branched: false,
         });
         state.events.push_back(HostEvent::OperationStarted {
@@ -7997,6 +8005,7 @@ impl FeatureHostController {
                     message_id: None,
                     reply_to_message_id: None,
                     attachment_batch_id: None,
+                    attachment: None,
                     branched: false,
                 });
                 state.events.push_back(HostEvent::OperationStarted {
@@ -8038,6 +8047,7 @@ impl FeatureHostController {
                     message_id: None,
                     reply_to_message_id: None,
                     attachment_batch_id: None,
+                    attachment: None,
                     branched: false,
                 });
                 state.events.push_back(HostEvent::UsageUpdated {

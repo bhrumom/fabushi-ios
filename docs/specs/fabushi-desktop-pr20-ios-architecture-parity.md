@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef`
+- pinned source commit for this baseline: `d7b12fe6486909b8738d97159c8ff4c8fea50845`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -34,6 +34,19 @@ Fabushi iOS PR #3
 ```
 
 If Desktop PR #20 moves to a new exact HEAD, all Desktop-bound source inventory, blob identities, stale implementation-status claims, and acceptance evidence tied to the old SHA must be revalidated before they can be used for the new baseline.
+
+### 1.1 Exact-HEAD rebaseline: 2026-10-03 / `d7b12fe6486909b8738d97159c8ff4c8fea50845`
+
+The live Desktop PR #20 HEAD moved again after the previous `f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef` baseline. The current authority is `d7b12fe6486909b8738d97159c8ff4c8fea50845`; all Desktop-bound manifest chunks, ledger chunks, blob identities and the strict architecture checker are rebound to that SHA before further parity promotion. The selected `frontend/** + source/**` inventory remains 7,926 paths.
+
+The `f2a2e181 -> 4166a73b` Desktop delta changes eight Host source/contract files. The current production ownership that iOS must follow is:
+
+- `TranscriptManager` owns the memory gateway for `getAgentMemories`, `deleteAgentMemory`, and `clearAgentMemories`; memory mutations invalidate the persisted agent-memory prompt snapshot before returning success. Shipping Host routing checks that manager-owned memory gateway before lifecycle and generic session fallbacks.
+- Created-agent lifecycle and kickstart gateway dispatch is routed through `TranscriptManager`; shipping Host still injects the production kickstart/deletion runtime adapters, so lifecycle ownership moves behind the manager without creating a second executor.
+- Session/group dispatch remains manager-owned and follows the same ordering constraint: specialized memory/lifecycle owners win before generic session fallback.
+- ForeverBox disk-pressure watch installation/replacement is a lifecycle-owned resource; replacing a watch disposes the previous watch. This is a Desktop mechanism whose iOS applicability must be judged by the product effect and iOS lifecycle replacement, not by copying a desktop daemon.
+
+No affected parity row is promoted merely because its `sourceCommit` or blob SHA was refreshed. The subsequent `4166a73b -> d7b12fe6` single-file change only makes the shipping `box_store_sync_deletion_slot` explicitly typed as `ProductionBoxStoreSyncApi`; this preserves the existing Host deletion owner and does not create a second lifecycle owner. Memory/transcript/group/lifecycle/ForeverBox rows require current iOS production wiring plus focused same-HEAD evidence before `verified`.
 
 ## 2. Product goal
 
