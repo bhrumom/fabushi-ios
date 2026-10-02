@@ -154,12 +154,16 @@ final class IOSMainRuntime {
     }
 
     func makeRendererPortServer(port: CoordinatorPort) -> RendererPortServer {
-        RendererPortServer(port: port) { [weak self] method, args in
+        let server = RendererPortServer(port: port) { [weak self] method, args in
             guard let self else {
                 return .failed(.init(code: "coordinator-unavailable", message: "iOS main runtime was released"))
             }
             return await self.dispatchTransport(method: method, args: args)
         }
+        coordinator.setRendererEventSink { [weak server] family, payload in
+            server?.postEvent(family: family, payload: payload)
+        }
+        return server
     }
 
     private func dispatchTransport(

@@ -290,6 +290,12 @@ Desktop `source/node-agent-coordinator/src/carrier.rs` owns more than the deskto
 
 On iOS these responsibilities remain Coordinator-owned even though the transport is in-process. `source/mahayana-agent-coordinator/carrier.swift` is the canonical iOS carrier owner, and the shipping `InProcessCoordinatorPort` must route its frame delivery through that carrier rather than bypassing it. `IOSMainRuntime` supplies validated app-version/package/data-directory bootstrap metadata to `IOSCoordinatorLauncher`; SwiftUI/renderer code never owns or synthesizes carrier truth. The iOS transport may project the existing `CoordinatorPort` API onto the control channel while retaining typed data/main-data channels for Coordinator-internal routing.
 
+### 10.2 Client-side tool v2 relay
+
+Desktop `source/node-agent-coordinator/src/client_side_tool_v2_relay.rs` at blob `a01c69f3eb7aec0e07a8bcc003d251ad9d3d7c33` is the normative Coordinator responsibility for the `client-side-tool-v2` event family. The relay does not invent request IDs or run IDs. Its durable ordering/settlement identity is `(agentId, epoch, sequence, protobuf toolCallId)`: wire version must be `1`, account slot must be `host`, agent/epoch must be non-empty, sequence is strictly increasing within the current agent epoch, retired epochs are rejected, and protobuf/base64 payloads must carry the expected message type plus the matching tool-call-id field (`3` for Call and `35` for Result). A Result without a current Call is dropped. Reset clears current tool-call lifecycles, epoch changes retire the previous epoch, replay exposes only the current epoch's accepted Call/Result pairs in sequence order, and Coordinator shutdown clears relay state.
+
+The iOS platform adaptation may receive Host events through the existing in-process Host/Coordinator boundary rather than Desktop stdio, but ownership may not move into SwiftUI. The shipping Coordinator must own the relay, route accepted events to the renderer event family, and replay accepted current-epoch state only from Coordinator-owned state. Host production of these events is a separate upstream responsibility: until the iOS Host turn-observation path can emit the same versioned `client-side-tool-v2` transport envelope, this Coordinator row may be implemented only for the Coordinator ingress/projection path and must not be represented as end-to-end verified.
+
 It owns, as applicable:
 
 - renderer port lifecycle;

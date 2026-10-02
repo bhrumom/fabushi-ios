@@ -2,13 +2,16 @@ import XCTest
 @testable import Fabushi
 
 final class CoordinatorAdapterTests: XCTestCase {
-    func testClientSideToolRelayRejectsStaleSequence() async throws {
+    @MainActor
+    func testClientSideToolRelayRejectsStaleSequence() {
         let relay = ClientSideToolV2Relay()
+        let callID = Array("call-1".utf8)
         let message = ClientSideToolV2WireMessage(
             messageType: "aiserver.v1.ClientSideToolV2Call",
-            bytes: Data([0x01, 0x02, 0x03])
+            bytes: Data([0x1a, UInt8(callID.count)] + callID)
         )
         let event = ClientSideToolV2TransportEvent.update(
+            version: ClientSideToolV2Transport.wireVersion,
             kind: .call,
             accountSlot: ClientSideToolV2Transport.accountSlot,
             agentId: "agent-1",
@@ -17,13 +20,8 @@ final class CoordinatorAdapterTests: XCTestCase {
             message: message
         )
 
-        try await relay.accept(event)
-        do {
-            try await relay.accept(event)
-            XCTFail("stale sequence should be rejected")
-        } catch let error as ClientSideToolV2Relay.RelayError {
-            XCTAssertEqual(error.localizedDescription, ClientSideToolV2Relay.RelayError.staleSequence.localizedDescription)
-        }
+        XCTAssertNotNil(relay.accept(event))
+        XCTAssertNil(relay.accept(event))
     }
 
     func testOAuthCallbackUsesAppURLAndConsumesStateOnce() async throws {

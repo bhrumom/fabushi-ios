@@ -53,6 +53,8 @@ final class MahayanaCoordinator {
     private let experimentService: SandExperimentService?
     private let webAuthnSigner: CoordinatorWebAuthnSigner?
     private let devControlAdapter: (any CoordinatorDevControlAdapting)?
+    private let clientSideToolV2Relay = ClientSideToolV2Relay()
+    private var rendererEventSink: ((String, CoordinatorPayload) -> Void)?
     private(set) var lifecycleState: LifecycleState = .starting
     private var inFlight = Set<String>()
 
@@ -122,6 +124,24 @@ final class MahayanaCoordinator {
 
     func configuredDefaultModel() -> SandAgentModelSelection? {
         experimentService?.getConfiguredDefaultModel()
+    }
+
+    func setRendererEventSink(_ sink: ((String, CoordinatorPayload) -> Void)?) {
+        rendererEventSink = sink
+        guard let sink else { return }
+        for event in clientSideToolV2Relay.replay() {
+            sink(ClientSideToolV2Transport.family, event.coordinatorPayload)
+        }
+    }
+
+    func acceptHostEventEnvelope(_ value: Any) {
+        guard let envelope = value as? [String: Any],
+              envelope["channel"] as? String == ClientSideToolV2Transport.family,
+              let payload = envelope["payload"],
+              let transportEvent = ClientSideToolV2TransportEvent.fromFoundation(payload),
+              let projected = clientSideToolV2Relay.accept(transportEvent)
+        else { return }
+        rendererEventSink?(ClientSideToolV2Transport.family, projected.coordinatorPayload)
     }
 
     func updateAccountSettingsScope(_ accountScope: String?) {
@@ -203,6 +223,9 @@ final class MahayanaCoordinator {
 
         do {
             let result = try await request(method: method, params: params)
+            if method == "feature.receive" {
+                acceptHostEventEnvelope(result.value)
+            }
             return .ok(try CoordinatorPayload.fromFoundation(result.value))
         } catch {
             return .failed(.init(code: "request-failed", message: error.localizedDescription))
@@ -237,6 +260,8 @@ final class MahayanaCoordinator {
     func beginShutdown() {
         lifecycleState = .shuttingDown
         inFlight.removeAll()
+        clientSideToolV2Relay.clear()
+        rendererEventSink = nil
         experimentService?.dispose()
     }
 }
