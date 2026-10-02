@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "95995bdf36a9687788e106c8544d292b2bb0877f",
+  "sourceCommit": "bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09",
   "group": "source-host",
   "rowCount": 955,
   "rows": [
@@ -8331,10 +8331,10 @@
     },
     {
       "desktop_path": "source/host/src/selected_image_inputs.rs",
-      "desktop_blob_sha": "305095f25c43e42dc3d7ffda9a7ae962f9270985",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "395d7446a31bcc6e5a93dbbea6d2779d8666e6d4",
+      "desktop_responsibility": "Own selected image MIME classification and byte-level dimension extraction, including primary-item ISO-BMFF HEIC/HEIF/AVIF dimensions and rotation handling.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "Selected image attachments expose correct dimensions for supported formats, including rotated HEIC/HEIF/AVIF primary images, before transcript/provider shaping.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
@@ -8342,7 +8342,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Desktop PR #20 bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09 changed this production owner from blob 305095f25c43e42dc3d7ffda9a7ae962f9270985 to 395d7446a31bcc6e5a93dbbea6d2779d8666e6d4 by adding native ISO-BMFF HEIC/HEIF/AVIF primary-image dimension and rotation parsing. This row remains unreviewed for iOS until the corresponding Host/media shipping owner is audited and ported; no stale acceptance is inherited."
     },
     {
       "desktop_path": "source/host/src/send_trace_host.rs",
@@ -13926,10 +13926,10 @@
     },
     {
       "desktop_path": "source/host/tests/transcript_send_echo_contract.rs",
-      "desktop_blob_sha": "5b509eecbc164abcfa3a57f093cfca10b5baf1f6",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "02c37e22fb6cd76f541778cd793f0545eff9f6ba",
+      "desktop_responsibility": "Contract coverage for transcript send echo and native ISO-BMFF image dimensions/rotation behavior.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "Focused contract proves transcript echo plus native HEIC/HEIF/AVIF primary-image dimensions and rotation semantics in the Desktop Host.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
@@ -13937,7 +13937,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Desktop PR #20 bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09 strengthened this Host contract to cover HEIC/HEIF/AVIF primary-item dimensions and quarter-turn rotation. It remains unreviewed as a test responsibility until the owning iOS production row is closed; the contract change itself is not acceptance evidence for iOS."
     },
     {
       "desktop_path": "source/host/tests/transcript_session_runtime_contract.rs",

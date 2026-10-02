@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "95995bdf36a9687788e106c8544d292b2bb0877f",
+  "sourceCommit": "bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09",
   "group": "source-node-agent-coordinator",
   "rowCount": 53,
   "rows": [
@@ -32,7 +32,7 @@
       "implementation_status": "implemented",
       "production_evidence": "source/mahayana-agent-coordinator/carrier.swift; source/ios-main/IOSMainRuntime.swift; source/ios-main/coordinator/coordinator-launcher.swift; source/ios-preload/preload.swift",
       "test_evidence": "mobile/ios/FabushiTests/CoordinatorContractTests.swift; exact-HEAD GitHub Actions pending",
-      "notes": "Re-read against Desktop PR #20 95995bdf36a9687788e106c8544d292b2bb0877f; Desktop carrier blob 31fcc507a390a8ad019d0cb6aeb85db92f2ae614 is unchanged from the implemented iOS review. Promote to verified only after exact-HEAD CI on the post-rebaseline iOS commit."
+      "notes": "Re-read against Desktop PR #20 bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09; Desktop carrier blob 31fcc507a390a8ad019d0cb6aeb85db92f2ae614 is unchanged from the implemented iOS review. Promote to verified only after exact-HEAD CI on the post-rebaseline iOS commit."
     },
     {
       "desktop_path": "source/node-agent-coordinator/src/client_side_tool_v2_relay.rs",
@@ -47,7 +47,7 @@
       "implementation_status": "implemented",
       "production_evidence": "source/mahayana-agent-coordinator/client-side-tool-v2-relay.swift; source/mahayana-agent-coordinator/MahayanaCoordinator.swift; source/mahayana-agent-coordinator/renderer-port-server.swift; source/ios-main/IOSMainRuntime.swift; source/shared/rpc/client-side-tool-v2-transport.swift",
       "test_evidence": "mobile/ios/FabushiTests/ClientSideToolV2RelayParityTests.swift; mobile/ios/FabushiTests/CoordinatorAdapterTests.swift; mobile/ios/FabushiTests/IOSCoordinatorArchitectureTests.swift; exact-HEAD GitHub Actions pending",
-      "notes": "Re-read against Desktop PR #20 95995bdf36a9687788e106c8544d292b2bb0877f, blob a01c69f3eb7aec0e07a8bcc003d251ad9d3d7c33. Relay identity is agentId+epoch+sequence+protobuf toolCallId; this source does not own requestId/runId. Cancel/turn teardown enters via reset/epoch change and Coordinator shutdown clear. Coordinator ingress/projection is wired in shipping composition, but end-to-end Host production remains blocked because the iOS mobile Rust Host does not yet port Desktop turn-observation client-side-tool-v2 producer; do not promote to verified until that adjacent producer and exact-HEAD CI are proven."
+      "notes": "Re-read against Desktop PR #20 bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09, blob a01c69f3eb7aec0e07a8bcc003d251ad9d3d7c33. Relay identity is agentId+epoch+sequence+protobuf toolCallId; this source does not own requestId/runId. Cancel/turn teardown enters via reset/epoch change and Coordinator shutdown clear. Coordinator ingress/projection is wired in shipping composition, but end-to-end Host production remains blocked because the iOS mobile Rust Host does not yet port Desktop turn-observation client-side-tool-v2 producer; do not promote to verified until that adjacent producer and exact-HEAD CI are proven."
     },
     {
       "desktop_path": "source/node-agent-coordinator/src/control_port_client.rs",

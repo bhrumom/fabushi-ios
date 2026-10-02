@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "95995bdf36a9687788e106c8544d292b2bb0877f",
+  "sourceCommit": "bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09",
   "group": "source-host",
   "fileCount": 955,
   "files": [
@@ -2780,8 +2780,8 @@
     },
     {
       "path": "source/host/src/selected_image_inputs.rs",
-      "blobSha": "305095f25c43e42dc3d7ffda9a7ae962f9270985",
-      "size": 6015
+      "blobSha": "395d7446a31bcc6e5a93dbbea6d2779d8666e6d4",
+      "size": 13275
     },
     {
       "path": "source/host/src/send_trace_host.rs",
@@ -4645,8 +4645,8 @@
     },
     {
       "path": "source/host/tests/transcript_send_echo_contract.rs",
-      "blobSha": "5b509eecbc164abcfa3a57f093cfca10b5baf1f6",
-      "size": 9478
+      "blobSha": "02c37e22fb6cd76f541778cd793f0545eff9f6ba",
+      "size": 11546
     },
     {
       "path": "source/host/tests/transcript_session_runtime_contract.rs",
