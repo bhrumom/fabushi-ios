@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `3e735e6e5b7253713815ee1d034bd8ec446fb5a7`
+- pinned source commit for this baseline: `a8cc75d1917ae8aa8c81d241f17cba57589bb4db`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -401,8 +401,18 @@ iOS disposition at this baseline:
 
 - `MahayanaCoordinator.request/dispatchTransport` currently returns the Host's accepted response and does not expose an `awaitTurn` contract that keeps the same renderer request pending through terminal Runtime settlement.
 - The iOS Runtime/Host already has stable operation identity, targeted same-conversation supersession, and stale-settlement fencing, but it does not yet model Desktop's pre-dispatch `dispatched + recovery_shaped` gate at the canonical Runner owner.
-- Therefore the terminal-settlement and affected Runner-registry/shell rows are `unreviewed` on this baseline. They are the earliest newly introduced production responsibility and must be closed before older send-pipeline candidates can be promoted.
-- Existing `send_pipeline` reply-target/thread/generated-attachment/fork gaps remain valid candidate work only after this new terminal-settlement delta is handled; no old `84dbe458` acceptance evidence proves parity with `3e735e6e`.
+- The Coordinator terminal-settlement half is now implemented in the iOS shipping path: only literal `awaitTurn=true` on `feature.execute` holds the Coordinator request; `feature.execute` atomically registers the accepted `operationId`; Host-owned `feature.awaitOperation` advances the canonical Runtime event pump in bounded steps, remembers terminal completion/interruption/failure only for registered waiters, and re-enqueues translated Host events so the terminal waiter cannot become a second renderer event owner. Coordinator cancellation removes the waiter registration without inventing a terminal operation state.
+- This implementation is not `verified` until the new iOS exact HEAD passes its own Rust/Swift/architecture/lifecycle acceptance. The changed Host Runner-registry/turn-shell rows remain `unreviewed`: iOS still lacks Desktop's canonical pre-dispatch `dispatched + recovery_shaped` supersession fence.
+- Existing `send_pipeline` reply-target/thread/generated-attachment/fork gaps remain valid candidate work only after the remaining pre-dispatch supersession delta is handled; no old `84dbe458` acceptance evidence proves parity with `3e735e6e`.
+
+
+### 11.7 Public recovery-shape helper export rebaseline
+
+Desktop PR #20 advanced from `3e735e6e5b7253713815ee1d034bd8ec446fb5a7` to `a8cc75d1917ae8aa8c81d241f17cba57589bb4db` in one commit. The selected inventory remains 7,925 files and only two selected source blobs changed: `source/host/app/src/main.rs` and `source/host/src/runner/mod.rs`.
+
+The change does not alter the recovery/supersession state machine introduced at `3e735e6e`. `runner/mod.rs` now publicly re-exports `is_recovery_shaped_turn`, while `host/app/src/main.rs` imports that helper through the public `runner` surface instead of the private `runner::turn_run_shell` path. Shipping composition still registers recovery shape before dispatch and marks the same routed stream dispatched; request/run identity, terminal settlement, targeted cancellation, recovery classification, and failure semantics are unchanged.
+
+For iOS this export shape is not itself a required mechanism because the iOS Host/Runner boundary is iOS-owned and in-process. The applicable product responsibility remains the pre-dispatch `dispatched + recovery_shaped` supersession fence identified in section 11.6. The two changed Desktop rows are revalidated against `a8cc75d1`; no previous exact-HEAD CI is promoted to current parity evidence.
 
 
 ## 12. Frontend requirements

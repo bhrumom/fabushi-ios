@@ -188,6 +188,8 @@ impl AppHost {
             "feature.info" => serde_json::to_value(self.feature.info())
                 .map_err(|error| AppHostError::Operation(error.to_string())),
             "feature.execute" => self.feature_execute(params),
+            "feature.awaitOperation" => self.feature_await_operation(params),
+            "feature.awaitOperation.cancel" => self.feature_cancel_await_operation(params),
             "feature.receive" => self.feature_receive(params),
             "feature.approval.resolve" => self.feature_resolve_approval(params),
             "feature.interrupt" => self.feature_interrupt(params),
@@ -242,7 +244,11 @@ impl AppHost {
     }
 
     fn feature_execute(&self, params: Value) -> Result<Value, AppHostError> {
-        let command_value = params.get("command").cloned().unwrap_or(params);
+        let await_turn = params.get("awaitTurn").and_then(Value::as_bool) == Some(true);
+        let command_value = params
+            .get("command")
+            .cloned()
+            .unwrap_or_else(|| params.clone());
         let command: FeatureCommand = serde_json::from_value(command_value).map_err(|error| {
             AppHostError::InvalidRequest(format!("invalid feature command: {error}"))
         })?;
@@ -250,7 +256,34 @@ impl AppHost {
             .feature
             .execute(command)
             .map_err(|error| AppHostError::Operation(error.to_string()))?;
+        if await_turn {
+            if let Some(operation_id) = accepted.operation_id.as_deref() {
+                self.feature
+                    .register_awaited_operation(operation_id)
+                    .map_err(|error| AppHostError::Operation(error.to_string()))?;
+            }
+        }
         serde_json::to_value(accepted).map_err(|error| AppHostError::Operation(error.to_string()))
+    }
+
+    fn feature_await_operation(&self, params: Value) -> Result<Value, AppHostError> {
+        let operation_id = string_param(&params, "operationId")?;
+        let timeout_ms = params
+            .get("timeoutMs")
+            .and_then(Value::as_u64)
+            .unwrap_or(250)
+            .min(1_000);
+        self.feature
+            .await_operation_step(operation_id, Duration::from_millis(timeout_ms))
+            .map_err(|error| AppHostError::Operation(error.to_string()))
+    }
+
+    fn feature_cancel_await_operation(&self, params: Value) -> Result<Value, AppHostError> {
+        let operation_id = string_param(&params, "operationId")?;
+        self.feature
+            .cancel_awaited_operation(operation_id)
+            .map_err(|error| AppHostError::Operation(error.to_string()))?;
+        Ok(Value::Null)
     }
 
     fn feature_receive(&self, params: Value) -> Result<Value, AppHostError> {

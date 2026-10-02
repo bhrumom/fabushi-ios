@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "3e735e6e5b7253713815ee1d034bd8ec446fb5a7",
+  "sourceCommit": "a8cc75d1917ae8aa8c81d241f17cba57589bb4db",
   "group": "source-node-agent-coordinator",
   "rowCount": 53,
   "rows": [
@@ -232,17 +232,17 @@
     {
       "desktop_path": "source/node-agent-coordinator/src/inference_router.rs",
       "desktop_blob_sha": "fd05df0ae09b0e4373f4aeb508b4e5ae452f08ac",
-      "desktop_responsibility": "pending-review",
+      "desktop_responsibility": "Own Coordinator inference request admission versus terminal turn settlement, preserving the original request identity when awaitTurn is explicitly true.",
       "desktop_owner": "coordinator",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebaselined for Desktop PR #20 3e735e6e: Coordinator now owns explicit awaitTurn parsing; only boolean true requests renderer request settlement at Runner terminal. Workflow-reference run-now stamps awaitTurn=true and source=workflow-reference. iOS has no equivalent terminal-wait routing owner yet; status invalidated pending production port."
+      "desktop_visible_effect": "Ordinary sends return after durable admission, while workflow-reference/explicit awaitTurn requests do not settle until the accepted operation completes, is interrupted, or fails.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/mahayana-agent-coordinator/MahayanaCoordinator.swift",
+      "ios_language": "swift+rust",
+      "ios_platform_delta": "iOS keeps the request boundary in MahayanaCoordinator and delegates terminal truth to the iOS-owned Rust Host. feature.execute atomically registers accepted operationId for terminal waiting; feature.awaitOperation pumps canonical Runtime events and re-enqueues renderer-visible Host events instead of creating a second event owner.",
+      "implementation_status": "implemented",
+      "production_evidence": "source/mahayana-agent-coordinator/MahayanaCoordinator.swift; source/packages/mahayana-rs/mahayana-app-host/src/lib.rs; source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "test_evidence": "mobile/ios/FabushiTests/LocalHostRecoveryTests.swift; source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebaselined for Desktop PR #20 3e735e6e: Coordinator now owns explicit awaitTurn parsing; only boolean true requests renderer request settlement at Runner terminal. Workflow-reference run-now stamps awaitTurn=true and source=workflow-reference. iOS has no equivalent terminal-wait routing owner yet; status invalidated pending production port. iOS production port now treats only literal awaitTurn=true on feature.execute as terminal-wait semantics. The same accepted operationId is held until Host-owned terminal completion/interruption/failure; cancellation cleans only the waiter registration. Exact-HEAD CI is still required before verified."
     },
     {
       "desktop_path": "source/node-agent-coordinator/src/lib.rs",
@@ -307,17 +307,17 @@
     {
       "desktop_path": "source/node-agent-coordinator/src/main.rs",
       "desktop_blob_sha": "0e58365c9e525eb1b735dd5dcdc66617cf89bac6",
-      "desktop_responsibility": "pending-review",
+      "desktop_responsibility": "Own Coordinator inference request admission versus terminal turn settlement, preserving the original request identity when awaitTurn is explicitly true.",
       "desktop_owner": "coordinator",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebaselined for Desktop PR #20 3e735e6e: inference request admission now separates immediate acceptance from terminal request settlement. awaitTurn requests preserve the original request identity until execute_local_inference terminates, returning success only at terminal or the normalized failure on error/cancel. iOS current MahayanaCoordinator returns Host acceptance immediately and therefore does not yet satisfy this responsibility."
+      "desktop_visible_effect": "Ordinary sends return after durable admission, while workflow-reference/explicit awaitTurn requests do not settle until the accepted operation completes, is interrupted, or fails.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/mahayana-agent-coordinator/MahayanaCoordinator.swift",
+      "ios_language": "swift+rust",
+      "ios_platform_delta": "iOS keeps the request boundary in MahayanaCoordinator and delegates terminal truth to the iOS-owned Rust Host. feature.execute atomically registers accepted operationId for terminal waiting; feature.awaitOperation pumps canonical Runtime events and re-enqueues renderer-visible Host events instead of creating a second event owner.",
+      "implementation_status": "implemented",
+      "production_evidence": "source/mahayana-agent-coordinator/MahayanaCoordinator.swift; source/packages/mahayana-rs/mahayana-app-host/src/lib.rs; source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "test_evidence": "mobile/ios/FabushiTests/LocalHostRecoveryTests.swift; source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebaselined for Desktop PR #20 3e735e6e: inference request admission now separates immediate acceptance from terminal request settlement. awaitTurn requests preserve the original request identity until execute_local_inference terminates, returning success only at terminal or the normalized failure on error/cancel. iOS current MahayanaCoordinator returns Host acceptance immediately and therefore does not yet satisfy this responsibility. iOS production port now treats only literal awaitTurn=true on feature.execute as terminal-wait semantics. The same accepted operationId is held until Host-owned terminal completion/interruption/failure; cancellation cleans only the waiter registration. Exact-HEAD CI is still required before verified."
     },
     {
       "desktop_path": "source/node-agent-coordinator/src/mcp.rs",
@@ -622,17 +622,17 @@
     {
       "desktop_path": "source/node-agent-coordinator/tests/inference_host_boundary_contract.rs",
       "desktop_blob_sha": "463ecc2c95086792b4bec68bca4d6feb2f79e177",
-      "desktop_responsibility": "pending-review",
+      "desktop_responsibility": "Focused contract for Coordinator awaitTurn/workflow-reference terminal settlement semantics.",
       "desktop_owner": "coordinator",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebaselined for Desktop PR #20 3e735e6e: focused contract now requires workflow-reference awaitTurn/source metadata and terminal settlement behavior. iOS equivalent contract is not yet present."
+      "desktop_visible_effect": "Regression evidence that awaitTurn/source metadata and terminal settlement remain on the canonical Coordinator/Host path.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "mobile/ios/FabushiTests/LocalHostRecoveryTests.swift",
+      "ios_language": "swift",
+      "ios_platform_delta": "Swift XCTest exercises the in-process Coordinator/Host adaptation rather than Desktop process transport.",
+      "implementation_status": "implemented",
+      "production_evidence": "source/mahayana-agent-coordinator/MahayanaCoordinator.swift",
+      "test_evidence": "mobile/ios/FabushiTests/LocalHostRecoveryTests.swift",
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebaselined for Desktop PR #20 3e735e6e: focused contract now requires workflow-reference awaitTurn/source metadata and terminal settlement behavior. iOS equivalent contract is not yet present. iOS focused awaitTurn completion, immediate-acceptance, and terminal-failure tests are added; exact-HEAD CI pending."
     },
     {
       "desktop_path": "source/node-agent-coordinator/tests/inference_router_attachments.rs",

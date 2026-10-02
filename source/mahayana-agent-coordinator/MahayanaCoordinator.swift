@@ -193,12 +193,73 @@ final class MahayanaCoordinator {
 
         let requestId = UUID().uuidString.lowercased()
         let observedHostGeneration = hostSupervisor.generation
+        let awaitTurn = method == "feature.execute" && (params["awaitTurn"] as? Bool) == true
+        var awaitedOperationId: String?
         inFlight.insert(requestId)
         defer { inFlight.remove(requestId) }
 
         do {
             let result = try await hostSupervisor.request(method: method, params: params)
-            return JSONResult(value: result.value)
+            guard awaitTurn,
+                  let accepted = result.value as? [String: Any],
+                  let operationId = (accepted["operationId"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !operationId.isEmpty
+            else {
+                return JSONResult(value: result.value)
+            }
+
+            awaitedOperationId = operationId
+            while true {
+                try Task.checkCancellation()
+                let terminal = try await hostSupervisor.request(
+                    method: "feature.awaitOperation",
+                    params: [
+                        "operationId": operationId,
+                        "timeoutMs": 250,
+                    ]
+                )
+                guard let value = terminal.value as? [String: Any],
+                      let status = value["status"] as? String
+                else {
+                    throw CoordinatorError.invalidResponse
+                }
+                switch status {
+                case "pending":
+                    continue
+                case "completed":
+                    awaitedOperationId = nil
+                    return JSONResult(value: result.value)
+                case "interrupted":
+                    awaitedOperationId = nil
+                    let reason = (value["reason"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    throw CoordinatorError.requestFailed(
+                        reason?.isEmpty == false ? reason! : "turn interrupted"
+                    )
+                case "failed":
+                    awaitedOperationId = nil
+                    let code = (value["code"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let message = (value["message"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let detail = [code, message]
+                        .compactMap { item -> String? in
+                            guard let item, !item.isEmpty else { return nil }
+                            return item
+                        }
+                        .joined(separator: ": ")
+                    throw CoordinatorError.requestFailed(
+                        detail.isEmpty ? "turn failed" : detail
+                    )
+                default:
+                    throw CoordinatorError.invalidResponse
+                }
+            }
+        } catch is CancellationError {
+            if let awaitedOperationId {
+                _ = try? await hostSupervisor.request(
+                    method: "feature.awaitOperation.cancel",
+                    params: ["operationId": awaitedOperationId]
+                )
+            }
+            throw CancellationError()
         } catch let hostError as MahayanaHostRuntime.HostError {
             if hostError.requiresRecovery {
                 do {
@@ -220,8 +281,14 @@ final class MahayanaCoordinator {
         guard lifecycleState != .shuttingDown else {
             return .failed(.init(code: "coordinator-unavailable", message: CoordinatorError.unavailable.localizedDescription))
         }
-        guard case .object = args, let params = args.foundationValue as? [String: Any] else {
+        guard case .object = args, var params = args.foundationValue as? [String: Any] else {
             return .failed(.init(code: "invalid-params", message: CoordinatorError.invalidParams.localizedDescription))
+        }
+        if method == "feature.execute",
+           let command = params["command"] as? [String: Any],
+           command["type"] as? String == "workflow.run" {
+            params["awaitTurn"] = true
+            params["source"] = "workflow-reference"
         }
 
         do {

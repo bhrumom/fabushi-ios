@@ -231,6 +231,8 @@ struct FeatureState {
     pending_approvals: BTreeMap<String, PendingApproval>,
     operations: BTreeSet<String>,
     operation_agents: BTreeMap<String, String>,
+    awaited_operations: BTreeSet<String>,
+    operation_terminals: BTreeMap<String, Value>,
     background_operations: BTreeMap<String, BackgroundOperationContext>,
     remote_computer_sessions: BTreeMap<String, RemoteComputerLocalSession>,
     remote_computer_device_secrets: BTreeMap<String, String>,
@@ -262,6 +264,8 @@ impl Default for FeatureState {
             pending_approvals: BTreeMap::new(),
             operations: BTreeSet::new(),
             operation_agents: BTreeMap::new(),
+            awaited_operations: BTreeSet::new(),
+            operation_terminals: BTreeMap::new(),
             background_operations: BTreeMap::new(),
             remote_computer_sessions: BTreeMap::new(),
             remote_computer_device_secrets: BTreeMap::new(),
@@ -5523,6 +5527,81 @@ impl FeatureHostController {
         Ok(matching_ids.len())
     }
 
+    pub fn register_awaited_operation(&self, operation_id: &str) -> Result<(), FeatureHostError> {
+        let operation_id = operation_id.trim();
+        if operation_id.is_empty() {
+            return Err(FeatureHostError::Contract(
+                "operationId is required for terminal settlement".into(),
+            ));
+        }
+        let mut state = self.state()?;
+        if !state.operations.contains(operation_id) {
+            return Err(FeatureHostError::Contract(format!(
+                "operation is not active: {operation_id}"
+            )));
+        }
+        state.awaited_operations.insert(operation_id.to_string());
+        Ok(())
+    }
+
+    pub fn cancel_awaited_operation(&self, operation_id: &str) -> Result<(), FeatureHostError> {
+        let mut state = self.state()?;
+        state.awaited_operations.remove(operation_id);
+        state.operation_terminals.remove(operation_id);
+        Ok(())
+    }
+
+    pub fn await_operation_step(
+        &self,
+        operation_id: &str,
+        timeout: Duration,
+    ) -> Result<Value, FeatureHostError> {
+        let operation_id = operation_id.trim();
+        if operation_id.is_empty() {
+            return Err(FeatureHostError::Contract(
+                "operationId is required for terminal settlement".into(),
+            ));
+        }
+
+        {
+            let mut state = self.state()?;
+            if let Some(terminal) = state.operation_terminals.remove(operation_id) {
+                state.awaited_operations.remove(operation_id);
+                return Ok(terminal);
+            }
+            if !state.awaited_operations.contains(operation_id) {
+                return Err(FeatureHostError::Contract(format!(
+                    "operation is not registered for terminal settlement: {operation_id}"
+                )));
+            }
+        }
+
+        match self.config.mode {
+            HostMode::Test => {}
+            HostMode::Production => {
+                #[cfg(feature = "production")]
+                {
+                    if let Some(event) = self.receive_production(timeout)? {
+                        // Awaiting a terminal request must never steal the renderer-visible
+                        // event stream. Re-enqueue the translated event after using the
+                        // Runtime receive path as the canonical event pump.
+                        self.state()?.events.push_back(event);
+                    }
+                }
+                #[cfg(not(feature = "production"))]
+                return Err(FeatureHostError::ProductionUnavailable);
+            }
+        }
+
+        let mut state = self.state()?;
+        if let Some(terminal) = state.operation_terminals.remove(operation_id) {
+            state.awaited_operations.remove(operation_id);
+            Ok(terminal)
+        } else {
+            Ok(json!({"status": "pending"}))
+        }
+    }
+
     pub fn receive(&self) -> Result<Option<HostEvent>, FeatureHostError> {
         self.receive_with_timeout(Duration::ZERO)
     }
@@ -6309,19 +6388,36 @@ impl FeatureHostController {
                     let mut state = self.state()?;
                     state.operations.remove(&operation_id);
                     state.operation_agents.remove(&operation_id);
+                    if state.awaited_operations.contains(&operation_id) {
+                        state
+                            .operation_terminals
+                            .insert(operation_id.clone(), json!({"status": "completed"}));
+                    }
                     Some(HostEvent::OperationCompleted {
                         timestamp: timestamp(),
                         operation_id,
                     })
                 }
             }
-            RuntimeEvent::OperationInterrupted { operation_id, reason } => {
+            RuntimeEvent::OperationInterrupted {
+                operation_id,
+                reason,
+            } => {
                 let operation_id = operation_id.to_string();
                 let mut state = self.state()?;
                 if !state.operations.remove(&operation_id) {
                     None
                 } else {
                     state.operation_agents.remove(&operation_id);
+                    if state.awaited_operations.contains(&operation_id) {
+                        state.operation_terminals.insert(
+                            operation_id.clone(),
+                            json!({
+                                "status": "interrupted",
+                                "reason": reason.clone(),
+                            }),
+                        );
+                    }
                     Some(HostEvent::OperationInterrupted {
                         timestamp: timestamp(),
                         operation_id,
@@ -6379,6 +6475,16 @@ impl FeatureHostController {
                 } else {
                     let mut state = self.state()?;
                     state.operations.remove(&operation_id);
+                    if state.awaited_operations.contains(&operation_id) {
+                        state.operation_terminals.insert(
+                            operation_id.clone(),
+                            json!({
+                                "status": "failed",
+                                "code": code.clone(),
+                                "message": message.clone(),
+                            }),
+                        );
+                    }
                     let agent_id = state
                         .operation_agents
                         .remove(&operation_id)
@@ -11669,6 +11775,56 @@ mod tests {
             events.push(event);
         }
         events
+    }
+
+    #[test]
+    fn awaited_operation_terminal_is_consumed_without_stealing_event_state() {
+        let controller = controller();
+        let operation_id = "operation-await-terminal".to_string();
+        {
+            let mut state = controller.state().expect("state");
+            state.operations.insert(operation_id.clone());
+            state
+                .operation_agents
+                .insert(operation_id.clone(), "mahayana-assistant".into());
+        }
+
+        controller
+            .register_awaited_operation(&operation_id)
+            .expect("register awaited operation");
+        {
+            let mut state = controller.state().expect("state");
+            state.operation_terminals.insert(
+                operation_id.clone(),
+                json!({"status": "completed"}),
+            );
+        }
+
+        let terminal = controller
+            .await_operation_step(&operation_id, Duration::ZERO)
+            .expect("consume terminal settlement");
+        assert_eq!(terminal["status"], "completed");
+        let state = controller.state().expect("state");
+        assert!(!state.awaited_operations.contains(&operation_id));
+        assert!(!state.operation_terminals.contains_key(&operation_id));
+    }
+
+    #[test]
+    fn awaited_operation_rejects_unknown_or_unregistered_identity() {
+        let controller = controller();
+        let error = controller
+            .register_awaited_operation("missing-operation")
+            .expect_err("unknown operation must fail closed");
+        assert!(error.to_string().contains("operation is not active"));
+
+        {
+            let mut state = controller.state().expect("state");
+            state.operations.insert("active-operation".into());
+        }
+        let error = controller
+            .await_operation_step("active-operation", Duration::ZERO)
+            .expect_err("unregistered operation must fail closed");
+        assert!(error.to_string().contains("not registered"));
     }
 
     #[test]
