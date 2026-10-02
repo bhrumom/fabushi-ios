@@ -48,6 +48,7 @@ const MAX_TOOL_OUTPUT_BYTES: usize = 64 * 1024;
 const DEFAULT_MAX_MODEL_TURNS: usize = 16;
 const MAX_REPLY_NUDGES: usize = 3;
 const REPLY_NUDGE_PROMPT: &str = "Your previous turn left the user without the result they're waiting on — you never called send_message that turn, or every send_message you tried failed to deliver. Deliver the result now by actually invoking the send_message tool. Plain assistant text is not user-visible for this turn; only a successful send_message satisfies delivery.";
+const CLOSING_SEND_NUDGE_PROMPT: &str = "Your previous turn already sent an acknowledgement, then continued with tool work, but ended without a follow-up send_message. The user can only see the earlier acknowledgement. If the work produced the result they are waiting on, deliver it now with a real send_message tool call. If work is genuinely unfinished, continue it and send the result when ready.";
 const DEFAULT_APPROVAL_TIMEOUT_MS: u64 = 120_000;
 
 #[derive(Debug, Clone, Default)]
@@ -486,8 +487,14 @@ impl NativeEngine {
         let mut last_workflow_id: Option<String> = None;
         let visible_user_turn =
             prompt_metadata.get("hidden").and_then(Value::as_bool) == Some(false);
+        let turn_started = Instant::now();
         let mut delivered_message = false;
         let mut reply_nudge_attempts = 0usize;
+        let mut tool_call_count = 0u64;
+        let mut stream_output_produced = false;
+        let mut tool_work_after_delivery = false;
+        let mut closing_send_nudge_attempted =
+            has_closing_send_nudge_for_operation(&session.history, operation_id);
 
         for turn in 0..self.config.max_model_turns {
             ensure_operation_active(control)?;
@@ -586,6 +593,7 @@ impl NativeEngine {
                             "model completed without assistant text or tool calls".into(),
                         )
                     })?;
+                stream_output_produced |= !text.is_empty();
                 if visible_user_turn
                     && should_attempt_reply_nudge(delivered_message, reply_nudge_attempts, control)
                 {
@@ -596,6 +604,32 @@ impl NativeEngine {
                         "source": "mahayana_reply_nudge",
                     }));
                     continue;
+                }
+                if visible_user_turn
+                    && should_attempt_closing_send_nudge(
+                        delivered_message,
+                        tool_work_after_delivery,
+                        closing_send_nudge_attempted,
+                        control,
+                    )
+                {
+                    closing_send_nudge_attempted = true;
+                    self.telemetry.closing_send_nudge();
+                    session.history.push(json!({
+                        "role": "user",
+                        "content": CLOSING_SEND_NUDGE_PROMPT,
+                        "source": "mahayana_closing_send_nudge",
+                        "operationId": operation_id.as_str(),
+                    }));
+                    continue;
+                }
+                if visible_user_turn && !delivered_message {
+                    self.telemetry.turn_empty_delivery(
+                        reply_nudge_attempts as u64,
+                        tool_call_count,
+                        stream_output_produced,
+                        turn_started.elapsed(),
+                    );
                 }
                 if !visible_user_turn {
                     events.emit(KernelEvent::MessageDelta {
@@ -613,6 +647,10 @@ impl NativeEngine {
             for call in calls {
                 ensure_operation_active(control)?;
                 let mut call = call;
+                tool_call_count = tool_call_count.saturating_add(1);
+                if delivered_message && call.name != "send_message" {
+                    tool_work_after_delivery = true;
+                }
                 if call.name == "workflow_status"
                     && call.arguments.get("workflow_id").and_then(Value::as_str)
                         == Some("$last_workflow_id")
@@ -676,7 +714,10 @@ impl NativeEngine {
                                 .unwrap_or(false)
                         {
                             delivered_message = true;
-                            if reply_nudge_attempts > 0 {
+                            tool_work_after_delivery = false;
+                            if closing_send_nudge_attempted {
+                                output["syntheticClosingSendNudge"] = Value::Bool(true);
+                            } else if reply_nudge_attempts > 0 {
                                 output["syntheticReplyNudge"] = Value::Bool(true);
                             }
                         }
@@ -2474,6 +2515,29 @@ fn permission_memory_from_metadata(
     }
 }
 
+fn has_closing_send_nudge_for_operation(
+    history: &[Value],
+    operation_id: &OperationId,
+) -> bool {
+    history.iter().any(|item| {
+        item.get("source").and_then(Value::as_str) == Some("mahayana_closing_send_nudge")
+            && item.get("operationId").and_then(Value::as_str) == Some(operation_id.as_str())
+    })
+}
+
+fn should_attempt_closing_send_nudge(
+    delivered_message: bool,
+    tool_work_after_delivery: bool,
+    already_attempted: bool,
+    control: &OperationControl,
+) -> bool {
+    delivered_message
+        && tool_work_after_delivery
+        && !already_attempted
+        && !control.suspended.load(Ordering::SeqCst)
+        && !control.interrupted.load(Ordering::SeqCst)
+}
+
 fn should_attempt_reply_nudge(
     delivered_message: bool,
     attempts: usize,
@@ -2919,6 +2983,153 @@ mod tests {
             KernelEvent::MessageDelta { .. } | KernelEvent::MessageCompleted { .. }
         )));
         assert_eq!(model.outputs.lock().expect("outputs").len(), 0);
+    }
+
+    #[tokio::test]
+    async fn visible_ack_then_tool_work_requires_one_durable_closing_send_nudge() {
+        let send_ack = json!({
+            "output": [{"type":"function_call","call_id":"call-send-ack","name":"send_message",
+                "arguments":"{\"message\":\"I will check that.\"}"}]
+        });
+        let memory_get = json!({
+            "output": [{"type":"function_call","call_id":"call-memory","name":"memory_get",
+                "arguments":"{\"namespace\":\"test\",\"key\":\"missing\"}"}]
+        });
+        let prose = |text| json!({
+            "output": [{"type":"message", "content":[{"type":"output_text", "text":text}]}]
+        });
+        let send_final = json!({
+            "output": [{"type":"function_call","call_id":"call-send-final","name":"send_message",
+                "arguments":"{\"message\":\"The check is complete.\"}"}]
+        });
+        let model = Arc::new(FakeModel {
+            outputs: Mutex::new(VecDeque::from([
+                send_ack,
+                memory_get,
+                prose("internal result after tool work"),
+                send_final,
+                prose("internal terminal text"),
+            ])),
+        });
+        let engine = NativeEngine::new(model.clone(), NativeEngineConfig::embedded("model"))
+            .expect("create engine");
+        let session = engine
+            .open_session(OpenSessionRequest {
+                profile: mahayana_kernel::RuntimeProfile::MobileEmbedded,
+                workspace_root: None,
+                model: None,
+                metadata: Value::Null,
+            })
+            .await
+            .expect("open session");
+        let operation_id = OperationId::new();
+        let events = Arc::new(Events::default());
+        engine
+            .run(
+                RunRequest {
+                    session_id: session.clone(),
+                    operation_id: operation_id.clone(),
+                    input: "check memory and report back".into(),
+                    policy: ExecutionPolicy::mobile_default(),
+                    required_capabilities: CapabilitySet::new([Capability::Model]),
+                    metadata: json!({"hidden": false}),
+                },
+                events.clone(),
+            )
+            .await
+            .expect("run visible turn");
+
+        let events = events.0.lock().expect("events");
+        let sends = events
+            .iter()
+            .filter_map(|event| match event {
+                KernelEvent::ToolCompleted {
+                    tool,
+                    output,
+                    success: true,
+                    ..
+                } if tool == "send_message" => Some(output),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(sends.len(), 2);
+        assert_eq!(sends[1]["syntheticClosingSendNudge"], true);
+        drop(events);
+
+        let session_state = engine.session(&session).expect("session state");
+        let session_state = session_state.lock().await;
+        let markers = session_state
+            .history
+            .iter()
+            .filter(|item| {
+                item.get("source").and_then(Value::as_str)
+                    == Some("mahayana_closing_send_nudge")
+                    && item.get("operationId").and_then(Value::as_str)
+                        == Some(operation_id.as_str())
+            })
+            .count();
+        assert_eq!(markers, 1);
+        drop(session_state);
+        let metrics = engine.metrics_snapshot();
+        assert_eq!(metrics.closing_send_nudges, 1);
+        assert_eq!(metrics.turn_empty_deliveries, 0);
+        assert_eq!(model.outputs.lock().expect("outputs").len(), 0);
+    }
+
+    #[tokio::test]
+    async fn visible_turn_reports_empty_delivery_after_bounded_reply_nudges() {
+        let prose = |text| json!({
+            "output": [{"type":"message", "content":[{"type":"output_text", "text":text}]}]
+        });
+        let model = Arc::new(FakeModel {
+            outputs: Mutex::new(VecDeque::from([
+                prose("plain-0"),
+                prose("plain-1"),
+                prose("plain-2"),
+                prose("plain-3"),
+            ])),
+        });
+        let engine = NativeEngine::new(model, NativeEngineConfig::embedded("model"))
+            .expect("create engine");
+        let session = engine
+            .open_session(OpenSessionRequest {
+                profile: mahayana_kernel::RuntimeProfile::MobileEmbedded,
+                workspace_root: None,
+                model: None,
+                metadata: Value::Null,
+            })
+            .await
+            .expect("open session");
+        engine
+            .run(
+                RunRequest {
+                    session_id: session,
+                    operation_id: OperationId::new(),
+                    input: "produce a delivered answer".into(),
+                    policy: ExecutionPolicy::mobile_default(),
+                    required_capabilities: CapabilitySet::new([Capability::Model]),
+                    metadata: json!({"hidden": false}),
+                },
+                Arc::new(Events::default()),
+            )
+            .await
+            .expect("run exhausted reply-nudge turn");
+        let metrics = engine.metrics_snapshot();
+        assert_eq!(metrics.turn_empty_deliveries, 1);
+        assert_eq!(metrics.empty_delivery_reply_nudge_attempts_total, 3);
+        assert_eq!(metrics.empty_delivery_tool_calls_total, 0);
+        assert_eq!(metrics.empty_delivery_stream_output_turns, 1);
+    }
+
+    #[test]
+    fn closing_send_guard_is_one_shot_and_cancel_fenced() {
+        let control = OperationControl::default();
+        assert!(should_attempt_closing_send_nudge(true, true, false, &control));
+        assert!(!should_attempt_closing_send_nudge(false, true, false, &control));
+        assert!(!should_attempt_closing_send_nudge(true, false, false, &control));
+        assert!(!should_attempt_closing_send_nudge(true, true, true, &control));
+        control.interrupted.store(true, Ordering::SeqCst);
+        assert!(!should_attempt_closing_send_nudge(true, true, false, &control));
     }
 
     #[tokio::test]

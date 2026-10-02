@@ -126,6 +126,12 @@ Desktop PR #20 advanced one evidence-only commit from 61f8518a5e0b4bead224ec3c08
 
 The focused contract tightens one semantic point for iOS: closing-send delivery and terminal delivery share the same canonical delivery predicate, including successful reaction delivery as satisfying delivery debt. The current iOS NativeEngine already owns real send_message delivery and bounded reply nudges, but has not yet implemented the 61f closing-send/ordinary-empty-delivery slice or proved one shared delivery predicate. This changed evidence row therefore remains mapped. Unchanged automation rows keep their implemented status, and the next production change must extend the existing NativeEngine/Host composition rather than add renderer or duplicate runtime ownership.
 
+### 1.11 iOS production adaptation: closing-send and empty-delivery ownership
+
+The iOS shipping adaptation keeps Mahayana NativeEngine as the Runner/Agent-loop owner. Visible user turns already suppress plain model prose, perform at most three reply nudges, and treat a successful send_message as delivery. The new production path records tool work after a delivery and, if that work would otherwise terminate in hidden plain text, inserts exactly one operation-scoped closing-send nudge into canonical NativeSession.history. The marker carries the operation id and is persisted with the runtime session, so recovery/resume cannot create a second closing nudge for the same operation. Suspension/interruption fence both reply and closing nudges; request_box_help still terminates as waiting-user before closing recovery.
+
+If a visible user turn exhausts bounded reply nudges without a successful send_message, NativeEngine records content-free empty-delivery telemetry through RuntimeTelemetry, including aggregate nudge attempts, tool calls, stream-output presence, and duration. This is canonical runtime telemetry, not renderer state. Focused Rust contracts exercise the production owner. These 61f behavior rows are implemented pending exact-HEAD Actions. The ed06 production-wiring evidence row remains mapped until the separate iOS reaction owner is audited and wired into the same delivery-debt predicate; no reaction capability is fabricated inside NativeEngine merely to satisfy a Desktop string contract.
+
 ## 2. Product goal
 
 The goal is not to make an iOS app that separately reinterprets Grok Bot.

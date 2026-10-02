@@ -28,6 +28,12 @@ pub struct RuntimeMetricsSnapshot {
     pub model_calls: u64,
     pub model_failures: u64,
     pub model_latency_millis_total: u64,
+    pub closing_send_nudges: u64,
+    pub turn_empty_deliveries: u64,
+    pub empty_delivery_reply_nudge_attempts_total: u64,
+    pub empty_delivery_tool_calls_total: u64,
+    pub empty_delivery_stream_output_turns: u64,
+    pub empty_delivery_duration_millis_total: u64,
 }
 
 impl RuntimeMetricsSnapshot {
@@ -74,6 +80,12 @@ pub struct RuntimeTelemetry {
     model_calls: AtomicU64,
     model_failures: AtomicU64,
     model_latency_millis_total: AtomicU64,
+    closing_send_nudges: AtomicU64,
+    turn_empty_deliveries: AtomicU64,
+    empty_delivery_reply_nudge_attempts_total: AtomicU64,
+    empty_delivery_tool_calls_total: AtomicU64,
+    empty_delivery_stream_output_turns: AtomicU64,
+    empty_delivery_duration_millis_total: AtomicU64,
 }
 
 impl RuntimeTelemetry {
@@ -144,6 +156,32 @@ impl RuntimeTelemetry {
         }
     }
 
+    pub fn closing_send_nudge(&self) {
+        self.closing_send_nudges.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn turn_empty_delivery(
+        &self,
+        reply_nudge_attempts: u64,
+        tool_call_count: u64,
+        stream_output_produced: bool,
+        duration: Duration,
+    ) {
+        self.turn_empty_deliveries.fetch_add(1, Ordering::Relaxed);
+        self.empty_delivery_reply_nudge_attempts_total
+            .fetch_add(reply_nudge_attempts, Ordering::Relaxed);
+        self.empty_delivery_tool_calls_total
+            .fetch_add(tool_call_count, Ordering::Relaxed);
+        if stream_output_produced {
+            self.empty_delivery_stream_output_turns
+                .fetch_add(1, Ordering::Relaxed);
+        }
+        self.empty_delivery_duration_millis_total.fetch_add(
+            duration.as_millis().min(u128::from(u64::MAX)) as u64,
+            Ordering::Relaxed,
+        );
+    }
+
     pub fn snapshot(&self) -> RuntimeMetricsSnapshot {
         RuntimeMetricsSnapshot {
             sessions_opened: self.sessions_opened.load(Ordering::Relaxed),
@@ -163,6 +201,12 @@ impl RuntimeTelemetry {
             model_calls: self.model_calls.load(Ordering::Relaxed),
             model_failures: self.model_failures.load(Ordering::Relaxed),
             model_latency_millis_total: self.model_latency_millis_total.load(Ordering::Relaxed),
+            closing_send_nudges: self.closing_send_nudges.load(Ordering::Relaxed),
+            turn_empty_deliveries: self.turn_empty_deliveries.load(Ordering::Relaxed),
+            empty_delivery_reply_nudge_attempts_total: self.empty_delivery_reply_nudge_attempts_total.load(Ordering::Relaxed),
+            empty_delivery_tool_calls_total: self.empty_delivery_tool_calls_total.load(Ordering::Relaxed),
+            empty_delivery_stream_output_turns: self.empty_delivery_stream_output_turns.load(Ordering::Relaxed),
+            empty_delivery_duration_millis_total: self.empty_delivery_duration_millis_total.load(Ordering::Relaxed),
         }
     }
 }
@@ -181,6 +225,8 @@ mod tests {
         telemetry.tool_started();
         telemetry.tool_completed(false);
         telemetry.model_finished(Duration::from_millis(40), true);
+        telemetry.closing_send_nudge();
+        telemetry.turn_empty_delivery(3, 4, true, Duration::from_millis(1250));
         telemetry.operation_failed();
 
         let snapshot = telemetry.snapshot();
@@ -190,6 +236,12 @@ mod tests {
         assert_eq!(snapshot.approvals_rejected, 1);
         assert_eq!(snapshot.tool_calls_failed, 1);
         assert_eq!(snapshot.model_calls, 1);
+        assert_eq!(snapshot.closing_send_nudges, 1);
+        assert_eq!(snapshot.turn_empty_deliveries, 1);
+        assert_eq!(snapshot.empty_delivery_reply_nudge_attempts_total, 3);
+        assert_eq!(snapshot.empty_delivery_tool_calls_total, 4);
+        assert_eq!(snapshot.empty_delivery_stream_output_turns, 1);
+        assert_eq!(snapshot.empty_delivery_duration_millis_total, 1250);
         assert_eq!(snapshot.average_model_latency_millis(), Some(40.0));
         assert_eq!(snapshot.operation_success_ratio(), 0.0);
     }
