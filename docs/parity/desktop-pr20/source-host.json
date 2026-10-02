@@ -41,13 +41,13 @@
       "desktop_owner": "host",
       "desktop_visible_effect": "Computer-use turns and ordinary turns share one Host-owned composition/lifecycle boundary, preventing leaked control leases or divergent settlement.",
       "ios_disposition": "ios-adapted",
-      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-host/src/lib.rs",
       "ios_language": "Rust",
       "ios_platform_delta": "iOS must keep computer-use/native-control preparation and settlement with the same canonical Host/Runner lifecycle owner; UI/Coordinator can request or project state but cannot own leases.",
-      "implementation_status": "mapped",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Revalidated against Desktop PR #20 612a075e7a7de5d845f765ade4eb51c7c318e3c8. This upstream commit only fixes worker-closure capture to call the already canonical worker_host_runner_composition for compose_production_turn/compose_production_runner; ownership semantics are unchanged. iOS has a shipping NativeRunnerComposition implementation at its current branch but remains mapped until same-head CI."
+      "implementation_status": "implemented",
+      "production_evidence": "Shipping MahayanaHost::build_runtime consumes NativeRunnerComposition::compose; that composition constructs one NativeEngine and derives both the Runtime EngineBackend and NativeAgentBackend from the same Arc owner. NativeEngine remains the canonical owner of operation control, durable active prompt/attempt state, model/tool loop, approvals, session checkpoint persistence, interruption, delivery recovery, and terminal settlement. The mobile turn-execution extension delegates back to the same Host and does not own a second model/tool/session engine.",
+      "test_evidence": "Focused Rust unit contract native_runner_composition_shares_one_engine_owner validates Runtime EngineBackend pointer identity with the composed NativeEngine and verifies the same engine is retained by both Runtime and NativeAgent. The exact-head architecture workflow now runs mahayana-host --lib --features mobile-embedded before mobile app-host tests; current-head CI acceptance is still required before verified.",
+      "notes": "Revalidated against Desktop PR #20 612a075e7a7de5d845f765ade4eb51c7c318e3c8. This upstream commit only fixes worker-closure capture to call the already canonical worker_host_runner_composition for compose_production_turn/compose_production_runner; ownership semantics are unchanged. iOS has a shipping NativeRunnerComposition implementation at its current branch but remains mapped until same-head CI. iOS production closure landed in NativeRunnerComposition; status is implemented only, not verified, until the same exact iOS HEAD completes required CI."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -6596,13 +6596,13 @@
       "desktop_owner": "host",
       "desktop_visible_effect": "One Host owner fences computer control and Runner lifecycle from preparation through terminal settlement.",
       "ios_disposition": "ios-adapted",
-      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-host/src/lib.rs",
       "ios_language": "Rust",
       "ios_platform_delta": "Map Desktop computer-use coordination to iOS-native capability/session ownership without introducing SwiftUI or Coordinator lease truth.",
-      "implementation_status": "mapped",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required."
+      "implementation_status": "implemented",
+      "production_evidence": "Shipping MahayanaHost::build_runtime consumes NativeRunnerComposition::compose; that composition constructs one NativeEngine and derives both the Runtime EngineBackend and NativeAgentBackend from the same Arc owner. NativeEngine remains the canonical owner of operation control, durable active prompt/attempt state, model/tool loop, approvals, session checkpoint persistence, interruption, delivery recovery, and terminal settlement. The mobile turn-execution extension delegates back to the same Host and does not own a second model/tool/session engine.",
+      "test_evidence": "Focused Rust unit contract native_runner_composition_shares_one_engine_owner validates Runtime EngineBackend pointer identity with the composed NativeEngine and verifies the same engine is retained by both Runtime and NativeAgent. The exact-head architecture workflow now runs mahayana-host --lib --features mobile-embedded before mobile app-host tests; current-head CI acceptance is still required before verified.",
+      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required. iOS production closure landed in NativeRunnerComposition; status is implemented only, not verified, until the same exact iOS HEAD completes required CI."
     },
     {
       "desktop_path": "source/host/src/host_secret_store.rs",
@@ -11486,13 +11486,13 @@
       "desktop_owner": "host",
       "desktop_visible_effect": "CI rejects parallel Runner or computer-use lifecycle ownership.",
       "ios_disposition": "ios-adapted",
-      "ios_target_path": "mobile/ios/FabushiTests/RunnerParityTests.swift",
-      "ios_language": "Swift",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-host/src/lib.rs",
+      "ios_language": "Rust",
       "ios_platform_delta": "Prove native iOS Host/Runner lifecycle ownership with behavior contracts; do not substitute Desktop string matching.",
-      "implementation_status": "mapped",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required."
+      "implementation_status": "implemented",
+      "production_evidence": "Shipping MahayanaHost::build_runtime consumes NativeRunnerComposition::compose; that composition constructs one NativeEngine and derives both the Runtime EngineBackend and NativeAgentBackend from the same Arc owner. NativeEngine remains the canonical owner of operation control, durable active prompt/attempt state, model/tool loop, approvals, session checkpoint persistence, interruption, delivery recovery, and terminal settlement. The mobile turn-execution extension delegates back to the same Host and does not own a second model/tool/session engine.",
+      "test_evidence": "Focused Rust unit contract native_runner_composition_shares_one_engine_owner validates Runtime EngineBackend pointer identity with the composed NativeEngine and verifies the same engine is retained by both Runtime and NativeAgent. The exact-head architecture workflow now runs mahayana-host --lib --features mobile-embedded before mobile app-host tests; current-head CI acceptance is still required before verified.",
+      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required. iOS production closure landed in NativeRunnerComposition; status is implemented only, not verified, until the same exact iOS HEAD completes required CI."
     },
     {
       "desktop_path": "source/host/tests/host_secret_store_contract.rs",
