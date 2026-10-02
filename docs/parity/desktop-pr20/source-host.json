@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "5ec257a7920478b56a88bdf24b85eb845aacfb46",
+  "sourceCommit": "9e0b1701d405ebd0b2707620c01781103562b39b",
   "group": "source-host",
   "rowCount": 956,
   "rows": [
@@ -36,8 +36,8 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "0b48f2c2955e00654db2b2e58d2d068dee5b922b",
-      "desktop_responsibility": "Shipping Host composes recreate recovery through TranscriptManager while the canonical pending-wake owner validates carried wake identity and eligibility before persistence or replay; existing upgrade quiesce, turn-delivery recovery, and automation settlement remain ordered sub-responsibilities.",
+      "desktop_blob_sha": "284729223dda48978a10055733e5fa628f449a7e",
+      "desktop_responsibility": "Shipping Host composition consumes the centralized ProductionHostExtensions lifecycle owners and wires their exact instances into Gateway, routed MCP/provider turns, automation/recreate recovery, transcript/run delivery, and shutdown ordering instead of constructing parallel extension owners in main.",
       "desktop_owner": "host",
       "desktop_visible_effect": "Host recreation cannot blindly replay stale/background work: restore follows one canonical owner and preserves quiesce/resume ordering.",
       "ios_disposition": "ios-adapted",
@@ -45,9 +45,9 @@
       "ios_language": "Rust",
       "ios_platform_delta": "MobileAppHost Drop stops extensions, shuts down and joins the Host thread; AppHost destruction drops the sole FeatureHostController, whose Drop calls close.",
       "implementation_status": "mapped",
-      "production_evidence": "mahayana-native-engine/src/lib.rs and mahayana-kernel/src/telemetry.rs: the shipping iOS NativeEngine remains the sole Runner/Agent-loop owner for bounded reply nudges, durable operation-scoped closing-send recovery in persisted NativeSession.history, real send_message delivery state, post-delivery tool-work detection, cancellation/suspension fences, and content-free empty-delivery telemetry aggregates.",
-      "test_evidence": "Desktop PR #20 cb2267d changes this exact blob for shipping upgrade quiesce. Current iOS has not yet proved ordered quiesce→durable checkpoint→Host recreation→resume on this upstream identity; exact-head focused and Actions evidence is required.",
-      "notes": "Revalidated at Desktop f5517530. f551 routes the remaining shipping group/shared-room/widget delegate call sites through TranscriptManager. This row proves composition ownership only; unchanged shared_rooms.rs and widget_responses.rs product-behavior rows remain independently unreviewed. Pre-dispatch direct-turn wiring revalidated: Host classifies recoverable direct-send shape, Runtime owns exact operation/dispatched state; broader app main responsibilities remain as separately described. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance. Revalidated at Desktop PR #20 c81d95b2399b864d10209d4853231853b7742c50. The 0941e6b→c81d95b delta centralizes secret-store failure trays, live auto-review settlement, transcript observer/roster/focus lifecycle ownership, and session group mutations behind the canonical transcript owner. iOS keeps those applicable responsibilities inside the single FeatureHostController/Runtime owner; exact-HEAD CI remains required before verified. Revalidated at Desktop PR #20 e4e0c92a5312e27004b7eb4a195cece9ca39f165. The c81d95b→e4e0c92 delta restores automation-config and listener-connect observers through the transcript extension/manager owner; iOS keeps equivalent automation/listener projection in the single FeatureHostController owner and requires same-HEAD verification before promotion. Revalidated at Desktop PR #20 387a5ec97a06a9bb5ee1f25242a2f0a75a9c155d. The e4e0c92→387a5ec delta routes create/update/delete/list agent lifecycle gateway work through TranscriptManager, removing shipping Host direct ownership. iOS already keeps bot/agent lifecycle mutation inside the single FeatureHostController Host owner; same-HEAD focused and Actions evidence remain required before promotion. Revalidated at Desktop PR #20 f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef. The d3b2477->f2a2e181 delta moves the existing channel-credential configuration-change signal behind TranscriptManager ownership: WidgetResponses still emits after successful credential persistence, TranscriptManager owns the callback proxy and clears it during dispose, and the production Transcript extension binds that manager-owned observer to transcript.channel-config-changed. The iOS row remains mapped: FeatureHostController is still the single Host owner and no SwiftUI/parallel observer registry exists, but equivalent credential-change projection plus same-HEAD focused/Actions evidence are still required before promotion. Revalidated against Desktop PR #20 4166a73b8fbdbb9bf8cd08d02585d2d6928711ac. The f2a2e181->4166a73b delta restores TranscriptManager memory-gateway ownership with prompt-snapshot invalidation, then moves created-agent lifecycle/kickstart dispatch ownership behind TranscriptManager while preserving shipping Host adapter injection; ForeverBox disk-pressure/lifecycle contracts also changed. This row is not promoted solely from metadata; current iOS production wiring and same-HEAD CI remain required. Revalidated against Desktop PR #20 d7b12fe6486909b8738d97159c8ff4c8fea50845. The 4166a73b->d7b12fe6 delta is a shipping Host type-ownership correction for the ProductionBoxStoreSyncApi deletion slot; it does not create a new owner or justify status promotion. Revalidated against Desktop PR #20 486c478c6ca5e511de989190c63ec9b35d2ff2a6. The d7b12fe6->486c478c delta moves durable pending-wake rearm ownership under TranscriptManager: shipping main binds the production runtime adapter exactly once, manager replays durable wakes after resources are live, rejects a second owner, and drops that owner during dispose. No status promotion is inferred from this rebaseline. Revalidated against Desktop PR #20 7b41050434d76ac2a18b3b042b4dcb018122b414. The 636b5a35->7b410504 delta removes the remaining shipping send-sink BoxHandoffService owner and injects TranscriptManager instead; iOS has no Swift/Coordinator parallel owner, but its applicable remote/box request-help and hand-back production path is not yet implemented, so this row remains mapped and non-verified. Re-audited at Desktop PR #20 c316a1ccac2d93810224dcfdd1085997a5dab452: visible user turns that succeed without a delivered SendMessage or reaction now receive at most three hidden reply-nudge reruns. The shipping guard is fenced by the original turn epoch, current epoch, cancellation, WaitingUser state, provider success, and delivery counters; hidden/background/resume turns are excluded and nudge text deltas are suppressed. iOS must independently prove the same product effect at its canonical Runtime/Host boundary; this rebaseline does not promote status. Revalidated at Desktop PR #20 827f22da7c527ab22df0700303f356d589c2a0f4. The 4060b1f5->827f22da delta only restores the shipping REPLY_NUDGE_PROMPT import and introduces no new owner. Current iOS work adds canonical Host-owned Box handoff request/settlement plus native reply-nudge checkpoint isolation; this broad main.rs row remains mapped until same-iOS-HEAD Actions prove the full composition. Revalidated against Desktop PR #20 b5f8855805ec1c0be3a821cf35a4cba047ee9d8b. After settle_routed_provider_task_result returns success, shipping main calls TranscriptManager.emit_automations(agent_id) before the routed-turn lease is retired; an Err result skips the call. iOS FeatureHostController already owns automation state/persistence and operation-to-Agent identity, but the current OperationCompleted path drops operation_agents without a success-only active-Agent automation projection, so this row remains mapped pending real production wiring and same-HEAD evidence. iOS production implementation now extends the existing canonical FeatureHostController terminal path instead of adding a facade: success consumes operation_agents once and projects current Host-owned per-Agent automation state only when the completed Agent still owns the active conversation. Same-HEAD CI is required before verified. Rebased to Desktop PR #20 61f8518. The iOS active-Agent automation projection remains a real implemented sub-responsibility, but this broad row is mapped because closing-send recovery and ordinary empty-delivery telemetry are new and not yet present in iOS production. iOS uses the existing NativeEngine/NativeSession owner rather than copying Desktop checkpoint wrappers. The separate ed06 production-wiring row remains mapped until reaction-as-delivery is audited in the iOS shipping reaction owner. Revalidated against Desktop PR #20 5ec257a7920478b56a88bdf24b85eb845aacfb46. The cb2267d->7582495 selected-source delta centralizes recreate carry validation/replay in PendingWakeRearm; the final 5ec257a commit changes only Desktop parity evidence and does not alter selected source blobs. iOS remains mapped pending real durable lifecycle/wake recovery and exact-head evidence."
+      "production_evidence": "",
+      "test_evidence": "",
+      "notes": "Revalidated at Desktop f5517530. f551 routes the remaining shipping group/shared-room/widget delegate call sites through TranscriptManager. This row proves composition ownership only; unchanged shared_rooms.rs and widget_responses.rs product-behavior rows remain independently unreviewed. Pre-dispatch direct-turn wiring revalidated: Host classifies recoverable direct-send shape, Runtime owns exact operation/dispatched state; broader app main responsibilities remain as separately described. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance. Revalidated at Desktop PR #20 c81d95b2399b864d10209d4853231853b7742c50. The 0941e6b→c81d95b delta centralizes secret-store failure trays, live auto-review settlement, transcript observer/roster/focus lifecycle ownership, and session group mutations behind the canonical transcript owner. iOS keeps those applicable responsibilities inside the single FeatureHostController/Runtime owner; exact-HEAD CI remains required before verified. Revalidated at Desktop PR #20 e4e0c92a5312e27004b7eb4a195cece9ca39f165. The c81d95b→e4e0c92 delta restores automation-config and listener-connect observers through the transcript extension/manager owner; iOS keeps equivalent automation/listener projection in the single FeatureHostController owner and requires same-HEAD verification before promotion. Revalidated at Desktop PR #20 387a5ec97a06a9bb5ee1f25242a2f0a75a9c155d. The e4e0c92→387a5ec delta routes create/update/delete/list agent lifecycle gateway work through TranscriptManager, removing shipping Host direct ownership. iOS already keeps bot/agent lifecycle mutation inside the single FeatureHostController Host owner; same-HEAD focused and Actions evidence remain required before promotion. Revalidated at Desktop PR #20 f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef. The d3b2477->f2a2e181 delta moves the existing channel-credential configuration-change signal behind TranscriptManager ownership: WidgetResponses still emits after successful credential persistence, TranscriptManager owns the callback proxy and clears it during dispose, and the production Transcript extension binds that manager-owned observer to transcript.channel-config-changed. The iOS row remains mapped: FeatureHostController is still the single Host owner and no SwiftUI/parallel observer registry exists, but equivalent credential-change projection plus same-HEAD focused/Actions evidence are still required before promotion. Revalidated against Desktop PR #20 4166a73b8fbdbb9bf8cd08d02585d2d6928711ac. The f2a2e181->4166a73b delta restores TranscriptManager memory-gateway ownership with prompt-snapshot invalidation, then moves created-agent lifecycle/kickstart dispatch ownership behind TranscriptManager while preserving shipping Host adapter injection; ForeverBox disk-pressure/lifecycle contracts also changed. This row is not promoted solely from metadata; current iOS production wiring and same-HEAD CI remain required. Revalidated against Desktop PR #20 d7b12fe6486909b8738d97159c8ff4c8fea50845. The 4166a73b->d7b12fe6 delta is a shipping Host type-ownership correction for the ProductionBoxStoreSyncApi deletion slot; it does not create a new owner or justify status promotion. Revalidated against Desktop PR #20 486c478c6ca5e511de989190c63ec9b35d2ff2a6. The d7b12fe6->486c478c delta moves durable pending-wake rearm ownership under TranscriptManager: shipping main binds the production runtime adapter exactly once, manager replays durable wakes after resources are live, rejects a second owner, and drops that owner during dispose. No status promotion is inferred from this rebaseline. Revalidated against Desktop PR #20 7b41050434d76ac2a18b3b042b4dcb018122b414. The 636b5a35->7b410504 delta removes the remaining shipping send-sink BoxHandoffService owner and injects TranscriptManager instead; iOS has no Swift/Coordinator parallel owner, but its applicable remote/box request-help and hand-back production path is not yet implemented, so this row remains mapped and non-verified. Re-audited at Desktop PR #20 c316a1ccac2d93810224dcfdd1085997a5dab452: visible user turns that succeed without a delivered SendMessage or reaction now receive at most three hidden reply-nudge reruns. The shipping guard is fenced by the original turn epoch, current epoch, cancellation, WaitingUser state, provider success, and delivery counters; hidden/background/resume turns are excluded and nudge text deltas are suppressed. iOS must independently prove the same product effect at its canonical Runtime/Host boundary; this rebaseline does not promote status. Revalidated at Desktop PR #20 827f22da7c527ab22df0700303f356d589c2a0f4. The 4060b1f5->827f22da delta only restores the shipping REPLY_NUDGE_PROMPT import and introduces no new owner. Current iOS work adds canonical Host-owned Box handoff request/settlement plus native reply-nudge checkpoint isolation; this broad main.rs row remains mapped until same-iOS-HEAD Actions prove the full composition. Revalidated against Desktop PR #20 b5f8855805ec1c0be3a821cf35a4cba047ee9d8b. After settle_routed_provider_task_result returns success, shipping main calls TranscriptManager.emit_automations(agent_id) before the routed-turn lease is retired; an Err result skips the call. iOS FeatureHostController already owns automation state/persistence and operation-to-Agent identity, but the current OperationCompleted path drops operation_agents without a success-only active-Agent automation projection, so this row remains mapped pending real production wiring and same-HEAD evidence. iOS production implementation now extends the existing canonical FeatureHostController terminal path instead of adding a facade: success consumes operation_agents once and projects current Host-owned per-Agent automation state only when the completed Agent still owns the active conversation. Same-HEAD CI is required before verified. Rebased to Desktop PR #20 61f8518. The iOS active-Agent automation projection remains a real implemented sub-responsibility, but this broad row is mapped because closing-send recovery and ordinary empty-delivery telemetry are new and not yet present in iOS production. iOS uses the existing NativeEngine/NativeSession owner rather than copying Desktop checkpoint wrappers. The separate ed06 production-wiring row remains mapped until reaction-as-delivery is audited in the iOS shipping reaction owner. Revalidated against Desktop PR #20 5ec257a7920478b56a88bdf24b85eb845aacfb46. The cb2267d->7582495 selected-source delta centralizes recreate carry validation/replay in PendingWakeRearm; the final 5ec257a commit changes only Desktop parity evidence and does not alter selected source blobs. iOS remains mapped pending real durable lifecycle/wake recovery and exact-head evidence. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -5331,18 +5331,18 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/automation_run_path.rs",
-      "desktop_blob_sha": "0bee6500497b823d9c059efe889307ccfd75983a",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "7bedae399879f7269cfded2c5bf629ad9204a0b1",
+      "desktop_responsibility": "Canonical automation execution path owns the hidden automation wake identity, routed Runner execution, terminal event settlement, timeout/cancellation classification, and upgrade-quiesce carry semantics used by production automation fires.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "Automation runs retain exact wake/run identity and settle once across success, failure, timeout, cancellation and upgrade quiesce.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/automation_runtime.rs",
@@ -5496,18 +5496,18 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/completion_revivals.rs",
-      "desktop_blob_sha": "e7df2c524e6d8dcee50386e8d7cb177df37e7ffd",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "b06f87124f566365b6e41190fc1382bf9c5628cd",
+      "desktop_responsibility": "Canonical completion-revival path turns Shell/Subagent completion into bounded transcript wake/revival work with durable identity and interruption handling, preserving the no-blind-replay rule across upgrade/recreate.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "Completion wakeups resume eligible work without blindly re-running interrupted shell/subagent work after lifecycle disruption.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/extension.rs",
@@ -5991,18 +5991,18 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "desktop_blob_sha": "36bae295949a50d79b2bf6bc2fe3d12209acc65b",
-      "desktop_responsibility": "Canonical lifecycle facade orders runner/transcript upgrade quiesce and delegates recreate-carried wake validation/restoration to PendingWakeRearm; runner quiesce is cleared only during resume-after-recreate, while automation projection and handoff remain manager responsibilities.",
+      "desktop_blob_sha": "3d86d37255aebeff06707ed5888fb722b9760a73",
+      "desktop_responsibility": "Canonical Transcript lifecycle facade owns transcript/session/send/Runner registries and projection observers, binds exactly one PendingWakeRearm owner, delegates recreate-carried wake filtering/restoration to it, and orders quiesce/resume/dispose around subordinate transcript runtimes.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "Recreated sessions restore only owner-approved durable work before normal resume, without renderer replay or a second manager-local wake policy.",
+      "desktop_visible_effect": "Transcript/run truth, projections and recreate recovery remain ordered under one lifecycle facade; carried wakes are filtered by the canonical durable wake owner before replay.",
       "ios_disposition": "ios-adapted",
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust",
       "ios_platform_delta": "The sole AppHost-owned FeatureHostController remains the iOS composition owner; its idempotent close/Drop now performs process-local lifecycle settlement and durable-state preservation.",
       "implementation_status": "mapped",
-      "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs: FeatureHostController remains the sole iOS Host owner; normal RuntimeEvent::OperationCompleted consumes durable operation-to-Agent identity, gates the post-terminal automation projection against Host-owned active conversation→Agent identity, reads state.automations owned/persisted by the same controller, and queues an Agent-tagged automations transport event. Interrupted/failed terminals never queue this success projection; no Swift/renderer automation owner is introduced.",
-      "test_evidence": "Desktop PR #20 cb2267d changes this exact blob for shipping upgrade quiesce. Current iOS has not yet proved ordered quiesce→durable checkpoint→Host recreation→resume on this upstream identity; exact-head focused and Actions evidence is required.",
-      "notes": "Ownership responsibility remains implemented after f5517530. This status does not promote the separate unchanged shared_rooms.rs/widget_responses.rs behavior rows, which remain unreviewed. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance. Revalidated at Desktop PR #20 c81d95b2399b864d10209d4853231853b7742c50. The 0941e6b→c81d95b delta centralizes secret-store failure trays, live auto-review settlement, transcript observer/roster/focus lifecycle ownership, and session group mutations behind the canonical transcript owner. iOS keeps those applicable responsibilities inside the single FeatureHostController/Runtime owner; exact-HEAD CI remains required before verified. Revalidated at Desktop PR #20 e4e0c92a5312e27004b7eb4a195cece9ca39f165. The c81d95b→e4e0c92 delta restores automation-config and listener-connect observers through the transcript extension/manager owner; iOS keeps equivalent automation/listener projection in the single FeatureHostController owner and requires same-HEAD verification before promotion. Revalidated at Desktop PR #20 387a5ec97a06a9bb5ee1f25242a2f0a75a9c155d. The e4e0c92→387a5ec delta routes create/update/delete/list agent lifecycle gateway work through TranscriptManager, removing shipping Host direct ownership. iOS already keeps bot/agent lifecycle mutation inside the single FeatureHostController Host owner; same-HEAD focused and Actions evidence remain required before promotion. Revalidated at Desktop PR #20 d3b2477ef7941554946a92d1267e5f6110e9137a. The 387a5ec→d3b2477 delta synchronizes Host memory active-agent lifecycle from the canonical transcript owner after successful session/agent lifecycle mutations; iOS conversation_session and account-scoped Host state remain the single lifecycle owner and require same-HEAD CI before promotion. Revalidated at Desktop PR #20 f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef. The d3b2477->f2a2e181 delta moves the existing channel-credential configuration-change signal behind TranscriptManager ownership: WidgetResponses still emits after successful credential persistence, TranscriptManager owns the callback proxy and clears it during dispose, and the production Transcript extension binds that manager-owned observer to transcript.channel-config-changed. The iOS row remains mapped: FeatureHostController is still the single Host owner and no SwiftUI/parallel observer registry exists, but equivalent credential-change projection plus same-HEAD focused/Actions evidence are still required before promotion. Revalidated against Desktop PR #20 4166a73b8fbdbb9bf8cd08d02585d2d6928711ac. The f2a2e181->4166a73b delta restores TranscriptManager memory-gateway ownership with prompt-snapshot invalidation, then moves created-agent lifecycle/kickstart dispatch ownership behind TranscriptManager while preserving shipping Host adapter injection; ForeverBox disk-pressure/lifecycle contracts also changed. This row is not promoted solely from metadata; current iOS production wiring and same-HEAD CI remain required. Revalidated against Desktop PR #20 486c478c6ca5e511de989190c63ec9b35d2ff2a6. The d7b12fe6->486c478c delta moves durable pending-wake rearm ownership under TranscriptManager: shipping main binds the production runtime adapter exactly once, manager replays durable wakes after resources are live, rejects a second owner, and drops that owner during dispose. No status promotion is inferred from this rebaseline. Revalidated against Desktop PR #20 7b41050434d76ac2a18b3b042b4dcb018122b414. Upgrade/recreate lifecycle and box-handoff state/settlement are canonical transcript-owner responsibilities. iOS preserves one FeatureHostController owner and native lifecycle signaling, but the box handoff product path remains a production gap; no status promotion. Re-audited at Desktop PR #20 dbf35f981c18d6eefef6a3fab4b438165c7e3b99: this upstream commit changes only the Desktop parity architecture manifest, not frontend/** or source/**. It records exact-head Desktop acceptance for TranscriptManager delegated composition plus WidgetResponses and WorkflowCommands; iOS does not inherit those Desktop status promotions and retains its own status until iOS production wiring and exact-head evidence prove parity. Revalidated against Desktop PR #20 b5f8855805ec1c0be3a821cf35a4cba047ee9d8b. TranscriptManager.emit_automations reads AutomationRuntime.get_agent_automations(agent_id), converts canonical records, and delegates to the roster owner. The iOS FeatureHostController is already the single automation CRUD/persistence owner, including account-scoped reload, but it does not yet perform the success-terminal projection; the real Host path must be extended rather than adding a renderer/facade owner. iOS production implementation now extends the existing canonical FeatureHostController terminal path instead of adding a facade: success consumes operation_agents once and projects current Host-owned per-Agent automation state only when the completed Agent still owns the active conversation. Same-HEAD CI is required before verified. Revalidated against Desktop PR #20 5ec257a7920478b56a88bdf24b85eb845aacfb46. Recreate carry filtering moved from manager-local logic into PendingWakeRearm; iOS must preserve the facade-versus-owner split."
+      "production_evidence": "",
+      "test_evidence": "",
+      "notes": "Ownership responsibility remains implemented after f5517530. This status does not promote the separate unchanged shared_rooms.rs/widget_responses.rs behavior rows, which remain unreviewed. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance. Revalidated at Desktop PR #20 c81d95b2399b864d10209d4853231853b7742c50. The 0941e6b→c81d95b delta centralizes secret-store failure trays, live auto-review settlement, transcript observer/roster/focus lifecycle ownership, and session group mutations behind the canonical transcript owner. iOS keeps those applicable responsibilities inside the single FeatureHostController/Runtime owner; exact-HEAD CI remains required before verified. Revalidated at Desktop PR #20 e4e0c92a5312e27004b7eb4a195cece9ca39f165. The c81d95b→e4e0c92 delta restores automation-config and listener-connect observers through the transcript extension/manager owner; iOS keeps equivalent automation/listener projection in the single FeatureHostController owner and requires same-HEAD verification before promotion. Revalidated at Desktop PR #20 387a5ec97a06a9bb5ee1f25242a2f0a75a9c155d. The e4e0c92→387a5ec delta routes create/update/delete/list agent lifecycle gateway work through TranscriptManager, removing shipping Host direct ownership. iOS already keeps bot/agent lifecycle mutation inside the single FeatureHostController Host owner; same-HEAD focused and Actions evidence remain required before promotion. Revalidated at Desktop PR #20 d3b2477ef7941554946a92d1267e5f6110e9137a. The 387a5ec→d3b2477 delta synchronizes Host memory active-agent lifecycle from the canonical transcript owner after successful session/agent lifecycle mutations; iOS conversation_session and account-scoped Host state remain the single lifecycle owner and require same-HEAD CI before promotion. Revalidated at Desktop PR #20 f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef. The d3b2477->f2a2e181 delta moves the existing channel-credential configuration-change signal behind TranscriptManager ownership: WidgetResponses still emits after successful credential persistence, TranscriptManager owns the callback proxy and clears it during dispose, and the production Transcript extension binds that manager-owned observer to transcript.channel-config-changed. The iOS row remains mapped: FeatureHostController is still the single Host owner and no SwiftUI/parallel observer registry exists, but equivalent credential-change projection plus same-HEAD focused/Actions evidence are still required before promotion. Revalidated against Desktop PR #20 4166a73b8fbdbb9bf8cd08d02585d2d6928711ac. The f2a2e181->4166a73b delta restores TranscriptManager memory-gateway ownership with prompt-snapshot invalidation, then moves created-agent lifecycle/kickstart dispatch ownership behind TranscriptManager while preserving shipping Host adapter injection; ForeverBox disk-pressure/lifecycle contracts also changed. This row is not promoted solely from metadata; current iOS production wiring and same-HEAD CI remain required. Revalidated against Desktop PR #20 486c478c6ca5e511de989190c63ec9b35d2ff2a6. The d7b12fe6->486c478c delta moves durable pending-wake rearm ownership under TranscriptManager: shipping main binds the production runtime adapter exactly once, manager replays durable wakes after resources are live, rejects a second owner, and drops that owner during dispose. No status promotion is inferred from this rebaseline. Revalidated against Desktop PR #20 7b41050434d76ac2a18b3b042b4dcb018122b414. Upgrade/recreate lifecycle and box-handoff state/settlement are canonical transcript-owner responsibilities. iOS preserves one FeatureHostController owner and native lifecycle signaling, but the box handoff product path remains a production gap; no status promotion. Re-audited at Desktop PR #20 dbf35f981c18d6eefef6a3fab4b438165c7e3b99: this upstream commit changes only the Desktop parity architecture manifest, not frontend/** or source/**. It records exact-head Desktop acceptance for TranscriptManager delegated composition plus WidgetResponses and WorkflowCommands; iOS does not inherit those Desktop status promotions and retains its own status until iOS production wiring and exact-head evidence prove parity. Revalidated against Desktop PR #20 b5f8855805ec1c0be3a821cf35a4cba047ee9d8b. TranscriptManager.emit_automations reads AutomationRuntime.get_agent_automations(agent_id), converts canonical records, and delegates to the roster owner. The iOS FeatureHostController is already the single automation CRUD/persistence owner, including account-scoped reload, but it does not yet perform the success-terminal projection; the real Host path must be extended rather than adding a renderer/facade owner. iOS production implementation now extends the existing canonical FeatureHostController terminal path instead of adding a facade: success consumes operation_agents once and projects current Host-owned per-Agent automation state only when the completed Agent still owns the active conversation. Same-HEAD CI is required before verified. Revalidated against Desktop PR #20 5ec257a7920478b56a88bdf24b85eb845aacfb46. Recreate carry filtering moved from manager-local logic into PendingWakeRearm; iOS must preserve the facade-versus-owner split. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -6321,18 +6321,18 @@
     },
     {
       "desktop_path": "source/host/src/gateway_protocol.rs",
-      "desktop_blob_sha": "6fd73d16ade784bb22b09dd1a29ce1471c9b1982",
-      "desktop_responsibility": "Expose the typed resumeAfterRecreate lifecycle command in the authoritative Host gateway protocol.",
+      "desktop_blob_sha": "13b6a5bad55c133ed67e39bc94b7e500808a82a5",
+      "desktop_responsibility": "Gateway protocol exposure consumes the single host_gateway_owner registry for the frozen Grok surface while keeping Fabushi-only resumeAfterRecreate as an explicit compatibility command outside that frozen registry.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "The lifecycle caller can hand carried resume identities and pending wakes back to the canonical Host after recreation.",
+      "desktop_visible_effect": "Public protocol exposure stays exact to the frozen owner registry while Fabushi-only recreate compatibility remains explicit and reviewable.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
       "implementation_status": "mapped",
       "production_evidence": "",
-      "test_evidence": "Desktop PR #20 79a9867 changes this exact blob for recreate-resume carry. Current iOS exact-head implementation has not yet proved durable pending-wake carry/rearm plus interrupted-turn resume; same-head focused and Actions evidence is required.",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "test_evidence": "",
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/src/gateway_server.rs",
@@ -6471,18 +6471,18 @@
     },
     {
       "desktop_path": "source/host/src/host_gateway_api.rs",
-      "desktop_blob_sha": "7a0ce36bee6456036b5a9d92fde2fa7230ce5145",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "b983d0d112a1cc30c8ca2c1d4678704ddf88890f",
+      "desktop_responsibility": "Single frozen Host gateway method-to-owner registry assigns every public method to its canonical Host owner, including TranscriptManager, Session, CrossUserSharing, Automations and MCP, preventing parallel dispatch ownership tables.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "Each frozen gateway request reaches one declared canonical owner; routed MCP, session, transcript, automation and sharing calls cannot silently drift between parallel dispatch tables.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/src/host_initial_transcript_load.rs",
@@ -6546,18 +6546,18 @@
     },
     {
       "desktop_path": "source/host/src/host_production_extensions.rs",
-      "desktop_blob_sha": "20f405a3cfdd6d38cc91efa82b01fff740f97999",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "6294645234707fef8472aff85737c2550252fd0b",
+      "desktop_responsibility": "Canonical production extension composition/lifecycle owner constructs or stages the shipping TurnExecution, Notifications, Session, AutoReview, Transcript, CrossUserSharing, Automations and MCP instances, rejects duplicate starts, and owns their ordered stop/drop lifecycle.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "A single shipping Host generation owns each centralized extension lifecycle, so duplicate Notifications/Session/AutoReview/Transcript/CrossUser/Automation/MCP or TurnExecution state cannot diverge across composition paths.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/src/host_request_context.rs",
@@ -9306,18 +9306,18 @@
     },
     {
       "desktop_path": "source/host/tests/automation_run_path_contract.rs",
-      "desktop_blob_sha": "425339cbb4679106794095f9bc656577634bcec9",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "e520c56702d4f700c85600fd53d4b7d3edbd4195",
+      "desktop_responsibility": "Focused contract locks automation hidden-wake identity, terminal settlement, interruption, timeout and upgrade/recreate carry behavior on the production automation run path.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "The production automation execution contract remains observable and locked across hidden wake admission, terminal settlement, timeout/interruption, and upgrade quiesce.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/tests/automation_run_production_wiring_contract.rs",
@@ -11151,18 +11151,18 @@
     },
     {
       "desktop_path": "source/host/tests/gateway_protocol_contract.rs",
-      "desktop_blob_sha": "4fc855da8fbdbcbdd95e07d9de30f76f66c8164e",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "9d98a34267d19246cdf049a9607681b117a57f67",
+      "desktop_responsibility": "Focused contract locks the exact frozen gateway surface and its consumption of the canonical method-owner registry while keeping Fabushi compatibility commands explicit.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "The public Host protocol exposes exactly the frozen owner-registry methods plus the explicit Fabushi recreate compatibility alias; accidental protocol widening is rejected.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/tests/gateway_server_contract.rs",
@@ -11451,18 +11451,18 @@
     },
     {
       "desktop_path": "source/host/tests/host_production_extensions_contract.rs",
-      "desktop_blob_sha": "8fd3f6359cc60f0387395f39e8a866a0f96979a5",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "23154526a48966f1e67e6fdafe86212d38d8f45d",
+      "desktop_responsibility": "Focused composition contract proves ProductionHostExtensions is the unique lifecycle owner for centralized frozen extension slots and that shipping main consumes those owners rather than constructing duplicates.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "Shipping composition has one lifecycle owner per centralized extension slot and rejects duplicate owners, preventing divergent state or teardown behavior.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/tests/host_runner_composition_local_permission_contract.rs",
@@ -11586,8 +11586,8 @@
     },
     {
       "desktop_path": "source/host/tests/host_upgrade_production_contract.rs",
-      "desktop_blob_sha": "e628a80521719a9157cfc7c8a63794101c4c5aa2",
-      "desktop_responsibility": "Focused shipping contract proves resumeAfterRecreate routes carried pending wakes through TranscriptManager into canonical PendingWakeRearm before durable interrupted-turn resume.",
+      "desktop_blob_sha": "6d569365baa4c452abd9db31a7eddea73385b102",
+      "desktop_responsibility": "Focused shipping upgrade contract proves quiesce, recreate-carried pending-wake restore and resume ordering through the canonical Transcript/PendingWake owners.",
       "desktop_owner": "host",
       "desktop_visible_effect": "Regression evidence fails if recreate bypasses the canonical wake owner or resumes interrupted turns before safe wake restoration.",
       "ios_disposition": "ios-adapted",
@@ -11597,7 +11597,7 @@
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Reviewed against Desktop PR #20 5ec257a7920478b56a88bdf24b85eb845aacfb46. Mapped to the existing iOS lifecycle test surface; required production behavior is not implemented yet."
+      "notes": "Reviewed against Desktop PR #20 5ec257a7920478b56a88bdf24b85eb845aacfb46. Mapped to the existing iOS lifecycle test surface; required production behavior is not implemented yet. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/tests/host_upgrade_service_contract.rs",
@@ -12456,18 +12456,18 @@
     },
     {
       "desktop_path": "source/host/tests/remaining_planned_contract.rs",
-      "desktop_blob_sha": "ba071d83af36b61ce432e3fd41204fbe0b8a765f",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "e2b2f6577ed5eb2c9e86e33c6fec76de5ae52cb6",
+      "desktop_responsibility": "Focused parity contract records the remaining frozen Host responsibilities and prevents centralized shipping owners from regressing to planned/string-only placeholders.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "Responsibilities promoted into current shipping owners cannot regress to planned/string-only placeholders without failing parity contracts.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
       "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed. Revalidated against Desktop PR #20 9e0b1701d405ebd0b2707620c01781103562b39b. The 5ec257a->9e0b170 delta changes this exact source/contract identity. Any older implemented/verified or exact-head acceptance claim is invalidated; this row is intentionally mapped until iOS shipping composition and same-iOS-HEAD evidence prove the current responsibility."
     },
     {
       "desktop_path": "source/host/tests/remote_box_resources_contract.rs",

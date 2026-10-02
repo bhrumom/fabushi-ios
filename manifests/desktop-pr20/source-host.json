@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "5ec257a7920478b56a88bdf24b85eb845aacfb46",
+  "sourceCommit": "9e0b1701d405ebd0b2707620c01781103562b39b",
   "group": "source-host",
   "fileCount": 956,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "0b48f2c2955e00654db2b2e58d2d068dee5b922b",
-      "size": 526370
+      "blobSha": "284729223dda48978a10055733e5fa628f449a7e",
+      "size": 526361
     },
     {
       "path": "source/host/build.rs",
@@ -1780,8 +1780,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/automation_run_path.rs",
-      "blobSha": "0bee6500497b823d9c059efe889307ccfd75983a",
-      "size": 16608
+      "blobSha": "7bedae399879f7269cfded2c5bf629ad9204a0b1",
+      "size": 17160
     },
     {
       "path": "source/host/src/extensions/transcript/automation_runtime.rs",
@@ -1835,8 +1835,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/completion_revivals.rs",
-      "blobSha": "e7df2c524e6d8dcee50386e8d7cb177df37e7ffd",
-      "size": 18531
+      "blobSha": "b06f87124f566365b6e41190fc1382bf9c5628cd",
+      "size": 18871
     },
     {
       "path": "source/host/src/extensions/transcript/extension.rs",
@@ -2000,8 +2000,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "36bae295949a50d79b2bf6bc2fe3d12209acc65b",
-      "size": 32847
+      "blobSha": "3d86d37255aebeff06707ed5888fb722b9760a73",
+      "size": 32970
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -2110,8 +2110,8 @@
     },
     {
       "path": "source/host/src/gateway_protocol.rs",
-      "blobSha": "6fd73d16ade784bb22b09dd1a29ce1471c9b1982",
-      "size": 5141
+      "blobSha": "13b6a5bad55c133ed67e39bc94b7e500808a82a5",
+      "size": 2832
     },
     {
       "path": "source/host/src/gateway_server.rs",
@@ -2160,8 +2160,8 @@
     },
     {
       "path": "source/host/src/host_gateway_api.rs",
-      "blobSha": "7a0ce36bee6456036b5a9d92fde2fa7230ce5145",
-      "size": 2126
+      "blobSha": "b983d0d112a1cc30c8ca2c1d4678704ddf88890f",
+      "size": 8200
     },
     {
       "path": "source/host/src/host_initial_transcript_load.rs",
@@ -2185,8 +2185,8 @@
     },
     {
       "path": "source/host/src/host_production_extensions.rs",
-      "blobSha": "20f405a3cfdd6d38cc91efa82b01fff740f97999",
-      "size": 38870
+      "blobSha": "6294645234707fef8472aff85737c2550252fd0b",
+      "size": 53960
     },
     {
       "path": "source/host/src/host_request_context.rs",
@@ -3105,8 +3105,8 @@
     },
     {
       "path": "source/host/tests/automation_run_path_contract.rs",
-      "blobSha": "425339cbb4679106794095f9bc656577634bcec9",
-      "size": 9788
+      "blobSha": "e520c56702d4f700c85600fd53d4b7d3edbd4195",
+      "size": 10385
     },
     {
       "path": "source/host/tests/automation_run_production_wiring_contract.rs",
@@ -3720,8 +3720,8 @@
     },
     {
       "path": "source/host/tests/gateway_protocol_contract.rs",
-      "blobSha": "4fc855da8fbdbcbdd95e07d9de30f76f66c8164e",
-      "size": 2864
+      "blobSha": "9d98a34267d19246cdf049a9607681b117a57f67",
+      "size": 3304
     },
     {
       "path": "source/host/tests/gateway_server_contract.rs",
@@ -3820,8 +3820,8 @@
     },
     {
       "path": "source/host/tests/host_production_extensions_contract.rs",
-      "blobSha": "8fd3f6359cc60f0387395f39e8a866a0f96979a5",
-      "size": 12965
+      "blobSha": "23154526a48966f1e67e6fdafe86212d38d8f45d",
+      "size": 21153
     },
     {
       "path": "source/host/tests/host_runner_composition_local_permission_contract.rs",
@@ -3865,8 +3865,8 @@
     },
     {
       "path": "source/host/tests/host_upgrade_production_contract.rs",
-      "blobSha": "e628a80521719a9157cfc7c8a63794101c4c5aa2",
-      "size": 5409
+      "blobSha": "6d569365baa4c452abd9db31a7eddea73385b102",
+      "size": 6993
     },
     {
       "path": "source/host/tests/host_upgrade_service_contract.rs",
@@ -4155,8 +4155,8 @@
     },
     {
       "path": "source/host/tests/remaining_planned_contract.rs",
-      "blobSha": "ba071d83af36b61ce432e3fd41204fbe0b8a765f",
-      "size": 11062
+      "blobSha": "e2b2f6577ed5eb2c9e86e33c6fec76de5ae52cb6",
+      "size": 15965
     },
     {
       "path": "source/host/tests/remote_box_resources_contract.rs",
