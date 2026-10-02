@@ -731,15 +731,12 @@ impl NativeEngine {
                             "send_message requires a non-empty message".into(),
                         ));
                     }
-                    events.emit(KernelEvent::MessageDelta {
-                        operation_id: operation_id.clone(),
-                        delta: message.to_string(),
-                    })?;
-                    events.emit(KernelEvent::MessageCompleted {
-                        operation_id: operation_id.clone(),
-                        text: message.to_string(),
-                    })?;
-                    Ok(json!({"delivered": true, "characters": message.chars().count()}))
+                    Ok(json!({
+                        "delivered": true,
+                        "characters": message.chars().count(),
+                        "generatedMessage": message,
+                        "toolCallId": call.call_id,
+                    }))
                 }
                 "workspace_read" => {
                     let root = workspace_root(session)?;

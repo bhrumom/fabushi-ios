@@ -517,18 +517,42 @@ impl KernelEventSink for RuntimeKernelEventBridge {
                 output,
                 success,
                 ..
-            } => self.activity(
-                format!("tool:{tool}"),
-                "tool".into(),
-                format!("Completed {tool}"),
-                None,
-                if success {
-                    RuntimeActivityStatus::Completed
-                } else {
-                    RuntimeActivityStatus::Failed
-                },
-                Some(json!({"tool": tool, "output": output, "success": success})),
-            ),
+            } => {
+                if tool == "send_message" && success {
+                    let message = generated_send_message(&self.conversation_id, &output)
+                        .ok_or_else(|| KernelError::Backend(
+                            "send_message tool completed without canonical generated payload".into(),
+                        ))?;
+                    let should_persist = self
+                        .state
+                        .lock()
+                        .map_err(|_| {
+                            KernelError::Backend(
+                                "kernel conversation state mutex poisoned".into(),
+                            )
+                        })?
+                        .record_assistant_completion(message.clone(), self.hidden);
+                    if should_persist {
+                        persist_history(&self.state, self.history_path.as_deref())?;
+                    }
+                    self.emit_runtime(RuntimeEvent::MessageCompleted {
+                        operation_id: self.operation_id.clone(),
+                        message,
+                    })?;
+                }
+                self.activity(
+                    format!("tool:{tool}"),
+                    "tool".into(),
+                    format!("Completed {tool}"),
+                    None,
+                    if success {
+                        RuntimeActivityStatus::Completed
+                    } else {
+                        RuntimeActivityStatus::Failed
+                    },
+                    Some(json!({"tool": tool, "output": output, "success": success})),
+                )
+            },
             KernelEvent::ApprovalRequested {
                 approval_id,
                 title,
@@ -585,6 +609,29 @@ fn execution_policy(profile: BuildProfile) -> ExecutionPolicy {
         BuildProfile::DesktopFull => ExecutionPolicy::interactive_default(),
         BuildProfile::MobileEmbedded | BuildProfile::WebWasm => ExecutionPolicy::mobile_default(),
     }
+}
+
+fn generated_send_message(conversation_id: &ConversationId, output: &Value) -> Option<Message> {
+    let text = output.get("generatedMessage")?.as_str()?.trim();
+    if text.is_empty() {
+        return None;
+    }
+    let tool_call_id = output
+        .get("toolCallId")
+        .and_then(Value::as_str)
+        .filter(|value| !value.trim().is_empty())?;
+    Some(Message {
+        id: MessageId::generated("generated-send"),
+        conversation_id: conversation_id.clone(),
+        role: MessageRole::Assistant,
+        text: text.to_string(),
+        created_at_ms: now_ms(),
+        metadata: json!({
+            "runtime": "mahayana-kernel",
+            "generatedSend": true,
+            "toolCallId": tool_call_id,
+        }),
+    })
 }
 
 fn runtime_activity_status(value: &str) -> RuntimeActivityStatus {
@@ -693,6 +740,26 @@ mod tests {
             created_at_ms: 1,
             metadata: Value::Null,
         }
+    }
+
+    #[test]
+    fn generated_send_tool_output_becomes_canonical_transcript_message() {
+        let conversation_id = conversation(mahayana_core::MAHAYANA_AI_CONVERSATION_ID);
+        let message = generated_send_message(
+            &conversation_id,
+            &json!({
+                "generatedMessage": "milestone complete",
+                "toolCallId": "call-17"
+            }),
+        )
+        .expect("generated send message");
+
+        assert_eq!(message.role, MessageRole::Assistant);
+        assert_eq!(message.text, "milestone complete");
+        assert_eq!(message.conversation_id, conversation_id);
+        assert_eq!(message.metadata["generatedSend"], true);
+        assert_eq!(message.metadata["toolCallId"], "call-17");
+        assert!(message.id.as_str().starts_with("generated-send"));
     }
 
     #[test]
