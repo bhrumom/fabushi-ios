@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "dcb19a94383833fc1ec5074f10c4bbbd28c09036",
+  "sourceCommit": "f1d06ed8ad2a1ce4b5adeeed6df8e97152553661",
   "group": "source-host",
   "rowCount": 955,
   "rows": [
@@ -36,7 +36,7 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "990203af8b8f04284bae91c8173c90f55f29181d",
+      "desktop_blob_sha": "4d9157c5685522cc2ac189ca8dc04093a9a9c64e",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -47,7 +47,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed. Revalidated for Desktop PR #20 f1d06ed8ad2a1ce4b5adeeed6df8e97152553661; upstream now routes Runner-generated SendMessage through the Host-owned transcript/send pipeline with live transcript entry IDs, reply target validation/auto-threading, attachment batch identity, and fork branched stamping. iOS status is not inherited."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -5291,13 +5291,13 @@
       "desktop_owner": "host",
       "desktop_visible_effect": "Generated Agent media sent to another Agent is retained in the inbound transcript envelope and local file images become actual selected image input for the recipient Runner wake instead of remaining metadata-only.",
       "ios_disposition": "direct-port",
-      "ios_target_path": "source/host/extensions/transcript/agent-to-agent-messaging.rs",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "rust",
       "ios_platform_delta": "Keep generated-Agent delivery and media materialization in the iOS-owned Host/Runner boundary; the iOS sandbox changes path access rules but not ownership, admission, or wake semantics.",
-      "implementation_status": "mapped",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Desktop acceptance names ProductionAgentToAgentMessaging and direct_peer_wake_materializes_file_url_images_for_runner_selected_input as the exact generated-media consumer evidence. No equivalent iOS Host production owner exists at this exact HEAD; generic Codex multi-agent helpers do not prove this Desktop Host responsibility."
+      "implementation_status": "implemented",
+      "production_evidence": "source/packages/mahayana-rs/mahayana-host-protocol/src/lib.rs::AgentMessageImage/AgentPeerMessage/FeatureCommand::AgentSend; source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs::execute_agent_messaging/load_agent_inbound_image_data_urls/schedule_background_agent_turn",
+      "test_evidence": "mahayana-host-protocol::tests::agent_send_round_trips_generated_image_metadata; mahayana-feature-host::tests::generated_agent_file_image_materializes_for_recipient_media_channel; exact-head GitHub Actions pending",
+      "notes": "Direct Agent messages retain image URL/alt envelopes in durable peer history. Local file URLs are decoded to filesystem paths, loaded by the canonical selected-image owner, and delivered through the recipient background Runtime send as selected image input. Remote/non-file images are not falsely materialized. Implemented only; exact-head CI is required for verified."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/async_task_union.rs",
@@ -5601,7 +5601,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/production_runtime.rs",
-      "desktop_blob_sha": "cb203327ea5f2483b9ed4d39396680a9e8fd5d32",
+      "desktop_blob_sha": "bdaedb4882769496eb88a541ac8bda0dfd43f996",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -5612,7 +5612,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed. Revalidated for Desktop PR #20 f1d06ed8ad2a1ce4b5adeeed6df8e97152553661; upstream now routes Runner-generated SendMessage through the Host-owned transcript/send pipeline with live transcript entry IDs, reply target validation/auto-threading, attachment batch identity, and fork branched stamping. iOS status is not inherited."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/profile_watch.rs",
@@ -5865,9 +5865,9 @@
       "ios_language": "rust",
       "ios_platform_delta": "Keep this responsibility in the iOS-owned Rust Host. iOS-native pickers may supply sandbox URLs, but SwiftUI/shared media helpers must not become the canonical send-shaping owner.",
       "implementation_status": "mapped",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Desktop PR #20 dcb19a94383833fc1ec5074f10c4bbbd28c09036 accepts this responsibility using send_message_shaping.rs plus selected_image_inputs.rs and ProductionAgentToAgentMessaging. iOS has no Host send-message-shaping module at this exact HEAD, so Desktop implemented status is not inherited. Required closure includes the real shipping attachment channel split before Runner dispatch."
+      "production_evidence": "Partial production path: ChatSend image attachments materialize through the Host selected-image owner into mahayana.conversation.send -> Kernel -> NativeEngine -> provider-specific model media blocks.",
+      "test_evidence": "mahayana-model focused ChatCompletions/Anthropic media projection tests; NativeEngine selected-image user-turn contract; exact-head Host CI pending",
+      "notes": "Still mapped, not implemented: the image channel is real shipping wiring, but applicable selected-video and generic-file channel-split semantics plus remaining Desktop send-shaping behavior are incomplete. Desktop implemented status is not inherited."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/send_not_persisted_error.rs",
@@ -5886,18 +5886,18 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/send_pipeline.rs",
-      "desktop_blob_sha": "283d5bf9acff78fd6450a79d506845c39a730417",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "12f58e2923cd909b9564b99e0a6393955a0945e0",
+      "desktop_responsibility": "Host-owned canonical send admission and transcript shaping, including generated Agent SendMessage entry identity, reply validation/threading, attachment batch identity, fork stamping, durable append, and downstream delivery/ack ownership.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "desktop_visible_effect": "Runner-generated Agent messages enter the same durable Host send pipeline as ordinary sends, preserving canonical transcript IDs, reply/thread semantics, attachment grouping, fork identity, delivery and acknowledgement behavior.",
+      "ios_disposition": "direct-port",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "ios_language": "rust",
+      "ios_platform_delta": "Keep this responsibility in the iOS-owned Rust Host; iOS may use in-process runtime boundaries, but generated sends must not bypass canonical transcript shaping/persistence or create a parallel sender.",
+      "implementation_status": "mapped",
+      "production_evidence": "Partial only: AgentSend reaches the iOS-owned FeatureHost and durable peer state, but current exact HEAD has not yet been shown to route generated sends through Desktop-equivalent canonical transcript entry ID/reply-thread/batch/fork shaping before persistence.",
+      "test_evidence": "Desktop upstream contract: generated_send_message_uses_shipping_session_and_frozen_pipeline_threading; iOS exact-head parity test pending.",
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated for Desktop PR #20 f1d06ed8ad2a1ce4b5adeeed6df8e97152553661; upstream now routes Runner-generated SendMessage through the Host-owned transcript/send pipeline with live transcript entry IDs, reply target validation/auto-threading, attachment batch identity, and fork branched stamping. iOS status is not inherited."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/send_thread_stamping.rs",
@@ -8339,10 +8339,10 @@
       "ios_target_path": "source/host/selected-image-inputs.rs",
       "ios_language": "rust",
       "ios_platform_delta": "The canonical owner remains the iOS-owned Rust Host so the same bytes used for Runner input determine dimensions. Swift ImageIO helpers may support presentation but cannot substitute for this Host contract.",
-      "implementation_status": "mapped",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Current iOS source/host/selected-image-inputs.rs only loads bytes/path and extension-derived MIME, omits heic/heif MIME, carries no dimensions, and has no ISO-BMFF pitm/ispe/irot parser. source/shared/media/image-dimensions.swift is a shared Swift/ImageIO helper and is not Host production parity. This is an upstream-priority production gap."
+      "implementation_status": "implemented",
+      "production_evidence": "source/host/selected-image-inputs.rs; source/packages/mahayana-rs/mahayana-feature-host/src/lib.rs; source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "test_evidence": "source/host/selected-image-inputs.rs::ios_parity_tests::native_isobmff_primary_item_rotation_matches_desktop_contract; exact-head GitHub Actions pending",
+      "notes": "iOS-owned Rust Host carries the Desktop byte-level dimensions parser including ISO-BMFF primary-item pitm/ispe and irot rotation. Shipping FeatureHost AttachmentReadImage calls this owner for dimensions; ChatSend/A2A media materialization calls its selected-image loader/MIME classifier before the Runtime/Kernel/NativeEngine media channel. Implemented only; exact-head CI is required for verified."
     },
     {
       "desktop_path": "source/host/src/send_trace_host.rs",
@@ -13881,7 +13881,7 @@
     },
     {
       "desktop_path": "source/host/tests/transcript_production_composition_contract.rs",
-      "desktop_blob_sha": "8eef8c9aab7dadac7c980f26e17ffc239a9ffa43",
+      "desktop_blob_sha": "ea37b4dccaf87e05dcb4314c8e6ad272e86ab43d",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -13892,7 +13892,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated for Desktop PR #20 f1d06ed8ad2a1ce4b5adeeed6df8e97152553661; upstream now routes Runner-generated SendMessage through the Host-owned transcript/send pipeline with live transcript entry IDs, reply target validation/auto-threading, attachment batch identity, and fork branched stamping. iOS status is not inherited."
     },
     {
       "desktop_path": "source/host/tests/transcript_replica_writer_contract.rs",
