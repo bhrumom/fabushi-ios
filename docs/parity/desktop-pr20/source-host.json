@@ -5861,13 +5861,13 @@
       "desktop_owner": "host",
       "desktop_visible_effect": "A send preserves durable attachment metadata while dispatching images as selected image inputs, videos as selected video descriptors, and only non-media files through generic attachment paths before Runner/provider execution.",
       "ios_disposition": "direct-port",
-      "ios_target_path": "source/host/extensions/transcript/send-message-shaping.rs",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/send_message_shaping.rs; source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "rust",
-      "ios_platform_delta": "Keep this responsibility in the iOS-owned Rust Host. iOS-native pickers may supply sandbox URLs, but SwiftUI/shared media helpers must not become the canonical send-shaping owner.",
+      "ios_platform_delta": "Keep this responsibility in the iOS-owned Rust Host. The shipping FeatureHost performs the Desktop-equivalent image/video/generic-file split before Runtime dispatch. Images retain the typed selected-image data path; because current iOS model adapters expose no native video/file block, selected-video descriptors and generic-file descriptors are consumed into distinct model-visible local attachment context before the Runtime boundary. SwiftUI/shared media helpers remain non-owners.",
       "implementation_status": "mapped",
-      "production_evidence": "Partial production path: ChatSend image attachments materialize through the Host selected-image owner into mahayana.conversation.send -> Kernel -> NativeEngine -> provider-specific model media blocks.",
-      "test_evidence": "mahayana-model focused ChatCompletions/Anthropic media projection tests; NativeEngine selected-image user-turn contract; exact-head Host CI pending",
-      "notes": "Still mapped, not implemented: the image channel is real shipping wiring, but applicable selected-video and generic-file channel-split semantics plus remaining Desktop send-shaping behavior are incomplete. Desktop implemented status is not inherited."
+      "production_evidence": "Shipping ChatSend now classifies attachments in the compiled Rust FeatureHost before Runtime dispatch. Image inputs alone materialize through the Host selected-image owner into mahayana.conversation.send -> Kernel -> NativeEngine -> provider media blocks; video inputs become Host-owned selected-video descriptors with path/MIME/filename/fps=4 and are rendered as a distinct local video context; only non-media inputs remain in generic attachment context.",
+      "test_evidence": "Focused FeatureHost send_message_shaping tests cover Desktop extension classification, iOS declared-MIME adaptation, three-way image/video/file split, selected-video MIME/filename/fps, and distinct video context; existing mahayana-model/NativeEngine selected-image contracts remain applicable; exact-head GitHub Host CI pending",
+      "notes": "Still mapped, not implemented: the three-way media channel split is now real shipping wiring, but the broader Desktop responsibility also owns applicable reaction/reply/thread shaping, inbound-image handling, and provider-facing send semantics that remain to be audited/ported. Desktop implemented status is not inherited."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/send_not_persisted_error.rs",

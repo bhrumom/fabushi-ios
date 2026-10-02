@@ -7024,9 +7024,20 @@ impl FeatureHostController {
             ),
             other => return Err(unexpected_response("runtime.status", other)),
         };
-        let selected_image_data_urls = selected_image_data_urls(&attachments);
-        let mut runtime_text =
-            compose_agent_input(&text, mode, mode_statement.as_deref(), &attachments);
+        let media_channels =
+            crate::send_message_shaping::split_send_media_channels(&attachments);
+        let selected_image_data_urls =
+            selected_image_data_urls(&media_channels.image_attachments);
+        let mut runtime_text = compose_agent_input(
+            &text,
+            mode,
+            mode_statement.as_deref(),
+            &media_channels.file_attachments,
+        );
+        runtime_text = crate::send_message_shaping::append_selected_video_context(
+            runtime_text,
+            &media_channels.selected_videos,
+        );
         if let Some(mcp_context) = self.mcp_instruction_context()? {
             runtime_text = format!(
                 "{mcp_context}

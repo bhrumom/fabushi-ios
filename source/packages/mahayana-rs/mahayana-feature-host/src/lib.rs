@@ -10,6 +10,8 @@ mod product_harness;
 #[path = "../../../../host/selected-image-inputs.rs"]
 mod selected_image_inputs;
 
+mod send_message_shaping;
+
 #[expect(clippy::collapsible_if, clippy::unneeded_wildcard_pattern)]
 #[path = "implementation.rs"]
 mod implementation;
