@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `f9546f9a77e22d8ce7dabf978eeeffa079b22915`
+- pinned source commit for this baseline: `c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -461,7 +461,7 @@ Final completion additionally requires all mandatory rows `verified` or reviewed
 
 The authority cutover begins from iOS PR #3 exact HEAD `cdcbfd4344377b592ed882e049dfb1a36a534aa6`.
 
-All implementation counts/statuses from the prior Grok-direct ledger are **historical only** until revalidated against Desktop PR #20 `f9546f9a77e22d8ce7dabf978eeeffa079b22915`.
+All implementation counts/statuses from the prior Grok-direct ledger are **historical only** until revalidated against Desktop PR #20 `c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0`. The current baseline contains 7,925 source-bearing `frontend/**` + `source/**` files. Relative to the previous pinned Desktop baseline, 19 Host files changed and `source/host/tests/group_chat_glue_owner_contract.rs` was added; all 20 affected rows remain `unreviewed` until responsibility-level review.
 
 | Item | Status | Evidence / reason |
 | --- | --- | --- |

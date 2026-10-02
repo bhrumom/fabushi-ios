@@ -4,9 +4,9 @@
     "repository": "bhrumom/fabushi-desktop",
     "pullRequest": 20,
     "branch": "refactor/grok-018-architecture-rebuild",
-    "commit": "f9546f9a77e22d8ce7dabf978eeeffa079b22915"
+    "commit": "c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0"
   },
-  "rowCount": 7924,
+  "rowCount": 7925,
   "statusPolicy": {
     "initial": "unreviewed",
     "note": "No status from the superseded Grok-direct ledger is inherited."
@@ -40,7 +40,7 @@
     {
       "name": "source-host",
       "path": "docs/parity/desktop-pr20/source-host.json",
-      "rowCount": 954
+      "rowCount": 955
     },
     {
       "name": "source-internal",

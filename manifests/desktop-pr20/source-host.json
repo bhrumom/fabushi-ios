@@ -1,7 +1,7 @@
 {
-  "sourceCommit": "f9546f9a77e22d8ce7dabf978eeeffa079b22915",
+  "sourceCommit": "c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0",
   "group": "source-host",
-  "fileCount": 954,
+  "fileCount": 955,
   "files": [
     {
       "path": "source/host/Cargo.toml",
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "e7ca448e597c755957091d092fc1cbb57dd09902",
-      "size": 499518
+      "blobSha": "990203af8b8f04284bae91c8173c90f55f29181d",
+      "size": 504750
     },
     {
       "path": "source/host/build.rs",
@@ -1765,8 +1765,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/agent_to_agent_messaging.rs",
-      "blobSha": "e0208ff4578d2657ca3ebaf9d45e5a7040233c39",
-      "size": 13168
+      "blobSha": "89d33abcdbc7e37142c8d5fba918b6d46f4ad55c",
+      "size": 13130
     },
     {
       "path": "source/host/src/extensions/transcript/async_task_union.rs",
@@ -1840,13 +1840,13 @@
     },
     {
       "path": "source/host/src/extensions/transcript/extension.rs",
-      "blobSha": "6c33d9c007ee40ec46c7cb6fd385e9d15da80f18",
-      "size": 6261
+      "blobSha": "47aeed754ad43e25b05c9b1ca0cc994510cb8c7a",
+      "size": 11553
     },
     {
       "path": "source/host/src/extensions/transcript/group_chat_glue.rs",
-      "blobSha": "64eac10b73e0ac8f10d3e0fa78aa0014b4bcc126",
-      "size": 6976
+      "blobSha": "dfb3adfc93e3f2042a25e1b6ce3d9ab25fb00a94",
+      "size": 9956
     },
     {
       "path": "source/host/src/extensions/transcript/group_chat_orchestrator.rs",
@@ -1870,13 +1870,13 @@
     },
     {
       "path": "source/host/src/extensions/transcript/production_runtime.rs",
-      "blobSha": "817881737b8a663d205907f91f77d3f6ae6d39fc",
-      "size": 57248
+      "blobSha": "cb203327ea5f2483b9ed4d39396680a9e8fd5d32",
+      "size": 58266
     },
     {
       "path": "source/host/src/extensions/transcript/profile_watch.rs",
-      "blobSha": "51594890574a6611818d6bd34997861e1220ee96",
-      "size": 9295
+      "blobSha": "5db12edd446f235feda18fa14ed7d1a8ab401904",
+      "size": 12496
     },
     {
       "path": "source/host/src/extensions/transcript/prompt_acceptance_ledger.rs",
@@ -1890,13 +1890,13 @@
     },
     {
       "path": "source/host/src/extensions/transcript/roster_emit.rs",
-      "blobSha": "f40e87c6f0f89495ef6b6b077327143d5171ae27",
-      "size": 7312
+      "blobSha": "997422281defa9bf77be918fb152fc5199981365",
+      "size": 15853
     },
     {
       "path": "source/host/src/extensions/transcript/roster_projection.rs",
-      "blobSha": "7078daa7b4bae873470106b0d88ffa89cf8ac019",
-      "size": 1212
+      "blobSha": "8b919420cc9aa22a646e4082edc52142a9a985eb",
+      "size": 5793
     },
     {
       "path": "source/host/src/extensions/transcript/roster_search.rs",
@@ -1950,8 +1950,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/send_group_fanout.rs",
-      "blobSha": "9957b10004ac5ca875d847193f9f3e3b37aa2dda",
-      "size": 13023
+      "blobSha": "f67898a1c93dffdaf81d38349bb454300ae56ea0",
+      "size": 14069
     },
     {
       "path": "source/host/src/extensions/transcript/send_message_shaping.rs",
@@ -2000,8 +2000,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "abc66c48d3d0da9869f3e0f74afc960179cded74",
-      "size": 8599
+      "blobSha": "74e90cc567105c21317cccf222a81860b1006f30",
+      "size": 11805
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -2055,8 +2055,8 @@
     },
     {
       "path": "source/host/src/extensions/turn_execution/turn_execution_service.rs",
-      "blobSha": "0d6de8f5cf931d2525a82416ce278aa964fb7d7b",
-      "size": 2126
+      "blobSha": "011be006dba71a251e70cf1dad2e3223a4f2b33d",
+      "size": 2293
     },
     {
       "path": "source/host/src/extensions/wallpaper/box_wallpaper_commands.rs",
@@ -3685,8 +3685,8 @@
     },
     {
       "path": "source/host/tests/extensions_turn_execution_contract.rs",
-      "blobSha": "0d8ba7a26594ce3f9f7df4453e34e43dd8902562",
-      "size": 2876
+      "blobSha": "117e927bf4949bbd36215ee67b7cc733d7363d20",
+      "size": 4529
     },
     {
       "path": "source/host/tests/extensions_webauthn_proxy_contract.rs",
@@ -3757,6 +3757,11 @@
       "path": "source/host/tests/group_chat_contract.rs",
       "blobSha": "b65baf18af9e23acb4f80b430aa238e39a629bcf",
       "size": 3507
+    },
+    {
+      "path": "source/host/tests/group_chat_glue_owner_contract.rs",
+      "blobSha": "63b7b45d643bf8a14622b810eef04d233da3262e",
+      "size": 6860
     },
     {
       "path": "source/host/tests/group_chat_orchestrator_contract.rs",
@@ -4090,8 +4095,8 @@
     },
     {
       "path": "source/host/tests/pressure_cpu_profiler_contract.rs",
-      "blobSha": "f90d66a568033ca61cb6652b395db82793fa92d5",
-      "size": 12295
+      "blobSha": "d4872114daf4b47760df8ea3495327cad72f00d9",
+      "size": 12715
     },
     {
       "path": "source/host/tests/process_crash_guard_contract.rs",
@@ -4135,8 +4140,8 @@
     },
     {
       "path": "source/host/tests/profile_watch_contract.rs",
-      "blobSha": "6d1bec12fb6d98214cee4989cdf071c1629f9a4a",
-      "size": 2820
+      "blobSha": "6ffdf305a136e044045f5c7f4722d4f3f76e2070",
+      "size": 7613
     },
     {
       "path": "source/host/tests/project_membership_contract.rs",
@@ -4150,8 +4155,8 @@
     },
     {
       "path": "source/host/tests/remaining_planned_contract.rs",
-      "blobSha": "7615035d58db0fca39536db982171d92288844cd",
-      "size": 8137
+      "blobSha": "ba071d83af36b61ce432e3fd41204fbe0b8a765f",
+      "size": 11062
     },
     {
       "path": "source/host/tests/remote_box_resources_contract.rs",
@@ -4165,8 +4170,8 @@
     },
     {
       "path": "source/host/tests/roster_emit_contract.rs",
-      "blobSha": "cd3f11993378b237a28598475eecfa3b43a1fbb7",
-      "size": 7827
+      "blobSha": "82c66fe9270c30d57469c9a61a6adff28026e36e",
+      "size": 9752
     },
     {
       "path": "source/host/tests/roster_search_contract.rs",
@@ -4390,8 +4395,8 @@
     },
     {
       "path": "source/host/tests/send_group_fanout_contract.rs",
-      "blobSha": "bf75c58c2fe5be521c25a4ae75c313ff934d1854",
-      "size": 16409
+      "blobSha": "60f65f5b100ccf94b9d02e46aaea15ad986c057e",
+      "size": 16703
     },
     {
       "path": "source/host/tests/send_message_tool_contract.rs",
@@ -4575,8 +4580,8 @@
     },
     {
       "path": "source/host/tests/transcript_extension_contract.rs",
-      "blobSha": "2e9a72e70f795d6d5278afa4da63bd374ef25306",
-      "size": 4371
+      "blobSha": "3330f4f87732664838ae70ae43985ccb39813153",
+      "size": 9321
     },
     {
       "path": "source/host/tests/transcript_journal_codec_contract.rs",
@@ -4585,8 +4590,8 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "7cf325cad357b48ebc122ed82aee12eb40d7963d",
-      "size": 1724
+      "blobSha": "c14bffd2ee2586fc74062bfc6950415b17fe65bd",
+      "size": 4193
     },
     {
       "path": "source/host/tests/transcript_mirror_contract.rs",

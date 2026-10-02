@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "f9546f9a77e22d8ce7dabf978eeeffa079b22915",
+  "sourceCommit": "c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0",
   "group": "source-host",
-  "rowCount": 954,
+  "rowCount": 955,
   "rows": [
     {
       "desktop_path": "source/host/Cargo.toml",
@@ -36,7 +36,7 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "e7ca448e597c755957091d092fc1cbb57dd09902",
+      "desktop_blob_sha": "990203af8b8f04284bae91c8173c90f55f29181d",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -47,7 +47,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -5286,7 +5286,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/agent_to_agent_messaging.rs",
-      "desktop_blob_sha": "e0208ff4578d2657ca3ebaf9d45e5a7040233c39",
+      "desktop_blob_sha": "89d33abcdbc7e37142c8d5fba918b6d46f4ad55c",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -5297,7 +5297,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/async_task_union.rs",
@@ -5511,7 +5511,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/extension.rs",
-      "desktop_blob_sha": "6c33d9c007ee40ec46c7cb6fd385e9d15da80f18",
+      "desktop_blob_sha": "47aeed754ad43e25b05c9b1ca0cc994510cb8c7a",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -5522,11 +5522,11 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/group_chat_glue.rs",
-      "desktop_blob_sha": "64eac10b73e0ac8f10d3e0fa78aa0014b4bcc126",
+      "desktop_blob_sha": "dfb3adfc93e3f2042a25e1b6ce3d9ab25fb00a94",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -5537,7 +5537,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/group_chat_orchestrator.rs",
@@ -5601,7 +5601,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/production_runtime.rs",
-      "desktop_blob_sha": "817881737b8a663d205907f91f77d3f6ae6d39fc",
+      "desktop_blob_sha": "cb203327ea5f2483b9ed4d39396680a9e8fd5d32",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -5612,11 +5612,11 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/profile_watch.rs",
-      "desktop_blob_sha": "51594890574a6611818d6bd34997861e1220ee96",
+      "desktop_blob_sha": "5db12edd446f235feda18fa14ed7d1a8ab401904",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -5627,7 +5627,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/prompt_acceptance_ledger.rs",
@@ -5661,7 +5661,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/roster_emit.rs",
-      "desktop_blob_sha": "f40e87c6f0f89495ef6b6b077327143d5171ae27",
+      "desktop_blob_sha": "997422281defa9bf77be918fb152fc5199981365",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -5672,11 +5672,11 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/roster_projection.rs",
-      "desktop_blob_sha": "7078daa7b4bae873470106b0d88ffa89cf8ac019",
+      "desktop_blob_sha": "8b919420cc9aa22a646e4082edc52142a9a985eb",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -5687,7 +5687,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/roster_search.rs",
@@ -5841,7 +5841,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/send_group_fanout.rs",
-      "desktop_blob_sha": "9957b10004ac5ca875d847193f9f3e3b37aa2dda",
+      "desktop_blob_sha": "f67898a1c93dffdaf81d38349bb454300ae56ea0",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -5852,7 +5852,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/send_message_shaping.rs",
@@ -5991,7 +5991,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "desktop_blob_sha": "abc66c48d3d0da9869f3e0f74afc960179cded74",
+      "desktop_blob_sha": "74e90cc567105c21317cccf222a81860b1006f30",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -6002,7 +6002,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -6156,7 +6156,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/turn_execution/turn_execution_service.rs",
-      "desktop_blob_sha": "0d6de8f5cf931d2525a82416ce278aa964fb7d7b",
+      "desktop_blob_sha": "011be006dba71a251e70cf1dad2e3223a4f2b33d",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -6167,7 +6167,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/src/extensions/wallpaper/box_wallpaper_commands.rs",
@@ -11046,7 +11046,7 @@
     },
     {
       "desktop_path": "source/host/tests/extensions_turn_execution_contract.rs",
-      "desktop_blob_sha": "0d8ba7a26594ce3f9f7df4453e34e43dd8902562",
+      "desktop_blob_sha": "117e927bf4949bbd36215ee67b7cc733d7363d20",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -11057,7 +11057,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/tests/extensions_webauthn_proxy_contract.rs",
@@ -11268,6 +11268,21 @@
       "production_evidence": "",
       "test_evidence": "",
       "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+    },
+    {
+      "desktop_path": "source/host/tests/group_chat_glue_owner_contract.rs",
+      "desktop_blob_sha": "63b7b45d643bf8a14622b810eef04d233da3262e",
+      "desktop_responsibility": "pending-review",
+      "desktop_owner": "host",
+      "desktop_visible_effect": "pending-review",
+      "ios_disposition": "unreviewed",
+      "ios_target_path": "",
+      "ios_language": "",
+      "ios_platform_delta": "",
+      "implementation_status": "unreviewed",
+      "production_evidence": "",
+      "test_evidence": "",
+      "notes": "Added in Desktop PR #20 baseline c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; requires responsibility/ownership review before promotion."
     },
     {
       "desktop_path": "source/host/tests/group_chat_orchestrator_contract.rs",
@@ -12261,7 +12276,7 @@
     },
     {
       "desktop_path": "source/host/tests/pressure_cpu_profiler_contract.rs",
-      "desktop_blob_sha": "f90d66a568033ca61cb6652b395db82793fa92d5",
+      "desktop_blob_sha": "d4872114daf4b47760df8ea3495327cad72f00d9",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -12272,7 +12287,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/tests/process_crash_guard_contract.rs",
@@ -12396,7 +12411,7 @@
     },
     {
       "desktop_path": "source/host/tests/profile_watch_contract.rs",
-      "desktop_blob_sha": "6d1bec12fb6d98214cee4989cdf071c1629f9a4a",
+      "desktop_blob_sha": "6ffdf305a136e044045f5c7f4722d4f3f76e2070",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -12407,7 +12422,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/tests/project_membership_contract.rs",
@@ -12441,7 +12456,7 @@
     },
     {
       "desktop_path": "source/host/tests/remaining_planned_contract.rs",
-      "desktop_blob_sha": "7615035d58db0fca39536db982171d92288844cd",
+      "desktop_blob_sha": "ba071d83af36b61ce432e3fd41204fbe0b8a765f",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -12452,7 +12467,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/tests/remote_box_resources_contract.rs",
@@ -12486,7 +12501,7 @@
     },
     {
       "desktop_path": "source/host/tests/roster_emit_contract.rs",
-      "desktop_blob_sha": "cd3f11993378b237a28598475eecfa3b43a1fbb7",
+      "desktop_blob_sha": "82c66fe9270c30d57469c9a61a6adff28026e36e",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -12497,7 +12512,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/tests/roster_search_contract.rs",
@@ -13161,7 +13176,7 @@
     },
     {
       "desktop_path": "source/host/tests/send_group_fanout_contract.rs",
-      "desktop_blob_sha": "bf75c58c2fe5be521c25a4ae75c313ff934d1854",
+      "desktop_blob_sha": "60f65f5b100ccf94b9d02e46aaea15ad986c057e",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -13172,7 +13187,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/tests/send_message_tool_contract.rs",
@@ -13716,7 +13731,7 @@
     },
     {
       "desktop_path": "source/host/tests/transcript_extension_contract.rs",
-      "desktop_blob_sha": "2e9a72e70f795d6d5278afa4da63bd374ef25306",
+      "desktop_blob_sha": "3330f4f87732664838ae70ae43985ccb39813153",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -13727,7 +13742,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/tests/transcript_journal_codec_contract.rs",
@@ -13746,7 +13761,7 @@
     },
     {
       "desktop_path": "source/host/tests/transcript_manager_contract.rs",
-      "desktop_blob_sha": "7cf325cad357b48ebc122ed82aee12eb40d7963d",
+      "desktop_blob_sha": "c14bffd2ee2586fc74062bfc6950415b17fe65bd",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -13757,7 +13772,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed."
     },
     {
       "desktop_path": "source/host/tests/transcript_mirror_contract.rs",
