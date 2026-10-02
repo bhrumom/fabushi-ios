@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "cf0012e6bb5ddcd1669c747994af68a5055bf05d",
+  "sourceCommit": "29b10d13f1158c6b070ccabc1cf655317adcf184",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -36,7 +36,7 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "5a41e5a5515cfc241b50289fdbb3234243b5c24b",
+      "desktop_blob_sha": "28fd81624b0ca32c492ea4cb748dc21773bce808",
       "desktop_responsibility": "Shipping Host delegates the complete production Runner object graph plus computer-use preparation/control-lease/turn-settlement lifecycle to HostRunnerComposition; main.rs supplies request-specific inputs but no longer owns a parallel ComputerUseCoordination lifecycle.",
       "desktop_owner": "host",
       "desktop_visible_effect": "Computer-use turns and ordinary turns share one Host-owned composition/lifecycle boundary, preventing leaked control leases or divergent settlement.",
@@ -47,7 +47,7 @@
       "implementation_status": "mapped",
       "production_evidence": "Shipping MahayanaHost::build_runtime consumes NativeRunnerComposition::compose; that composition constructs one NativeEngine and derives both the Runtime EngineBackend and NativeAgentBackend from the same Arc owner. NativeEngine remains the canonical owner of operation control, durable active prompt/attempt state, model/tool loop, approvals, session checkpoint persistence, interruption, delivery recovery, and terminal settlement. The mobile turn-execution extension delegates back to the same Host and does not own a second model/tool/session engine.",
       "test_evidence": "Focused Rust unit contract native_runner_composition_shares_one_engine_owner validates Runtime EngineBackend pointer identity with the composed NativeEngine and verifies the same engine is retained by both Runtime and NativeAgent. The exact-head architecture workflow now runs mahayana-host --lib --features mobile-embedded before mobile app-host tests; current-head CI acceptance is still required before verified.",
-      "notes": "Revalidated against Desktop PR #20 612a075e7a7de5d845f765ade4eb51c7c318e3c8. This upstream commit only fixes worker-closure capture to call the already canonical worker_host_runner_composition for compose_production_turn/compose_production_runner; ownership semantics are unchanged. iOS has a shipping NativeRunnerComposition implementation at its current branch but remains mapped until same-head CI. iOS production closure landed in NativeRunnerComposition; status is implemented only, not verified, until the same exact iOS HEAD completes required CI. Revalidated at Desktop PR #20 cf0012e6bb5ddcd1669c747994af68a5055bf05d: upstream now makes group-member turns retain the generated-Agent lifecycle while omitting private checkpoint/state/image persistence. Current iOS NativeRunnerComposition has one canonical NativeEngine owner but no equivalent group-member composition boundary, so this affected row is deliberately reset to mapped pending shipping implementation and same-head evidence."
+      "notes": "Revalidated against Desktop PR #20 612a075e7a7de5d845f765ade4eb51c7c318e3c8. This upstream commit only fixes worker-closure capture to call the already canonical worker_host_runner_composition for compose_production_turn/compose_production_runner; ownership semantics are unchanged. iOS has a shipping NativeRunnerComposition implementation at its current branch but remains mapped until same-head CI. iOS production closure landed in NativeRunnerComposition; status is implemented only, not verified, until the same exact iOS HEAD completes required CI. Revalidated at Desktop PR #20 cf0012e6bb5ddcd1669c747994af68a5055bf05d: upstream now makes group-member turns retain the generated-Agent lifecycle while omitting private checkpoint/state/image persistence. Current iOS NativeRunnerComposition has one canonical NativeEngine owner but no equivalent group-member composition boundary, so this affected row is deliberately reset to mapped pending shipping implementation and same-head evidence. Revalidated at Desktop PR #20 29b10d13f1158c6b070ccabc1cf655317adcf184: Host shutdown now explicitly settles HostRunnerComposition-owned live local-permission subscriptions through dispose() after Runner cancellation. Current iOS has no same-owner shutdown-settlement evidence, so this row remains mapped pending shipping implementation and exact-head CI."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -6591,7 +6591,7 @@
     },
     {
       "desktop_path": "source/host/src/host_runner_composition.rs",
-      "desktop_blob_sha": "b87a9df8b50318739701effd044b4a2f9a0f3b17",
+      "desktop_blob_sha": "182c12cbf182f2c7ee84199aae1a7a9e39d9ba6b",
       "desktop_responsibility": "Canonical Host -> Runner owner for turn assembly, checkpoint/state surfaces, final Runner construction, and computer-use session lifecycle including preparation, control lease, ready/failed state, model/usage settlement, release, and window cleanup.",
       "desktop_owner": "host",
       "desktop_visible_effect": "One Host owner fences computer control and Runner lifecycle from preparation through terminal settlement.",
@@ -6602,7 +6602,7 @@
       "implementation_status": "mapped",
       "production_evidence": "Shipping MahayanaHost::build_runtime consumes NativeRunnerComposition::compose; that composition constructs one NativeEngine and derives both the Runtime EngineBackend and NativeAgentBackend from the same Arc owner. NativeEngine remains the canonical owner of operation control, durable active prompt/attempt state, model/tool loop, approvals, session checkpoint persistence, interruption, delivery recovery, and terminal settlement. The mobile turn-execution extension delegates back to the same Host and does not own a second model/tool/session engine.",
       "test_evidence": "Focused Rust unit contract native_runner_composition_shares_one_engine_owner validates Runtime EngineBackend pointer identity with the composed NativeEngine and verifies the same engine is retained by both Runtime and NativeAgent. The exact-head architecture workflow now runs mahayana-host --lib --features mobile-embedded before mobile app-host tests; current-head CI acceptance is still required before verified.",
-      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required. iOS production closure landed in NativeRunnerComposition; status is implemented only, not verified, until the same exact iOS HEAD completes required CI. Revalidated at Desktop PR #20 cf0012e6bb5ddcd1669c747994af68a5055bf05d: upstream now makes group-member turns retain the generated-Agent lifecycle while omitting private checkpoint/state/image persistence. Current iOS NativeRunnerComposition has one canonical NativeEngine owner but no equivalent group-member composition boundary, so this affected row is deliberately reset to mapped pending shipping implementation and same-head evidence."
+      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required. iOS production closure landed in NativeRunnerComposition; status is implemented only, not verified, until the same exact iOS HEAD completes required CI. Revalidated at Desktop PR #20 cf0012e6bb5ddcd1669c747994af68a5055bf05d: upstream now makes group-member turns retain the generated-Agent lifecycle while omitting private checkpoint/state/image persistence. Current iOS NativeRunnerComposition has one canonical NativeEngine owner but no equivalent group-member composition boundary, so this affected row is deliberately reset to mapped pending shipping implementation and same-head evidence. Revalidated at Desktop PR #20 29b10d13f1158c6b070ccabc1cf655317adcf184: Host shutdown now explicitly settles HostRunnerComposition-owned live local-permission subscriptions through dispose() after Runner cancellation. Current iOS has no same-owner shutdown-settlement evidence, so this row remains mapped pending shipping implementation and exact-head CI."
     },
     {
       "desktop_path": "source/host/src/host_secret_store.rs",
@@ -11466,18 +11466,18 @@
     },
     {
       "desktop_path": "source/host/tests/host_runner_composition_local_permission_contract.rs",
-      "desktop_blob_sha": "68f1beb1f8653a19b5a195ebf87862ce8f7e0ef2",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "65341e5c9520f55ddeae6fda9182c25be3b21484",
+      "desktop_responsibility": "Focused behavior contract proving HostRunnerComposition owns live local-tool permission projection surfaces and deterministically disposes every subscription at Host shutdown.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "desktop_visible_effect": "No stale local-permission ask surface survives Host shutdown/restart, and permission projection remains owned by the canonical Host/Runner composition.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-host/src/lib.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "Use iOS Host-owned permission/approval subscription cleanup at lifecycle shutdown; SwiftUI and Coordinator must not retain permission truth.",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 29b10d13f1158c6b070ccabc1cf655317adcf184: Host shutdown now explicitly settles HostRunnerComposition-owned live local-permission subscriptions through dispose() after Runner cancellation. Current iOS has no same-owner shutdown-settlement evidence, so this row remains mapped pending shipping implementation and exact-head CI."
     },
     {
       "desktop_path": "source/host/tests/host_runner_composition_production_wiring_contract.rs",

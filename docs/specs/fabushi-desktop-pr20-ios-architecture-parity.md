@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `cf0012e6bb5ddcd1669c747994af68a5055bf05d`
+- pinned source commit for this baseline: `29b10d13f1158c6b070ccabc1cf655317adcf184`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -243,6 +243,14 @@ Desktop PR #20 advanced two production commits from `9f22a1974f02683f4ad27a2fe85
 The new responsibility is behavioral, not merely structural. A group-member turn must still execute through the canonical generated-Agent lifecycle and terminal owner, while private per-Agent state is deliberately absent: no private checkpoint sink, no private turn-state surface, and no private browser/computer image-persistence callback. `HostRunnerComposition` is the sole composition owner that decides those omissions before the Runner is constructed. The shipping Host may supply group-member identity and request-specific hooks but may not create a parallel raw-provider path or private-state fallback.
 
 The current iOS `NativeRunnerComposition` proves a single shared `NativeEngine` owner for Runtime and NativeAgent, but it has no group-member composition input and therefore cannot yet prove the required generated-lifecycle-without-private-state behavior. All five affected ledger rows are intentionally reset to `mapped`; prior `implemented` evidence remains historical and cannot satisfy this upstream identity. The iOS closure must be a native Host/Runner composition rule, not SwiftUI/Coordinator state and not a test-only facade. Same-iOS-HEAD GitHub Actions evidence is required before promotion.
+
+### 1.26 Exact-HEAD rebaseline: 2026-10-03 / `29b10d13f1158c6b070ccabc1cf655317adcf184`
+
+Desktop PR #20 advanced two commits from `cf0012e6bb5ddcd1669c747994af68a5055bf05d` to `29b10d13f1158c6b070ccabc1cf655317adcf184`. The selected inventory remains exactly **7,927** blobs. Three `source-host` blobs changed: shipping `main.rs`, `host_runner_composition.rs`, and the local-permission focused contract.
+
+The new lifecycle rule is normative: after canonical Runner cancellation begins, Host shutdown must explicitly dispose the live local-tool permission projection subscriptions owned by `HostRunnerComposition`. This prevents stale permission surfaces from surviving shutdown/restart and keeps ask/projection ownership inside the Host/Runner composition rather than UI state. iOS must provide the same product effect with a native Host-owned shutdown settlement path; SwiftUI and the Coordinator may project permission state but cannot retain or clean up the canonical subscriptions themselves.
+
+No affected row is promoted by rebaseline. The shipping and composition rows remain `mapped`; the previously unreviewed local-permission contract is now reviewed and mapped only. Exact-head production wiring plus focused behavior evidence is required before `implemented` or `verified`.
 
 ## 2. Product goal
 
