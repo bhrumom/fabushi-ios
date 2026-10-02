@@ -316,6 +316,54 @@ pub fn default_product_session_path() -> PathBuf {
     shared
 }
 
+struct NativeRunnerComposition {
+    engine_backend: Arc<dyn EngineBackend>,
+    agent_backend: Arc<dyn mahayana_agent::AgentBackend>,
+}
+
+impl NativeRunnerComposition {
+    fn from_engine(
+        native_engine: Arc<NativeEngine>,
+        profile: mahayana_kernel::RuntimeProfile,
+        cwd: PathBuf,
+        mcp_registry: NativeMcpRegistry,
+    ) -> Self {
+        let engine_backend: Arc<dyn EngineBackend> = native_engine.clone();
+        let agent_backend: Arc<dyn mahayana_agent::AgentBackend> =
+            Arc::new(NativeAgentBackend::new(
+                native_engine,
+                NativeAgentConfig {
+                    profile,
+                    workspace_root: Some(cwd),
+                    mcp_registry,
+                },
+            ));
+        Self {
+            engine_backend,
+            agent_backend,
+        }
+    }
+
+    fn compose(
+        model_runtime: Arc<dyn mahayana_model::ModelRuntime>,
+        engine_config: NativeEngineConfig,
+        profile: mahayana_kernel::RuntimeProfile,
+        cwd: PathBuf,
+        mcp_registry: NativeMcpRegistry,
+    ) -> Result<Self, HostError> {
+        let native_engine = Arc::new(
+            NativeEngine::new(model_runtime, engine_config)
+                .map_err(|error| HostError::new(error.to_string()))?,
+        );
+        Ok(Self::from_engine(
+            native_engine,
+            profile,
+            cwd,
+            mcp_registry,
+        ))
+    }
+}
+
 fn build_runtime(
     create: HostCreateConfig,
     product_client: MahayanaProductClient,
@@ -508,32 +556,23 @@ fn build_runtime(
             .data_dir
             .as_ref()
             .map(|root| root.join("provider-neutral-assistant-session.json"));
-        let native_engine = Arc::new(
-            NativeEngine::new(model_runtime, engine_config)
-                .map_err(|error| HostError::new(error.to_string()))?,
-        );
-        let engine_backend: Arc<dyn EngineBackend> = native_engine.clone();
         let mcp_roots = runtime_config
             .workspace_roots
             .iter()
             .map(|root| root.join(".agents/plugins/plugins"))
             .collect::<Vec<_>>();
         let mcp_registry = NativeMcpRegistry::new(mcp_roots, session_token.clone());
-        let native_agent: Arc<dyn mahayana_agent::AgentBackend> =
-            Arc::new(NativeAgentBackend::new(
-                native_engine,
-                NativeAgentConfig {
-                    profile: match runtime_config.build_profile {
-                        BuildProfile::DesktopFull => mahayana_kernel::RuntimeProfile::DesktopFull,
-                        BuildProfile::MobileEmbedded => {
-                            mahayana_kernel::RuntimeProfile::MobileEmbedded
-                        }
-                        BuildProfile::WebWasm => mahayana_kernel::RuntimeProfile::WebWasm,
-                    },
-                    workspace_root: Some(cwd),
-                    mcp_registry,
-                },
-            ));
+        let runner_composition = NativeRunnerComposition::compose(
+            model_runtime,
+            engine_config,
+            match runtime_config.build_profile {
+                BuildProfile::DesktopFull => mahayana_kernel::RuntimeProfile::DesktopFull,
+                BuildProfile::MobileEmbedded => mahayana_kernel::RuntimeProfile::MobileEmbedded,
+                BuildProfile::WebWasm => mahayana_kernel::RuntimeProfile::WebWasm,
+            },
+            cwd,
+            mcp_registry,
+        )?;
         let miniapp = MiniAppConversationProvider::new_for_platform_with_entitlements(
             Arc::clone(&native_agent),
             mini_apps,
@@ -544,8 +583,8 @@ fn build_runtime(
         )
         .map_err(|error| HostError::new(error.to_string()))?;
         return builder
-            .with_engine_backend(engine_backend)?
-            .with_agent_control_backend(native_agent)
+            .with_engine_backend(runner_composition.engine_backend)?
+            .with_agent_control_backend(runner_composition.agent_backend)
             .with_provider(Arc::new(miniapp))?
             .build()
             .map_err(HostError::from);
@@ -732,6 +771,58 @@ mod tests {
             inherit_installed_plugins: Some(false),
             ..HostCreateConfig::default()
         }
+    }
+
+
+    struct NoopModelRuntime;
+
+    #[async_trait::async_trait]
+    impl mahayana_model::ModelRuntime for NoopModelRuntime {
+        async fn infer(
+            &self,
+            _request: mahayana_model::ModelRequest,
+            _events: mahayana_model::SharedModelEventSink,
+        ) -> Result<(), mahayana_model::ModelError> {
+            Err(mahayana_model::ModelError::Unavailable(
+                "composition identity test does not run inference".into(),
+            ))
+        }
+
+        fn provider_mode(&self) -> ModelProviderMode {
+            ModelProviderMode::LocalModel
+        }
+    }
+
+    #[test]
+    fn native_runner_composition_shares_one_engine_owner() {
+        let engine = Arc::new(
+            NativeEngine::new(
+                Arc::new(NoopModelRuntime),
+                NativeEngineConfig::embedded("composition-test"),
+            )
+            .expect("create native engine"),
+        );
+        let before = Arc::strong_count(&engine);
+        let composition = NativeRunnerComposition::from_engine(
+            Arc::clone(&engine),
+            mahayana_kernel::RuntimeProfile::MobileEmbedded,
+            PathBuf::from("."),
+            NativeMcpRegistry::new(Vec::new(), None),
+        );
+
+        assert_eq!(before, 1);
+        assert_eq!(
+            Arc::as_ptr(&composition.engine_backend) as *const (),
+            Arc::as_ptr(&engine) as *const (),
+            "Runtime engine backend must be the exact NativeEngine owned by the composition"
+        );
+        assert_eq!(
+            Arc::strong_count(&engine),
+            3,
+            "the same NativeEngine must be retained by the Runtime backend and NativeAgent"
+        );
+        drop(composition);
+        assert_eq!(Arc::strong_count(&engine), 1);
     }
 
     #[test]
