@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `3ad5c76a67408357cfe5647c6d073b36015c8eb5`
+- pinned source commit for this baseline: `84dbe458a8f14307bbdeaff469388734e6ce8879`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -375,6 +375,12 @@ Desktop PR #20 advanced from `bf36916c80e68737f02217ae85be4d22a6a5f928` to `3ad5
 
 This behavior is applicable on iOS regardless of process topology. The iOS Host/Runner boundary must preserve current-run identity, targeted same-Agent cancellation, stale-run fencing, cancellation reason, acknowledgement settlement, and observable interruption lineage. The changed Runner-registry responsibility remains unreviewed until the iOS shipping task registry and direct user-send path are audited; no Desktop status is inherited.
 
+### 11.5 Workflow-reference trace-context rebaseline
+
+Desktop PR #20 advanced from `3ad5c76a67408357cfe5647c6d073b36015c8eb5` to `84dbe458a8f14307bbdeaff469388734e6ce8879` with a focused shipping correction: a visible workflow-reference run-now still re-enters the canonical `sendPrompt` path, but it does so without carrying a synthetic gateway trace context. This preserves the ordinary user-turn execution/telemetry boundary rather than manufacturing a gateway parent span for a locally synthesized workflow-reference turn.
+
+The iOS workflow-reference responsibility remains unreviewed until its shipping owner is audited. No media or direct-turn supersession status changes are inherited from this upstream change.
+
 ## 12. Frontend requirements
 
 Desktop PR #20 `frontend/**` is the product/UI behavior source. iOS implements it natively in SwiftUI.
@@ -509,7 +515,7 @@ Final completion additionally requires all mandatory rows `verified` or reviewed
 
 The authority cutover begins from iOS PR #3 exact HEAD `cdcbfd4344377b592ed882e049dfb1a36a534aa6`.
 
-All implementation counts/statuses from the prior Grok-direct ledger are **historical only** until revalidated against Desktop PR #20 `3ad5c76a67408357cfe5647c6d073b36015c8eb5`. The current baseline contains 7,925 source-bearing `frontend/**` + `source/**` files. Relative to the immediately previous iOS baseline `95995bdf36a9687788e106c8544d292b2bb0877f`, Desktop advanced to `dcb19a94383833fc1ec5074f10c4bbbd28c09036` with exactly two source-bearing changes under the authoritative roots: `source/host/src/selected_image_inputs.rs` and `source/host/tests/transcript_send_echo_contract.rs`. Desktop then advanced from `bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09` to `dcb19a94383833fc1ec5074f10c4bbbd28c09036` only by accepting the send-message-shaping architecture row; no `frontend/**` or `source/**` blob changed. The full 7,925-row source inventory was revalidated against the dcb19a tree with zero missing paths and zero blob mismatches. The newly accepted Desktop responsibility does not transfer status to iOS: send_message_shaping.rs, selected_image_inputs.rs, and agent_to_agent_messaging.rs are explicitly re-audited independently. The iOS port may advance a row only after its own Host-owned production path exists. The production change adds native ISO-BMFF HEIC/HEIF/AVIF primary-image dimension extraction with rotation handling; the test change adds focused contract coverage. All other 7,923 source-bearing blob identities are unchanged. Previously reviewed Coordinator `carrier.rs` and `client_side_tool_v2_relay.rs` blobs are unchanged, so their `implemented` status is preserved, but neither may be promoted to `verified` without exact-HEAD iOS CI and the relay's adjacent Host producer closure described above.
+All implementation counts/statuses from the prior Grok-direct ledger are **historical only** until revalidated against Desktop PR #20 `84dbe458a8f14307bbdeaff469388734e6ce8879`. The current baseline contains 7,925 source-bearing `frontend/**` + `source/**` files. Relative to the immediately previous iOS baseline `95995bdf36a9687788e106c8544d292b2bb0877f`, Desktop advanced to `dcb19a94383833fc1ec5074f10c4bbbd28c09036` with exactly two source-bearing changes under the authoritative roots: `source/host/src/selected_image_inputs.rs` and `source/host/tests/transcript_send_echo_contract.rs`. Desktop then advanced from `bbc7b34a5f6dad46e3d4ca88fe21cc4f7932ce09` to `dcb19a94383833fc1ec5074f10c4bbbd28c09036` only by accepting the send-message-shaping architecture row; no `frontend/**` or `source/**` blob changed. The full 7,925-row source inventory was revalidated against the dcb19a tree with zero missing paths and zero blob mismatches. The newly accepted Desktop responsibility does not transfer status to iOS: send_message_shaping.rs, selected_image_inputs.rs, and agent_to_agent_messaging.rs are explicitly re-audited independently. The iOS port may advance a row only after its own Host-owned production path exists. The production change adds native ISO-BMFF HEIC/HEIF/AVIF primary-image dimension extraction with rotation handling; the test change adds focused contract coverage. All other 7,923 source-bearing blob identities are unchanged. Previously reviewed Coordinator `carrier.rs` and `client_side_tool_v2_relay.rs` blobs are unchanged, so their `implemented` status is preserved, but neither may be promoted to `verified` without exact-HEAD iOS CI and the relay's adjacent Host producer closure described above.
 
 | Item | Status | Evidence / reason |
 | --- | --- | --- |

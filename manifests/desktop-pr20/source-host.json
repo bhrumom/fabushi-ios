@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "3ad5c76a67408357cfe5647c6d073b36015c8eb5",
+  "sourceCommit": "84dbe458a8f14307bbdeaff469388734e6ce8879",
   "group": "source-host",
   "fileCount": 955,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "ef59e2e5b9e5c4b50656b257bf98b8bef5b389c2",
-      "size": 508727
+      "blobSha": "f0eba2b3bbc70c68fc11fef85e7e84c38745186d",
+      "size": 508716
     },
     {
       "path": "source/host/build.rs",
