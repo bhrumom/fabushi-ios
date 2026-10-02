@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "d7b12fe6486909b8738d97159c8ff4c8fea50845",
+  "sourceCommit": "486c478c6ca5e511de989190c63ec9b35d2ff2a6",
   "group": "source-host",
   "fileCount": 956,
   "files": [
@@ -15,7 +15,7 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "63fe4e8450f2ef3e2b79ad01774a51ae9c4f8757",
+      "blobSha": "b78b2763cc4ae14361fa11881ae09c2d92e40162",
       "size": 517689
     },
     {
@@ -2000,7 +2000,7 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "a35aa30edad7007e42eed5e0a3815a28d8ebdd14",
+      "blobSha": "686acf7c2440675a484564276756cf860e34a58b",
       "size": 24826
     },
     {
@@ -4590,7 +4590,7 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "a465f4b6c976340fceb1940becde5fae0825dd9f",
+      "blobSha": "ac0b5f9f00d589697e76d3d40a663fa06c316116",
       "size": 15121
     },
     {
