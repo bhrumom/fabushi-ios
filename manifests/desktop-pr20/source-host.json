@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "f1d06ed8ad2a1ce4b5adeeed6df8e97152553661",
+  "sourceCommit": "bf36916c80e68737f02217ae85be4d22a6a5f928",
   "group": "source-host",
   "fileCount": 955,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "4d9157c5685522cc2ac189ca8dc04093a9a9c64e",
-      "size": 505241
+      "blobSha": "a58675a375205ea8558419dce8bbde4de49825b4",
+      "size": 506167
     },
     {
       "path": "source/host/build.rs",
@@ -1975,8 +1975,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/send_turn_dispatch.rs",
-      "blobSha": "287489abe93fbad287dd817210821a18e3a423aa",
-      "size": 5031
+      "blobSha": "ce507240a5c5375888ac28ab36b634195ba85864",
+      "size": 10181
     },
     {
       "path": "source/host/src/extensions/transcript/session_runtime.rs",
@@ -2025,8 +2025,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/workflow_commands.rs",
-      "blobSha": "fc0dfa3e5ba38a28dd0088ddb17f62d719f1da93",
-      "size": 16537
+      "blobSha": "d57a7835620ec70c81439f998b77ebcda1dc7791",
+      "size": 19656
     },
     {
       "path": "source/host/src/extensions/trays/extension.rs",
@@ -4630,8 +4630,8 @@
     },
     {
       "path": "source/host/tests/transcript_production_composition_contract.rs",
-      "blobSha": "ea37b4dccaf87e05dcb4314c8e6ad272e86ab43d",
-      "size": 30601
+      "blobSha": "2e34c8669063c7ce84ddc586e90afc7810ba059a",
+      "size": 33207
     },
     {
       "path": "source/host/tests/transcript_replica_writer_contract.rs",
@@ -4730,8 +4730,8 @@
     },
     {
       "path": "source/host/tests/workflow_commands_contract.rs",
-      "blobSha": "5f180a4ab120c72a12b3054c2c4dc51afa27c7d8",
-      "size": 10150
+      "blobSha": "3b0ef29df8a0e46a39bd1fc3d5aa1bc9b656106a",
+      "size": 11743
     },
     {
       "path": "source/host/tests/workflow_store_contract.rs",
