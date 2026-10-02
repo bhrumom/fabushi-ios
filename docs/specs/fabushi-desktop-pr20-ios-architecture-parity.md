@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `1e79bdad87022dcb394b9d4ecaef9508baf7497d`
+- pinned source commit for this baseline: `39e1eeaee2d861b18a5db5864dac4f7fc049530b`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -259,6 +259,14 @@ Desktop PR #20 advanced one contract-only commit from `29b10d13f1158c6b070ccabc1
 The strengthened contract makes two current responsibilities explicit without changing shipping Desktop source. First, `is_group_member_turn` must be supplied to the canonical `HostRunnerComposition.compose_turn_state_surfaces` path so group-member turns retain generated-Agent execution while omitting private Agent state. Second, shutdown ownership is ordered: the canonical Runner registry interrupts active turns first, then `HostRunnerComposition` disposes only the permission/projection surfaces it owns; composition must not duplicate Runner cancellation ownership.
 
 The affected iOS row remains `mapped`. Existing single-NativeEngine ownership evidence is insufficient until the native mobile shipping path proves group-aware private-state omission and Rust Host-owned shutdown settlement with the same separation of responsibilities.
+
+### 1.28 Exact-HEAD rebaseline: 2026-10-03 / `39e1eeaee2d861b18a5db5864dac4f7fc049530b`
+
+Desktop PR #20 advanced one architecture-manifest-only commit from `1e79bdad87022dcb394b9d4ecaef9508baf7497d` to `39e1eeaee2d861b18a5db5864dac4f7fc049530b`. The selected `frontend/** + source/**` inventory remains exactly **7,927** blobs and every selected blob SHA is unchanged.
+
+The Desktop manifest now declares HostRunnerComposition implemented after shipping-owner audit. Its normative responsibility set is explicit: one Host owner composes per-turn state/checkpoint surfaces, Runner construction and ordered decoration; group-member turns keep the generated-Agent lifecycle while omitting private state/checkpoint/memory/image/local-permission surfaces; TranscriptRunnerRegistry remains the active-run cancellation owner; HostRunnerComposition disposes only its own permission subscriptions after Runner cancellation.
+
+That Desktop status is evidence about Desktop only. iOS does not inherit `implemented` or `verified`. The affected iOS rows remain `mapped` until the native mobile shipping path proves the same product effects and the exact iOS HEAD passes its own required CI/acceptance gates.
 
 ## 2. Product goal
 
