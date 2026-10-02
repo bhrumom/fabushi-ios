@@ -182,6 +182,8 @@ Desktop PR #20 advanced one evidence-only commit from `9467112079551dc9ff64d40ba
 
 The preceding production-source audit remains semantically current because all selected source blobs are identical. The iOS Rust CI-session transport fix is retained as production code, but acceptance results tied to its pre-rebaseline iOS SHA are not used as proof for the post-rebaseline exact HEAD; that exact HEAD must earn its own architecture, Rust, Swift/UI, archive and protected complete-state evidence.
 
+Rebaseline generation evidence: GitHub Actions run `37076005927` completed successfully; its generation step, `git diff --check`, strict Desktop PR20 architecture checker, and final durable commit/push all succeeded before this provenance note was added. This run proves only the baseline generation/integrity operation, not the downstream product acceptance gates.
+
 ## 2. Product goal
 
 The goal is not to make an iOS app that separately reinterprets Grok Bot.
