@@ -735,7 +735,7 @@ impl NativeEngine {
                         "delivered": true,
                         "characters": message.chars().count(),
                         "generatedMessage": message,
-                        "toolCallId": call.call_id,
+                        "toolCallId": call.call_id.clone(),
                     }))
                 }
                 "workspace_read" => {
