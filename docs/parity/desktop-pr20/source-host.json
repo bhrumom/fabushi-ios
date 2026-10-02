@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "c96b56c47c6b2a478370839888124d1703aac518",
+  "sourceCommit": "854d4bffde64dee2d7f12ba093207381ef369af4",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -36,18 +36,18 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "32ffdcfe6979a41093f455566e1e1ce9f90957f3",
-      "desktop_responsibility": "Shipping Host supplies turn-scoped inputs and hooks to the canonical HostRunnerComposition and consumes the returned TurnAgentComposition; main.rs must not directly construct or decorate a parallel production Runner composition.",
+      "desktop_blob_sha": "736bac8f6400df33c4b60b3321aea44d725da18d",
+      "desktop_responsibility": "Shipping Host delegates production Runner turn assembly, transcript/checkpoint composition, and turn state-surface construction to HostRunnerComposition; main.rs resolves concrete request inputs but must not construct parallel checkpoint/state/Runner owners.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "Every shipping turn receives one deterministic Host-owned Runner capability/decorator stack instead of behavior drifting by call site.",
+      "desktop_visible_effect": "Shipping turns use one canonical Host -> Runner assembly path for model/tool behavior, durable transcript checkpointing, memory/agent state, and multitask state.",
       "ios_disposition": "ios-adapted",
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust",
-      "ios_platform_delta": "iOS keeps one native Host/Runner composition boundary; SwiftUI and Coordinator may provide requests or platform capabilities but cannot own a second turn-decoration path.",
+      "ios_platform_delta": "iOS must keep checkpoint/state/Runner composition below SwiftUI/Coordinator in one native Host-owned path; platform storage may differ but ownership and one-time assembly may not.",
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Revalidated against Desktop PR #20 c96b56c47c6b2a478370839888124d1703aac518. Desktop now delegates production turn assembly to HostRunnerComposition.compose_production_turn and forbids direct create_production_runner_composition/decorator ownership in shipping main. Current iOS has not yet proved an equivalent single native Runner-composition owner, so this broad row remains mapped pending shipping-path audit and exact-head evidence."
+      "notes": "Revalidated against Desktop PR #20 854d4bffde64dee2d7f12ba093207381ef369af4. The c96b56c ownership move expanded: main.rs now delegates checkpoint/transcript-mirror and turn-state-surface construction as well as turn decorators to HostRunnerComposition. Current iOS parity is not assumed; row remains mapped."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -6591,18 +6591,18 @@
     },
     {
       "desktop_path": "source/host/src/host_runner_composition.rs",
-      "desktop_blob_sha": "ba6c0dc01fcb259e8f9036763b2e2886451004a8",
-      "desktop_responsibility": "Canonical Host -> Runner production composition owner. It constructs the base production Runner composition and applies agent-management, state-writer, routine auto-review, box-shell review, Subagent, routine-post-write, and multitask hooks in one ordered entrypoint.",
+      "desktop_blob_sha": "35e0c7727a9c7dac5f9f8f626f027d243b015b8d",
+      "desktop_responsibility": "Canonical Host -> Runner composition owner for production turn decorators, transcript/checkpoint sink construction, and turn state surfaces including memory-backed SandAgentState and optional multitask todo state.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "Production turns cannot silently diverge in enabled Runner capabilities or decorator ordering across Host call sites.",
+      "desktop_visible_effect": "One Host owner determines the exact Runner capability stack and the durable state/checkpoint surfaces observed by every production turn.",
       "ios_disposition": "ios-adapted",
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust",
-      "ios_platform_delta": "Preserve one native Host/Runner assembly owner rather than copying Desktop process mechanics; platform-specific capability implementations may be injected, but assembly ownership stays below SwiftUI/Coordinator.",
+      "ios_platform_delta": "Use the existing iOS-native Host/Runtime storage and Runner boundary, but centralize construction so Coordinator/UI cannot create a second state/checkpoint/turn assembly path.",
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Reviewed at Desktop PR #20 c96b56c47c6b2a478370839888124d1703aac518. compose_production_turn is now the sole shipping assembly owner. iOS ownership must be audited on the real production path before implemented/verified promotion."
+      "notes": "Reviewed at Desktop PR #20 854d4bffde64dee2d7f12ba093207381ef369af4. compose_production_checkpoint_sink and compose_turn_state_surfaces join compose_production_turn under HostRunnerComposition. iOS needs real shipping-owner audit and focused contracts before promotion."
     },
     {
       "desktop_path": "source/host/src/host_secret_store.rs",
@@ -11481,18 +11481,18 @@
     },
     {
       "desktop_path": "source/host/tests/host_runner_composition_production_wiring_contract.rs",
-      "desktop_blob_sha": "f5ff4d26b141d30802a5ea90c1aba70f9cff7520",
-      "desktop_responsibility": "Focused contract proving HostRunnerComposition owns production turn decoration order and shipping main.rs has exactly one Runner composition entrypoint with no parallel direct construction/decorators.",
+      "desktop_blob_sha": "b448acf1341cb4b3fe6b4f436c1bc0d5c1a5bc38",
+      "desktop_responsibility": "Focused production contract proving HostRunnerComposition exclusively owns turn decoration order, transcript/checkpoint composition, and turn state-surface wiring while shipping main.rs consumes those entrypoints without parallel construction.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "A regression that reintroduces a second shipping Runner assembly path fails acceptance instead of silently changing turn capabilities.",
+      "desktop_visible_effect": "CI fails if shipping Host reintroduces a second Runner/checkpoint/state assembly path.",
       "ios_disposition": "ios-adapted",
       "ios_target_path": "mobile/ios/FabushiTests/RunnerParityTests.swift",
       "ios_language": "Swift",
-      "ios_platform_delta": "Prove the equivalent iOS native shipping owner by behavior/composition tests, not by mirroring Desktop source-string checks.",
+      "ios_platform_delta": "Add native behavior/composition evidence for the single iOS Host/Runner owner; do not copy Desktop source-string assertions as implementation.",
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "New selected Desktop row at PR #20 c96b56c47c6b2a478370839888124d1703aac518; mapped after source review, not inherited as implemented/verified."
+      "notes": "Expanded at Desktop PR #20 854d4bffde64dee2d7f12ba093207381ef369af4; mapped only. Existing iOS tests do not yet prove checkpoint/state/Runner composition ownership."
     },
     {
       "desktop_path": "source/host/tests/host_secret_store_contract.rs",

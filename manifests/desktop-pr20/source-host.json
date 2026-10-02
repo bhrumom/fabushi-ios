@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "c96b56c47c6b2a478370839888124d1703aac518",
+  "sourceCommit": "854d4bffde64dee2d7f12ba093207381ef369af4",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "32ffdcfe6979a41093f455566e1e1ce9f90957f3",
-      "size": 525740
+      "blobSha": "736bac8f6400df33c4b60b3321aea44d725da18d",
+      "size": 523340
     },
     {
       "path": "source/host/build.rs",
@@ -2200,8 +2200,8 @@
     },
     {
       "path": "source/host/src/host_runner_composition.rs",
-      "blobSha": "ba6c0dc01fcb259e8f9036763b2e2886451004a8",
-      "size": 9366
+      "blobSha": "35e0c7727a9c7dac5f9f8f626f027d243b015b8d",
+      "size": 12628
     },
     {
       "path": "source/host/src/host_secret_store.rs",
@@ -3830,8 +3830,8 @@
     },
     {
       "path": "source/host/tests/host_runner_composition_production_wiring_contract.rs",
-      "blobSha": "f5ff4d26b141d30802a5ea90c1aba70f9cff7520",
-      "size": 2058
+      "blobSha": "b448acf1341cb4b3fe6b4f436c1bc0d5c1a5bc38",
+      "size": 4474
     },
     {
       "path": "source/host/tests/host_secret_store_contract.rs",
