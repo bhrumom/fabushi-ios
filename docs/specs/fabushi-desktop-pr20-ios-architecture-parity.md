@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `d3b2477ef7941554946a92d1267e5f6110e9137a`
+- pinned source commit for this baseline: `f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -692,3 +692,10 @@ The iOS equivalent remains `FeatureHostController`, where bot/agent lifecycle mu
 Desktop PR #20 advanced from `387a5ec97a06a9bb5ee1f25242a2f0a75a9c155d` to `d3b2477ef7941554946a92d1267e5f6110e9137a` in one production Host commit. The selected inventory remains 7,926 rows; two existing Host blobs changed. `TranscriptManager` now synchronizes the memory subsystem's active-agent identity after successful agent-lifecycle and session gateway mutations, and clears/synchronizes the memory owner as transcript lifecycle settles.
 
 On iOS the equivalent invariant is that account/conversation lifecycle and active-agent memory-facing identity remain canonical Host/Runtime state, never SwiftUI-owned parallel state. The changed source rows are rebound to the new blob identities; older exact-HEAD acceptance remains historical only.
+
+
+### 11.14 Rebaseline: d3b2477 -> f2a2e181 (current)
+
+Desktop PR #20 advanced from `d3b2477ef7941554946a92d1267e5f6110e9137a` to `f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef` in one production Host commit. The selected inventory remains 7,926 rows; four existing `source/host/**` blobs changed and no selected source path was added or removed. Shipping Host main no longer binds the WidgetResponses channel-config callback directly. `TranscriptManager` now creates and owns the callback proxy, the production Transcript extension binds the manager-owned observer to `transcript.channel-config-changed`, and dispose clears that observer. The focused manager contract rejects a second WidgetResponses channel-config owner and proves the signal is emitted after successful channel-credential persistence.
+
+This is applicable to iOS as an ownership and lifecycle rule, not an Electron mechanism. The current iOS replacement remains the single Host-owned `FeatureHostController`; no SwiftUI or secondary observer registry may become canonical. The affected Desktop rows are rebound to the new blob identities and remain `mapped`: iOS still needs equivalent credential-change projection plus current exact-HEAD focused behavior/Actions evidence before any promotion. Older acceptance bound to d3b2477/cbe85ca is historical only.

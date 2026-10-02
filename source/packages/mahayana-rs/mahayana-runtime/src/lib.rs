@@ -308,11 +308,12 @@ impl MahayanaRuntime {
                         text,
                         None,
                         client_message_id,
-                        false,
-                        false,
-                        None,
-                        false,
-                        None,
+                        false, // capability invocation is a visible user command, not a hidden turn
+                        false, // capability dispatch does not opt into assistant-output projection
+                        false, // InvokeCapability carries no recovery contract
+                        None,  // InvokeCapability carries no reply target
+                        false, // without a reply target this cannot be a fork
+                        None,  // InvokeCapability carries no attachment batch
                         Vec::new(),
                     )?;
                 Ok(RuntimeResponse::CapabilityAccepted {

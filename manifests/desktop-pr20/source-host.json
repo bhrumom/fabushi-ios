@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "d3b2477ef7941554946a92d1267e5f6110e9137a",
+  "sourceCommit": "f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef",
   "group": "source-host",
   "fileCount": 956,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "f642e361f972de960f8193f844eeb05aa3b697e9",
-      "size": 518028
+      "blobSha": "6cc6a442664ce3ddf7b67e2ecf2a1794e0a1234a",
+      "size": 517689
     },
     {
       "path": "source/host/build.rs",
@@ -1840,8 +1840,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/extension.rs",
-      "blobSha": "eb9f9bbe65a4f9e4858f1d6fe38fb9cba3102c61",
-      "size": 12390
+      "blobSha": "ef69506c36a58988645764714a7d172c02ce57f4",
+      "size": 12612
     },
     {
       "path": "source/host/src/extensions/transcript/group_chat_glue.rs",
@@ -2000,8 +2000,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "b2f8902b6d621a7fcaea98948a3dc11c9eda40fd",
-      "size": 23265
+      "blobSha": "66a42554f9c7cd2072925942bf042d5c857cd263",
+      "size": 24826
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -4590,8 +4590,8 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "0153d5cb309887f966aae40c4f2a8a2887b3cf79",
-      "size": 13540
+      "blobSha": "0f34753b4140a185f3f107a42ad12b8748635978",
+      "size": 15121
     },
     {
       "path": "source/host/tests/transcript_mirror_contract.rs",
