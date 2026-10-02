@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "bf36916c80e68737f02217ae85be4d22a6a5f928",
+  "sourceCommit": "3ad5c76a67408357cfe5647c6d073b36015c8eb5",
   "group": "source-host",
   "fileCount": 955,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "a58675a375205ea8558419dce8bbde4de49825b4",
-      "size": 506167
+      "blobSha": "ef59e2e5b9e5c4b50656b257bf98b8bef5b389c2",
+      "size": 508727
     },
     {
       "path": "source/host/build.rs",
@@ -1915,8 +1915,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/runner_registry.rs",
-      "blobSha": "db0ec055ed753312c848e717bc3bf5d4c388e09a",
-      "size": 8861
+      "blobSha": "82cd081f97bd1b506ff373067b3bcec16ba65f31",
+      "size": 9281
     },
     {
       "path": "source/host/src/extensions/transcript/sand_ack_obligation_store.rs",
@@ -4240,8 +4240,8 @@
     },
     {
       "path": "source/host/tests/runner_routed_provider_contract.rs",
-      "blobSha": "cc5ef858c2ecc9ee79746b56225c4b4ab9e9be16",
-      "size": 10420
+      "blobSha": "de15dad748173b2ae70c82aef6398c0ab7f88219",
+      "size": 11733
     },
     {
       "path": "source/host/tests/runner_small_modules_contract.rs",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "bf36916c80e68737f02217ae85be4d22a6a5f928",
+  "sourceCommit": "3ad5c76a67408357cfe5647c6d073b36015c8eb5",
   "group": "source-host",
   "rowCount": 955,
   "rows": [
@@ -36,7 +36,7 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "a58675a375205ea8558419dce8bbde4de49825b4",
+      "desktop_blob_sha": "ef59e2e5b9e5c4b50656b257bf98b8bef5b389c2",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -47,7 +47,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed. Revalidated for Desktop PR #20 f1d06ed8ad2a1ce4b5adeeed6df8e97152553661; upstream now routes Runner-generated SendMessage through the Host-owned transcript/send pipeline with live transcript entry IDs, reply target validation/auto-threading, attachment batch identity, and fork branched stamping. iOS status is not inherited. Revalidated for Desktop PR #20 bf36916c80e68737f02217ae85be4d22a6a5f928; upstream now restores direct-turn Runner context shaping from durable Host state (messageId/recent user history, composed-offline note, workflow expansion and mentioned-Agent context) and routes workflow-reference run-now through the canonical sendPrompt path. Existing iOS status is not inherited."
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed. Revalidated for Desktop PR #20 f1d06ed8ad2a1ce4b5adeeed6df8e97152553661; upstream now routes Runner-generated SendMessage through the Host-owned transcript/send pipeline with live transcript entry IDs, reply target validation/auto-threading, attachment batch identity, and fork branched stamping. iOS status is not inherited. Revalidated for Desktop PR #20 bf36916c80e68737f02217ae85be4d22a6a5f928; upstream now restores direct-turn Runner context shaping from durable Host state (messageId/recent user history, composed-offline note, workflow expansion and mentioned-Agent context) and routes workflow-reference run-now through the canonical sendPrompt path. Existing iOS status is not inherited. Revalidated for Desktop PR #20 3ad5c76a67408357cfe5647c6d073b36015c8eb5; upstream now preempts only the current same-Agent routed one-to-one run after durable direct-user admission, preserves stale identity, records ack interruption, and emits superseded turn-interrupt telemetry. iOS status is not inherited."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -5736,10 +5736,10 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/runner_registry.rs",
-      "desktop_blob_sha": "db0ec055ed753312c848e717bc3bf5d4c388e09a",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "82cd081f97bd1b506ff373067b3bcec16ba65f31",
+      "desktop_responsibility": "Own live Runner task identity/registry and targeted cancellation, including direct-user supersession of only the current routed one-to-one run while preserving stale stream identity and separate group-member task ownership.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
+      "desktop_visible_effect": "A newer direct user message supersedes the currently active same-Agent run without cancelling stale/completed identities or unrelated Agents; cancellation reason and downstream settlement remain attributable to the correct run.",
       "ios_disposition": "unreviewed",
       "ios_target_path": "",
       "ios_language": "",
@@ -5747,7 +5747,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Upstream blob changed at Desktop PR #20 b49e4567abc101ee75a60b6bd635153fba292d25; responsibility must be re-reviewed before promotion."
+      "notes": "Upstream blob changed at Desktop PR #20 b49e4567abc101ee75a60b6bd635153fba292d25; responsibility must be re-reviewed before promotion. Revalidated for Desktop PR #20 3ad5c76a67408357cfe5647c6d073b36015c8eb5; upstream now preempts only the current same-Agent routed one-to-one run after durable direct-user admission, preserves stale identity, records ack interruption, and emits superseded turn-interrupt telemetry. iOS status is not inherited."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/sand_ack_obligation_store.rs",
@@ -12711,7 +12711,7 @@
     },
     {
       "desktop_path": "source/host/tests/runner_routed_provider_contract.rs",
-      "desktop_blob_sha": "cc5ef858c2ecc9ee79746b56225c4b4ab9e9be16",
+      "desktop_blob_sha": "de15dad748173b2ae70c82aef6398c0ab7f88219",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -12722,7 +12722,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Upstream test contract changed at Desktop PR #20 f782c0c8fb6e2641c64d3daf25ebe0a9bcc3b110; it strengthens current-stream watchdog cancellation evidence. Host/Runner production responsibility remains unreviewed for iOS until its owning production rows are reviewed."
+      "notes": "Upstream test contract changed at Desktop PR #20 f782c0c8fb6e2641c64d3daf25ebe0a9bcc3b110; it strengthens current-stream watchdog cancellation evidence. Host/Runner production responsibility remains unreviewed for iOS until its owning production rows are reviewed. Revalidated for Desktop PR #20 3ad5c76a67408357cfe5647c6d073b36015c8eb5; upstream now preempts only the current same-Agent routed one-to-one run after durable direct-user admission, preserves stale identity, records ack interruption, and emits superseded turn-interrupt telemetry. iOS status is not inherited."
     },
     {
       "desktop_path": "source/host/tests/runner_small_modules_contract.rs",
