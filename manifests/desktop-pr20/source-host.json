@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "cb2267d52ad816287ad97a357e6e7d4135e79083",
+  "sourceCommit": "5ec257a7920478b56a88bdf24b85eb845aacfb46",
   "group": "source-host",
   "fileCount": 956,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "aa3aa450897f21c801fd4a40be8415ce321d9da0",
-      "size": 526122
+      "blobSha": "0b48f2c2955e00654db2b2e58d2d068dee5b922b",
+      "size": 526370
     },
     {
       "path": "source/host/build.rs",
@@ -1865,8 +1865,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/pending_wake_rearm.rs",
-      "blobSha": "3096078c9e44d70d5409cba1ccdcce1f534c7d9c",
-      "size": 10502
+      "blobSha": "7520306135c9210bde37f59cdee6a5584c516410",
+      "size": 13147
     },
     {
       "path": "source/host/src/extensions/transcript/production_runtime.rs",
@@ -2000,8 +2000,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "8a88ea60451d703f9534270c22e27d3aaec55f80",
-      "size": 33640
+      "blobSha": "36bae295949a50d79b2bf6bc2fe3d12209acc65b",
+      "size": 32847
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -3865,8 +3865,8 @@
     },
     {
       "path": "source/host/tests/host_upgrade_production_contract.rs",
-      "blobSha": "79d075b6dcc372eeee8e7fab9b4aaecbb701bc4e",
-      "size": 4802
+      "blobSha": "e628a80521719a9157cfc7c8a63794101c4c5aa2",
+      "size": 5409
     },
     {
       "path": "source/host/tests/host_upgrade_service_contract.rs",
@@ -4080,8 +4080,8 @@
     },
     {
       "path": "source/host/tests/pending_wake_rearm_contract.rs",
-      "blobSha": "96298d14829bfc6853d9292ab0f36c1dec8bce03",
-      "size": 7846
+      "blobSha": "05f6a1e21882f6a5eab4037d609613cc6bd30402",
+      "size": 10957
     },
     {
       "path": "source/host/tests/plugin_skills_contract.rs",

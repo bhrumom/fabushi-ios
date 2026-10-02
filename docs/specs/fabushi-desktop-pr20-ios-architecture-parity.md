@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `cb2267d52ad816287ad97a357e6e7d4135e79083`
+- pinned source commit for this baseline: `5ec257a7920478b56a88bdf24b85eb845aacfb46`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -147,6 +147,16 @@ Desktop PR #20 adds the shipping quiesce half of the recreate lifecycle across e
 This extends, rather than replaces, the 79a recreate carry contract. Correct ordering is now: request quiesce, stop/settle active shipping runners with durable identity, carry pending durable work, recreate Host, restore/rearm carried work, then clear quiesce/resume. iOS cannot satisfy this by merely refreshing UI state or by restarting a Host generation with no work identity.
 
 The current iOS NativeEngine already has persisted NativeSession state containing active_prompt and operation attempts plus resume_operation, but ordinary run() persists only after execution returns. Therefore an active process recreation can still lose the exact work identity, and there is no canonical shared upgrade-quiesce fence across the current Coordinator/Host generation boundary. All eight changed rows remain mapped. The iOS adaptation must first durably checkpoint the active prompt/operation before inference, then wire one generation-safe quiesce/resume path through existing Host/Coordinator owners; SwiftUI remains a lifecycle trigger only, never the source of runnable work truth.
+
+### 1.14 Exact-HEAD rebaseline: 2026-10-03 / 5ec257a7920478b56a88bdf24b85eb845aacfb46
+
+Desktop PR #20 advanced four commits from `cb2267d52ad816287ad97a357e6e7d4135e79083` to `5ec257a7920478b56a88bdf24b85eb845aacfb46`. The selected `frontend/** + source/**` inventory remains exactly 7,926 paths. Through `75824953`, only five existing Host files change; the final `5ec257a` commit changes only `projects/grok-fabu-parity/architecture-manifest.json`, so it adds upstream Desktop evidence but no new selected source blob. All manifest/ledger sourceCommit authorities, indexes and the strict checker are nevertheless rebound to the current exact HEAD.
+
+The selected-source responsibility is recreate-carry safety ownership. `TranscriptManager` is the lifecycle facade but delegates carried values to canonical `PendingWakeRearm.restore_recreate_carried_pending_wakes`. That owner fails closed when carry is disabled or runtime execution is unavailable, deduplicates identities already durable on the replacement Host, suppresses gone Agents, group sessions and Subagent wakes, and treats session lookup failure as a failed restore rather than guessing. Only CloudAgent and Shell wakes cross recreate. CloudAgent work is rearmed with recreate provenance; Shell wakes are marked `interrupted_by_recreate` and produce an interruption notice instead of blindly re-running shell work. The shipping upgrade contract follows this owner.
+
+The `5ec257a` parity-manifest-only commit records Desktop's own upgrade/recreate/resume row as implemented and expands its production/test evidence across TranscriptManager, Runner quiesce, pending-wake restore, Gateway and source-specific resume. iOS does not inherit that status: it remains independently gated by native production composition and exact-iOS-HEAD evidence.
+
+Current iOS still lacks this complete recreate-carry owner and the preceding active-operation durability guarantee. NativeEngine has `active_prompt`/operation-attempt state and `resume_operation`, but ordinary execution persists the session only after the run returns. `feature.sessionActivity` reaches canonical Rust `FeatureHostController`, yet currently records focus/scene activity rather than a generation-safe quiesce/resume state machine. Therefore all five changed selected-source rows remain only `mapped`. First closure is to durably checkpoint exact active prompt/operation identity before inference, then wire native Host/Coordinator quiesce/recreate recovery with durable identity and the same safe wake filters, including no blind Shell replay.
 
 ## 2. Product goal
 
