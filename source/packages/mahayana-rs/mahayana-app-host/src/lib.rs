@@ -920,6 +920,16 @@ impl AppHost {
         serde_json::to_value(tools).map_err(|error| AppHostError::Operation(error.to_string()))
     }
 
+    /// Deterministically settle the canonical feature Host before the process-local
+    /// app-host owner is released. FeatureHostController::close owns operation
+    /// interruption and pending approval/session cleanup; this layer only exposes
+    /// that existing owner to composition roots that need ordered shutdown.
+    pub fn close(&self) -> Result<(), AppHostError> {
+        self.feature
+            .close()
+            .map_err(|error| AppHostError::Operation(error.to_string()))
+    }
+
     fn runtime_call(&self, params: Value) -> Result<Value, AppHostError> {
         let plugin_id = string_param(&params, "pluginId")?;
         let name = string_param(&params, "name")?;
