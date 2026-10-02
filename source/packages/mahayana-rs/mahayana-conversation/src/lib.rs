@@ -24,6 +24,7 @@ pub struct SendMessageRequest {
     pub text: String,
     pub client_message_id: Option<String>,
     pub hidden: bool,
+    pub selected_image_data_urls: Vec<String>,
 }
 
 #[derive(Debug, Clone)]

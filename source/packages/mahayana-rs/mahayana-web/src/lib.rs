@@ -232,6 +232,7 @@ impl MahayanaWebRuntime {
                     text,
                     client_message_id,
                     hidden: false,
+                    selected_image_data_urls: Vec::new(),
                 };
                 let send_command = serde_json::to_string(&send_command).map_err(js_error)?;
                 let accepted = self.execute(&send_command)?;
@@ -374,6 +375,7 @@ impl MahayanaWebRuntime {
                 text,
                 client_message_id,
                 hidden,
+                selected_image_data_urls: _,
             } => {
                 ensure_browser_conversation(&self.state.borrow().plugins, &conversation_id)?;
                 if text.trim().is_empty() {

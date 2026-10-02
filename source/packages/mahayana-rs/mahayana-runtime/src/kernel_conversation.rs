@@ -262,7 +262,10 @@ impl ConversationProvider for KernelConversationProvider {
                     input: request.text,
                     policy: execution_policy(self.profile),
                     required_capabilities: CapabilitySet::new([Capability::Model]),
-                    metadata: json!({"clientMessageId": request.client_message_id}),
+                    metadata: json!({
+                        "clientMessageId": request.client_message_id,
+                        "selectedImageDataUrls": request.selected_image_data_urls,
+                    }),
                 },
                 sink,
             )

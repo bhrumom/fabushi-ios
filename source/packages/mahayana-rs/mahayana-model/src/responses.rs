@@ -392,6 +392,33 @@ fn validate_response_payload(payload: &Value) -> Result<(), ModelError> {
     Ok(())
 }
 
+fn anthropic_content_part(part: &Value) -> Option<Value> {
+    match part.get("type").and_then(Value::as_str) {
+        Some("input_text" | "output_text" | "text") => Some(json!({
+            "type": "text",
+            "text": part.get("text").and_then(Value::as_str).unwrap_or_default(),
+        })),
+        Some("input_image") => {
+            let image_url = part.get("image_url").and_then(Value::as_str)?;
+            let payload = image_url.strip_prefix("data:")?;
+            let (mime_and_encoding, data) = payload.split_once(',')?;
+            let (media_type, encoding) = mime_and_encoding.split_once(';')?;
+            if encoding != "base64" || !media_type.starts_with("image/") || data.is_empty() {
+                return None;
+            }
+            Some(json!({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": media_type,
+                    "data": data,
+                }
+            }))
+        }
+        _ => None,
+    }
+}
+
 fn anthropic_messages(input: &Value) -> Vec<Value> {
     let mut messages: Vec<Value> = Vec::new();
     for item in input.as_array().into_iter().flatten() {
@@ -402,17 +429,12 @@ fn anthropic_messages(input: &Value) -> Vec<Value> {
             let content = item.get("content").cloned().unwrap_or_else(|| json!(""));
             let content = match content {
                 Value::String(text) => json!([{"type":"text", "text":text}]),
-                Value::Array(mut parts) => {
-                    for part in &mut parts {
-                        if matches!(
-                            part.get("type").and_then(Value::as_str),
-                            Some("input_text" | "output_text")
-                        ) {
-                            part["type"] = json!("text");
-                        }
-                    }
-                    Value::Array(parts)
-                }
+                Value::Array(parts) => Value::Array(
+                    parts
+                        .iter()
+                        .filter_map(anthropic_content_part)
+                        .collect::<Vec<_>>(),
+                ),
                 other => json!([{"type":"text", "text":other.to_string()}]),
             };
             messages.push(json!({"role": role, "content": content}));
@@ -562,12 +584,11 @@ fn chat_messages(input: &Value) -> Vec<Value> {
                 .cloned()
                 .unwrap_or(Value::String(String::new()));
             let content = if let Some(parts) = content.as_array() {
-                Value::String(
+                Value::Array(
                     parts
                         .iter()
-                        .filter_map(|part| part.get("text").and_then(Value::as_str))
-                        .collect::<Vec<_>>()
-                        .join(""),
+                        .filter_map(chat_content_part)
+                        .collect::<Vec<_>>(),
                 )
             } else {
                 content
@@ -611,6 +632,23 @@ fn chat_messages(input: &Value) -> Vec<Value> {
         }
     }
     messages
+}
+
+fn chat_content_part(part: &Value) -> Option<Value> {
+    match part.get("type").and_then(Value::as_str) {
+        Some("input_text" | "output_text" | "text") => Some(json!({
+            "type": "text",
+            "text": part.get("text").and_then(Value::as_str).unwrap_or_default(),
+        })),
+        Some("input_image") => {
+            let image_url = part.get("image_url").and_then(Value::as_str)?;
+            Some(json!({
+                "type": "image_url",
+                "image_url": {"url": image_url},
+            }))
+        }
+        _ => None,
+    }
 }
 
 fn chat_tool(tool: &Value) -> Option<Value> {
@@ -780,6 +818,38 @@ mod tests {
         assert_eq!(extract_output_text(&normalized).as_deref(), Some("善哉"));
         assert_eq!(normalized["output"][1]["name"], "search");
         assert_eq!(extract_usage(&normalized).unwrap().total_tokens, 16);
+    }
+
+    #[test]
+    fn projects_selected_images_to_chat_completions_content() {
+        let messages = chat_messages(&json!([{
+            "role": "user",
+            "content": [
+                {"type":"input_text", "text":"inspect"},
+                {"type":"input_image", "image_url":"data:image/png;base64,AQID"}
+            ]
+        }]));
+        assert_eq!(messages[0]["content"][0]["type"], "text");
+        assert_eq!(messages[0]["content"][1]["type"], "image_url");
+        assert_eq!(
+            messages[0]["content"][1]["image_url"]["url"],
+            "data:image/png;base64,AQID"
+        );
+    }
+
+    #[test]
+    fn projects_selected_images_to_anthropic_content() {
+        let messages = anthropic_messages(&json!([{
+            "role": "user",
+            "content": [
+                {"type":"input_text", "text":"inspect"},
+                {"type":"input_image", "image_url":"data:image/png;base64,AQID"}
+            ]
+        }]));
+        assert_eq!(messages[0]["content"][0]["type"], "text");
+        assert_eq!(messages[0]["content"][1]["type"], "image");
+        assert_eq!(messages[0]["content"][1]["source"]["media_type"], "image/png");
+        assert_eq!(messages[0]["content"][1]["source"]["data"], "AQID");
     }
 
     #[test]

@@ -304,6 +304,12 @@ pub enum RuntimeCommand {
         client_message_id: Option<String>,
         #[serde(default)]
         hidden: bool,
+        #[serde(
+            rename = "selectedImageDataUrls",
+            default,
+            skip_serializing_if = "Vec::is_empty"
+        )]
+        selected_image_data_urls: Vec<String>,
     },
     #[serde(rename = "mahayana.operation.interrupt")]
     Interrupt {
@@ -575,6 +581,7 @@ mod tests {
             text: "你好".to_string(),
             client_message_id: Some("client-1".to_string()),
             hidden: false,
+            selected_image_data_urls: Vec::new(),
         };
         let json = serde_json::to_value(command).expect("serialize command");
         assert_eq!(json["@type"], "mahayana.conversation.send");

@@ -46,6 +46,7 @@ use mahayana_host::HostCreateConfig;
 #[cfg(feature = "production")]
 use mahayana_host::MahayanaHost;
 use mahayana_host_protocol::AgentBroadcastResult;
+use mahayana_host_protocol::AgentMessageImage;
 use mahayana_host_protocol::AgentMode;
 use mahayana_host_protocol::AgentPeerMessage;
 use mahayana_host_protocol::AgentStepStatus;
@@ -2025,6 +2026,7 @@ impl FeatureHostController {
                 text: prompt,
                 client_message_id: Some(format!("teach:{}:{}", bot.id, now_millis())),
                 hidden: true,
+                selected_image_data_urls: Vec::new(),
             })?;
             let operation_id = match response {
                 RuntimeResponse::Accepted { operation_id } => operation_id.to_string(),
@@ -2218,6 +2220,7 @@ impl FeatureHostController {
                 from_agent_id,
                 target_id,
                 text,
+                images,
                 priority,
                 ..
             } => {
@@ -2248,6 +2251,7 @@ impl FeatureHostController {
                             target_id: target.id.clone(),
                             target_name: target.name.clone(),
                             text: text.clone(),
+                            images: images.clone(),
                             priority,
                             created_at_ms: now_millis(),
                         };
@@ -2358,6 +2362,7 @@ impl FeatureHostController {
 
                 if let Some((sender, target)) = direct_target {
                     let wake_prompt = build_agent_inbound_wake_prompt(&sender, &text, priority);
+                    let selected_image_data_urls = load_agent_inbound_image_data_urls(&images);
                     self.schedule_background_agent_turn(
                         &target,
                         if priority {
@@ -2367,6 +2372,7 @@ impl FeatureHostController {
                         },
                         wake_prompt,
                         format!("peer:{}:{}", sender.id, request_id),
+                        selected_image_data_urls,
                     )?;
                 }
                 Ok(CommandAccepted {
@@ -2409,6 +2415,7 @@ impl FeatureHostController {
                             "broadcast",
                             prompt,
                             format!("broadcast:{}:{}", target.id, request_id),
+                            Vec::new(),
                         )
                         .is_ok()
                     {
@@ -2435,6 +2442,7 @@ impl FeatureHostController {
         source: &str,
         prompt: String,
         client_message_id: String,
+        selected_image_data_urls: Vec<String>,
     ) -> Result<Option<String>, FeatureHostError> {
         if self.config.mode == HostMode::Test {
             let operation_id = format!("background-test-{}-{}", target.id, now_millis());
@@ -2475,6 +2483,7 @@ impl FeatureHostController {
                 text: prompt,
                 client_message_id: Some(client_message_id),
                 hidden: true,
+                selected_image_data_urls,
             })?;
             let operation_id = match response {
                 RuntimeResponse::Accepted { operation_id } => operation_id.to_string(),
@@ -3444,6 +3453,7 @@ impl FeatureHostController {
                                     text: runtime_text,
                                     client_message_id: Some(request_id.clone()),
                                     hidden: true,
+                                    selected_image_data_urls: Vec::new(),
                                 })?;
                             let operation_id = match response {
                                 RuntimeResponse::Accepted { operation_id } => {
@@ -6014,6 +6024,7 @@ impl FeatureHostController {
                 context.run_id, context.group_id, context.member_id
             )),
             hidden: true,
+            selected_image_data_urls: Vec::new(),
         })?;
         let operation_id = match response {
             RuntimeResponse::Accepted { operation_id } => operation_id.to_string(),
@@ -6998,6 +7009,7 @@ impl FeatureHostController {
             ),
             other => return Err(unexpected_response("runtime.status", other)),
         };
+        let selected_image_data_urls = selected_image_data_urls(&attachments);
         let mut runtime_text =
             compose_agent_input(&text, mode, mode_statement.as_deref(), &attachments);
         if let Some(mcp_context) = self.mcp_instruction_context()? {
@@ -7039,6 +7051,7 @@ impl FeatureHostController {
             text: runtime_text,
             client_message_id: Some(request_id.clone()),
             hidden: false,
+            selected_image_data_urls,
         })?;
         let operation_id = match response {
             RuntimeResponse::Accepted { operation_id } => operation_id.to_string(),
@@ -8801,64 +8814,10 @@ fn looks_like_binary(bytes: &[u8]) -> bool {
     control * 100 / bytes.len() > 5
 }
 
-fn image_dimensions(bytes: &[u8], mime: &str) -> (Option<u32>, Option<u32>) {
-    if mime == "image/png" && bytes.len() >= 24 && &bytes[..8] == b"\x89PNG\r\n\x1a\n" {
-        let width = u32::from_be_bytes([bytes[16], bytes[17], bytes[18], bytes[19]]);
-        let height = u32::from_be_bytes([bytes[20], bytes[21], bytes[22], bytes[23]]);
-        return (Some(width), Some(height));
-    }
-    if mime == "image/gif"
-        && bytes.len() >= 10
-        && (&bytes[..6] == b"GIF87a" || &bytes[..6] == b"GIF89a")
-    {
-        let width = u16::from_le_bytes([bytes[6], bytes[7]]) as u32;
-        let height = u16::from_le_bytes([bytes[8], bytes[9]]) as u32;
-        return (Some(width), Some(height));
-    }
-    if mime == "image/jpeg" && bytes.len() > 4 && bytes[0] == 0xff && bytes[1] == 0xd8 {
-        let mut index = 2usize;
-        while index + 8 < bytes.len() {
-            if bytes[index] != 0xff {
-                index += 1;
-                continue;
-            }
-            let marker = bytes[index + 1];
-            index += 2;
-            if marker == 0xd8 || marker == 0xd9 || marker == 0x01 || (0xd0..=0xd7).contains(&marker)
-            {
-                continue;
-            }
-            if index + 2 > bytes.len() {
-                break;
-            }
-            let segment_length = u16::from_be_bytes([bytes[index], bytes[index + 1]]) as usize;
-            if segment_length < 2 || index + segment_length > bytes.len() {
-                break;
-            }
-            if matches!(
-                marker,
-                0xc0 | 0xc1
-                    | 0xc2
-                    | 0xc3
-                    | 0xc5
-                    | 0xc6
-                    | 0xc7
-                    | 0xc9
-                    | 0xca
-                    | 0xcb
-                    | 0xcd
-                    | 0xce
-                    | 0xcf
-            ) && segment_length >= 7
-            {
-                let height = u16::from_be_bytes([bytes[index + 3], bytes[index + 4]]) as u32;
-                let width = u16::from_be_bytes([bytes[index + 5], bytes[index + 6]]) as u32;
-                return (Some(width), Some(height));
-            }
-            index += segment_length;
-        }
-    }
-    (None, None)
+fn image_dimensions(bytes: &[u8], _mime: &str) -> (Option<u32>, Option<u32>) {
+    crate::selected_image_inputs::read_image_dimensions(bytes)
+        .map(|dimensions| (Some(dimensions.width), Some(dimensions.height)))
+        .unwrap_or((None, None))
 }
 
 fn build_content_snippet(text: &str, normalized_query: &str) -> Option<String> {
@@ -8947,6 +8906,9 @@ fn media_mime_type(name: &str) -> Option<&'static str> {
         "jpg" | "jpeg" => Some("image/jpeg"),
         "gif" => Some("image/gif"),
         "webp" => Some("image/webp"),
+        "avif" => Some("image/avif"),
+        "heic" => Some("image/heic"),
+        "heif" => Some("image/heif"),
         "svg" => Some("image/svg+xml"),
         "pdf" => Some("application/pdf"),
         "txt" | "md" | "markdown" | "log" => Some("text/plain"),
@@ -9008,6 +8970,62 @@ fn clone_agent_display_name(name: &str) -> String {
     } else {
         format!("{trimmed} copy")
     }
+}
+
+fn selected_input_data_url(input: crate::selected_image_inputs::SelectedImageInput) -> String {
+    format!(
+        "data:{};base64,{}",
+        input.mime_type,
+        base64::engine::general_purpose::STANDARD.encode(input.data)
+    )
+}
+
+fn load_agent_inbound_image_data_urls(images: &[AgentMessageImage]) -> Vec<String> {
+    let paths = images
+        .iter()
+        .filter_map(|image| {
+            let url = url::Url::parse(&image.url).ok()?;
+            (url.scheme() == "file").then(|| url.to_file_path().ok()).flatten()
+        })
+        .collect::<Vec<_>>();
+    let path_strings = paths
+        .iter()
+        .map(|path| path.to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
+    crate::selected_image_inputs::load_selected_image_inputs(&path_strings)
+        .unwrap_or_default()
+        .into_iter()
+        .map(selected_input_data_url)
+        .collect()
+}
+
+fn selected_image_data_urls(attachments: &[AttachmentContext]) -> Vec<String> {
+    attachments
+        .iter()
+        .filter_map(|attachment| {
+            let path = attachment.path.as_deref()?;
+            if let Ok(mut selected) =
+                crate::selected_image_inputs::load_selected_image_inputs(&[path.to_string()])
+                && let Some(input) = selected.pop()
+            {
+                return Some(selected_input_data_url(input));
+            }
+
+            // iOS-native pickers can supply an explicit image MIME for formats
+            // whose Desktop extension classifier intentionally does not claim
+            // as send-channel inputs. Preserve that declared product effect
+            // without moving ownership to SwiftUI.
+            let mime = attachment
+                .mime_type
+                .as_deref()
+                .filter(|mime| mime.starts_with("image/"))?;
+            let bytes = std::fs::read(path).ok()?;
+            Some(format!(
+                "data:{mime};base64,{}",
+                base64::engine::general_purpose::STANDARD.encode(bytes)
+            ))
+        })
+        .collect()
 }
 
 fn compose_agent_input(
@@ -12889,6 +12907,7 @@ mod tests {
                 from_agent_id: "mahayana-assistant".into(),
                 target_id: peer.id.clone(),
                 text: "Summarize the evidence.".into(),
+                images: Vec::new(),
                 priority: true,
             })
             .expect("send peer message");
@@ -12938,6 +12957,29 @@ mod tests {
             HostEvent::AgentBroadcasted { result, .. }
                 if result.total >= 2 && result.scheduled == result.total
         )));
+    }
+
+    #[test]
+    fn generated_agent_file_image_materializes_for_recipient_media_channel() {
+        let path = std::env::temp_dir().join(format!(
+            "fabushi-agent-generated-media-{}.png",
+            std::process::id()
+        ));
+        std::fs::write(&path, b"generated-image").expect("write generated image fixture");
+        let url = url::Url::from_file_path(&path)
+            .expect("file url")
+            .to_string();
+        let images = vec![AgentMessageImage {
+            url,
+            alt: Some("generated preview".into()),
+        }];
+        let data_urls = load_agent_inbound_image_data_urls(&images);
+        let _ = std::fs::remove_file(path);
+        assert_eq!(data_urls.len(), 1);
+        assert_eq!(
+            data_urls[0],
+            "data:image/png;base64,Z2VuZXJhdGVkLWltYWdl"
+        );
     }
 
     #[cfg(not(feature = "production"))]
@@ -13263,6 +13305,7 @@ mod tests {
                 text: "visible assistant completion".into(),
                 client_message_id: Some("visible-completion".into()),
                 hidden: false,
+                selected_image_data_urls: Vec::new(),
             })
             .expect("visible production runtime send");
         wait_for_fcm_assistant_unread(&controller, 1, "after-visible");
@@ -13310,6 +13353,7 @@ mod tests {
                 text: "hidden background completion".into(),
                 client_message_id: Some("hidden-completion".into()),
                 hidden: true,
+                selected_image_data_urls: Vec::new(),
             })
             .expect("hidden production runtime send");
         std::thread::sleep(Duration::from_millis(25));

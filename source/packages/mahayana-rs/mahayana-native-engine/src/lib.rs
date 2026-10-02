@@ -460,15 +460,17 @@ impl NativeEngine {
         session: &mut NativeSession,
         operation_id: &OperationId,
         prompt: String,
+        prompt_metadata: &Value,
         append_user_prompt: bool,
         policy: &ExecutionPolicy,
         control: &OperationControl,
         events: SharedKernelEventSink,
     ) -> Result<String, KernelError> {
         if append_user_prompt {
-            session
-                .history
-                .push(json!({"role": "user", "content": prompt}));
+            session.history.push(json!({
+                "role": "user",
+                "content": model_user_content(&prompt, prompt_metadata),
+            }));
         }
 
         // Some OpenAI-compatible providers silently turn an explicit tool
@@ -1345,6 +1347,7 @@ impl NativeEngine {
                 session,
                 operation_id,
                 prompt.text.clone(),
+                &prompt.metadata,
                 append_user_prompt,
                 policy,
                 control,
@@ -1927,6 +1930,30 @@ fn extract_function_calls(payload: &Value) -> Result<Vec<FunctionCall>, KernelEr
     Ok(calls)
 }
 
+fn model_user_content(prompt: &str, metadata: &Value) -> Value {
+    let images = metadata
+        .get("selectedImageDataUrls")
+        .and_then(Value::as_array)
+        .map(|values| {
+            values
+                .iter()
+                .filter_map(Value::as_str)
+                .filter(|value| value.starts_with("data:image/"))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    if images.is_empty() {
+        return Value::String(prompt.to_string());
+    }
+    let mut content = vec![json!({"type": "input_text", "text": prompt})];
+    content.extend(
+        images
+            .into_iter()
+            .map(|image_url| json!({"type": "input_image", "image_url": image_url})),
+    );
+    Value::Array(content)
+}
+
 fn append_model_output(history: &mut Vec<Value>, payload: &Value) {
     if let Some(output) = payload.get("output").and_then(Value::as_array) {
         history.extend(output.iter().cloned());
@@ -2504,6 +2531,25 @@ mod tests {
     use super::*;
     use mahayana_model::ModelProviderMode;
     use std::collections::VecDeque;
+
+    #[test]
+    fn selected_images_project_into_the_current_user_turn() {
+        let content = model_user_content(
+            "inspect",
+            &json!({
+                "selectedImageDataUrls": [
+                    "data:image/png;base64,AQID",
+                    "https://example.test/not-local.png"
+                ]
+            }),
+        );
+        let parts = content.as_array().expect("multimodal user content");
+        assert_eq!(parts[0]["type"], "input_text");
+        assert_eq!(parts[0]["text"], "inspect");
+        assert_eq!(parts[1]["type"], "input_image");
+        assert_eq!(parts[1]["image_url"], "data:image/png;base64,AQID");
+        assert_eq!(parts.len(), 2);
+    }
 
     #[test]
     fn web_research_capability_and_tools_follow_provider_configuration() {

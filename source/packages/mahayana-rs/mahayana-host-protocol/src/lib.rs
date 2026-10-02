@@ -307,6 +307,14 @@ pub struct GroupSummary {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AgentMessageImage {
+    pub url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub alt: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AgentPeerMessage {
     pub id: String,
     pub from_agent_id: String,
@@ -314,6 +322,8 @@ pub struct AgentPeerMessage {
     pub target_id: String,
     pub target_name: String,
     pub text: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub images: Vec<AgentMessageImage>,
     pub priority: bool,
     pub created_at_ms: i64,
 }
@@ -1393,6 +1403,8 @@ pub enum FeatureCommand {
         #[serde(rename = "targetId")]
         target_id: String,
         text: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        images: Vec<AgentMessageImage>,
         #[serde(default)]
         priority: bool,
     },
@@ -2886,6 +2898,35 @@ mod tests {
         let value = serde_json::to_value(event).expect("encode usage event");
         assert_eq!(value["type"], "usage.updated");
         assert_eq!(value["contextWindow"], 128_000);
+    }
+
+    #[test]
+    fn agent_send_round_trips_generated_image_metadata() {
+        let command: FeatureCommand = serde_json::from_str(
+            r#"{"type":"agent.send","requestId":"agent-media-1","fromAgentId":"agent-a","targetId":"agent-b","text":"inspect","images":[{"url":"file:///tmp/generated.png","alt":"preview"}],"priority":true}"#,
+        )
+        .expect("decode agent send with images");
+        let FeatureCommand::AgentSend { images, .. } = command else {
+            panic!("expected agent.send");
+        };
+        assert_eq!(images.len(), 1);
+        assert_eq!(images[0].url, "file:///tmp/generated.png");
+        assert_eq!(images[0].alt.as_deref(), Some("preview"));
+
+        let persisted = AgentPeerMessage {
+            id: "peer-1".into(),
+            from_agent_id: "agent-a".into(),
+            from_agent_name: "A".into(),
+            target_id: "agent-b".into(),
+            target_name: "B".into(),
+            text: "inspect".into(),
+            images,
+            priority: true,
+            created_at_ms: 1,
+        };
+        let value = serde_json::to_value(persisted).expect("encode peer message");
+        assert_eq!(value["images"][0]["url"], "file:///tmp/generated.png");
+        assert_eq!(value["images"][0]["alt"], "preview");
     }
 
     #[test]

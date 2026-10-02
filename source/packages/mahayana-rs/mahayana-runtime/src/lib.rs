@@ -303,7 +303,13 @@ impl MahayanaRuntime {
                 }
                 let conversation_id = capability.conversation_id;
                 let operation_id =
-                    self.start_message(conversation_id.clone(), text, client_message_id, false)?;
+                    self.start_message(
+                        conversation_id.clone(),
+                        text,
+                        client_message_id,
+                        false,
+                        Vec::new(),
+                    )?;
                 Ok(RuntimeResponse::CapabilityAccepted {
                     capability_id: capability.id,
                     conversation_id,
@@ -537,12 +543,14 @@ impl MahayanaRuntime {
                 text,
                 client_message_id,
                 hidden,
+                selected_image_data_urls,
             } => Ok(RuntimeResponse::Accepted {
                 operation_id: self.start_message(
                     conversation_id,
                     text,
                     client_message_id,
                     hidden,
+                    selected_image_data_urls,
                 )?,
             }),
             RuntimeCommand::Interrupt { operation_id } => {
@@ -617,6 +625,7 @@ impl MahayanaRuntime {
         text: String,
         client_message_id: Option<String>,
         hidden: bool,
+        selected_image_data_urls: Vec<String>,
     ) -> Result<OperationId, RuntimeError> {
         if text.trim().is_empty() {
             return Err(RuntimeError::EmptyMessage);
@@ -631,6 +640,7 @@ impl MahayanaRuntime {
             text,
             client_message_id,
             hidden,
+            selected_image_data_urls,
         };
         let sink: SharedConversationEventSink = Arc::new(RuntimeEventSink {
             provider_key,
@@ -889,6 +899,7 @@ mod tests {
                 text: "你好".to_string(),
                 client_message_id: None,
                 hidden: false,
+                selected_image_data_urls: Vec::new(),
             })
             .expect("send message");
         let RuntimeResponse::Accepted { operation_id } = response else {
@@ -1003,6 +1014,7 @@ mod tests {
                 text: "first visible prompt".to_string(),
                 client_message_id: Some("first-visible-prompt".to_string()),
                 hidden: false,
+                selected_image_data_urls: Vec::new(),
             })
             .expect("send first message");
         let RuntimeResponse::Accepted { operation_id } = response else {
