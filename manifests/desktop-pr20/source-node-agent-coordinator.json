@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "84dbe458a8f14307bbdeaff469388734e6ce8879",
+  "sourceCommit": "3e735e6e5b7253713815ee1d034bd8ec446fb5a7",
   "group": "source-node-agent-coordinator",
   "fileCount": 53,
   "files": [
@@ -80,8 +80,8 @@
     },
     {
       "path": "source/node-agent-coordinator/src/inference_router.rs",
-      "blobSha": "a1a366752168c6ee699092e774dd90ae3f33784f",
-      "size": 39446
+      "blobSha": "fd05df0ae09b0e4373f4aeb508b4e5ae452f08ac",
+      "size": 39871
     },
     {
       "path": "source/node-agent-coordinator/src/lib.rs",
@@ -105,8 +105,8 @@
     },
     {
       "path": "source/node-agent-coordinator/src/main.rs",
-      "blobSha": "9fafb55681d9b9d2188268e82ffe6547ff23e89d",
-      "size": 111424
+      "blobSha": "0e58365c9e525eb1b735dd5dcdc66617cf89bac6",
+      "size": 112310
     },
     {
       "path": "source/node-agent-coordinator/src/mcp.rs",
@@ -210,8 +210,8 @@
     },
     {
       "path": "source/node-agent-coordinator/tests/inference_host_boundary_contract.rs",
-      "blobSha": "4d5a3b767a1a3fef6140cd012a5fa6a66cfb787c",
-      "size": 13128
+      "blobSha": "463ecc2c95086792b4bec68bca4d6feb2f79e177",
+      "size": 13569
     },
     {
       "path": "source/node-agent-coordinator/tests/inference_router_attachments.rs",

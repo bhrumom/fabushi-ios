@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "84dbe458a8f14307bbdeaff469388734e6ce8879",
+  "sourceCommit": "3e735e6e5b7253713815ee1d034bd8ec446fb5a7",
   "group": "source-node-agent-coordinator",
   "rowCount": 53,
   "rows": [
@@ -231,7 +231,7 @@
     },
     {
       "desktop_path": "source/node-agent-coordinator/src/inference_router.rs",
-      "desktop_blob_sha": "a1a366752168c6ee699092e774dd90ae3f33784f",
+      "desktop_blob_sha": "fd05df0ae09b0e4373f4aeb508b4e5ae452f08ac",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "coordinator",
       "desktop_visible_effect": "pending-review",
@@ -242,7 +242,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebaselined for Desktop PR #20 3e735e6e: Coordinator now owns explicit awaitTurn parsing; only boolean true requests renderer request settlement at Runner terminal. Workflow-reference run-now stamps awaitTurn=true and source=workflow-reference. iOS has no equivalent terminal-wait routing owner yet; status invalidated pending production port."
     },
     {
       "desktop_path": "source/node-agent-coordinator/src/lib.rs",
@@ -306,7 +306,7 @@
     },
     {
       "desktop_path": "source/node-agent-coordinator/src/main.rs",
-      "desktop_blob_sha": "9fafb55681d9b9d2188268e82ffe6547ff23e89d",
+      "desktop_blob_sha": "0e58365c9e525eb1b735dd5dcdc66617cf89bac6",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "coordinator",
       "desktop_visible_effect": "pending-review",
@@ -317,7 +317,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebaselined for Desktop PR #20 3e735e6e: inference request admission now separates immediate acceptance from terminal request settlement. awaitTurn requests preserve the original request identity until execute_local_inference terminates, returning success only at terminal or the normalized failure on error/cancel. iOS current MahayanaCoordinator returns Host acceptance immediately and therefore does not yet satisfy this responsibility."
     },
     {
       "desktop_path": "source/node-agent-coordinator/src/mcp.rs",
@@ -621,7 +621,7 @@
     },
     {
       "desktop_path": "source/node-agent-coordinator/tests/inference_host_boundary_contract.rs",
-      "desktop_blob_sha": "4d5a3b767a1a3fef6140cd012a5fa6a66cfb787c",
+      "desktop_blob_sha": "463ecc2c95086792b4bec68bca4d6feb2f79e177",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "coordinator",
       "desktop_visible_effect": "pending-review",
@@ -632,7 +632,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebaselined for Desktop PR #20 3e735e6e: focused contract now requires workflow-reference awaitTurn/source metadata and terminal settlement behavior. iOS equivalent contract is not yet present."
     },
     {
       "desktop_path": "source/node-agent-coordinator/tests/inference_router_attachments.rs",

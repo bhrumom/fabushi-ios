@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `84dbe458a8f14307bbdeaff469388734e6ce8879`
+- pinned source commit for this baseline: `3e735e6e5b7253713815ee1d034bd8ec446fb5a7`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -380,6 +380,30 @@ This behavior is applicable on iOS regardless of process topology. The iOS Host/
 Desktop PR #20 advanced from `3ad5c76a67408357cfe5647c6d073b36015c8eb5` to `84dbe458a8f14307bbdeaff469388734e6ce8879` with a focused shipping correction: a visible workflow-reference run-now still re-enters the canonical `sendPrompt` path, but it does so without carrying a synthetic gateway trace context. This preserves the ordinary user-turn execution/telemetry boundary rather than manufacturing a gateway parent span for a locally synthesized workflow-reference turn.
 
 The iOS workflow-reference responsibility remains unreviewed until its shipping owner is audited. No media or direct-turn supersession status changes are inherited from this upstream change.
+
+
+### 11.6 Await-turn terminal settlement and pre-dispatch supersession rebaseline
+
+Desktop PR #20 advanced from `84dbe458a8f14307bbdeaff469388734e6ce8879` to `3e735e6e5b7253713815ee1d034bd8ec446fb5a7` in two commits. The selected `frontend/**` + `source/**` inventory remains 7,925 files, but seven source-bearing blobs changed and the Desktop architecture manifest changed with them. Every affected ledger row is invalidated until revalidated against the iOS shipping path.
+
+The eight changed Desktop files and their normative responsibility deltas are:
+
+- `source/node-agent-coordinator/src/inference_router.rs`: Coordinator owns explicit `awaitTurn` parsing. Only boolean `true` requests terminal settlement, and workflow-reference run-now now sends `awaitTurn=true` plus `source=workflow-reference`.
+- `source/node-agent-coordinator/src/main.rs`: request acceptance and turn completion are distinct. Ordinary sends settle the renderer request after queue admission; `awaitTurn` preserves that same request identity until `execute_local_inference` reaches terminal success or normalized failure/cancel.
+- `source/node-agent-coordinator/tests/inference_host_boundary_contract.rs`: focused contract proves the workflow-reference metadata and terminal-request semantics.
+- `source/host/src/extensions/transcript/runner_registry.rs`: Host canonical Runner registry now records `dispatched` and `recovery_shaped` per routed stream, and removes that state on finish.
+- `source/host/src/runner/turn_run_shell.rs`: the active run records dispatch/recovery shape. Before actual dispatch, supersession is allowed only when the superseding turn carries recovery and the active turn is recovery-shaped; after dispatch normal targeted cancellation applies.
+- `source/host/app/src/main.rs`: shipping composition wires recovery-shape registration and dispatch marking into the real routed turn path; this is not helper-only parity.
+- `source/host/tests/runner_routed_provider_contract.rs`: focused Host contract proves the pre-dispatch/recovery-shaped fencing and dispatched-state behavior.
+- `projects/grok-fabu-parity/architecture-manifest.json`: Desktop's own parity manifest promotes the corresponding send-turn-dispatch responsibility; this file is outside the iOS selected source inventory but is part of the audit evidence.
+
+iOS disposition at this baseline:
+
+- `MahayanaCoordinator.request/dispatchTransport` currently returns the Host's accepted response and does not expose an `awaitTurn` contract that keeps the same renderer request pending through terminal Runtime settlement.
+- The iOS Runtime/Host already has stable operation identity, targeted same-conversation supersession, and stale-settlement fencing, but it does not yet model Desktop's pre-dispatch `dispatched + recovery_shaped` gate at the canonical Runner owner.
+- Therefore the terminal-settlement and affected Runner-registry/shell rows are `unreviewed` on this baseline. They are the earliest newly introduced production responsibility and must be closed before older send-pipeline candidates can be promoted.
+- Existing `send_pipeline` reply-target/thread/generated-attachment/fork gaps remain valid candidate work only after this new terminal-settlement delta is handled; no old `84dbe458` acceptance evidence proves parity with `3e735e6e`.
+
 
 ## 12. Frontend requirements
 
