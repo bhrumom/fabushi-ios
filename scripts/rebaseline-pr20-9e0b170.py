@@ -43,6 +43,10 @@ VISIBLE_EFFECTS = {
     "source/host/src/extensions/transcript/transcript_manager.rs": "Transcript/run truth, projections and recreate recovery remain ordered under one lifecycle facade; carried wakes are filtered by the canonical durable wake owner before replay.",
     "source/host/src/extensions/transcript/automation_run_path.rs": "Automation runs retain exact wake/run identity and settle once across success, failure, timeout, cancellation and upgrade quiesce.",
     "source/host/src/extensions/transcript/completion_revivals.rs": "Completion wakeups resume eligible work without blindly re-running interrupted shell/subagent work after lifecycle disruption.",
+    "source/host/tests/automation_run_path_contract.rs": "The production automation execution contract remains observable and locked across hidden wake admission, terminal settlement, timeout/interruption, and upgrade quiesce.",
+    "source/host/tests/gateway_protocol_contract.rs": "The public Host protocol exposes exactly the frozen owner-registry methods plus the explicit Fabushi recreate compatibility alias; accidental protocol widening is rejected.",
+    "source/host/tests/host_production_extensions_contract.rs": "Shipping composition has one lifecycle owner per centralized extension slot and rejects duplicate owners, preventing divergent state or teardown behavior.",
+    "source/host/tests/remaining_planned_contract.rs": "Responsibilities promoted into current shipping owners cannot regress to planned/string-only placeholders without failing parity contracts.",
 }
 
 def dump(path, obj):
