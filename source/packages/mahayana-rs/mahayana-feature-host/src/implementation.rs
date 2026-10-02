@@ -5780,9 +5780,11 @@ impl FeatureHostController {
             HostMode::Production => {
                 #[cfg(feature = "production")]
                 {
-                    let messages = match self.production_read_conversation_messages(
+                    let catch_up = match self.production_read_conversation_window(
                         &claim.conversation_id,
-                        200,
+                        None,
+                        claim.shipped_through_id.as_deref(),
+                        None,
                     ) {
                         Ok(messages) => messages,
                         Err(error) => {
@@ -5794,10 +5796,6 @@ impl FeatureHostController {
                             }));
                         }
                     };
-                    let catch_up = ConversationSessionState::windowed_catch_up(
-                        claim.shipped_through_id.as_deref(),
-                        &messages,
-                    );
                     {
                         let mut state = self.state()?;
                         let previous = state
@@ -7551,6 +7549,39 @@ impl FeatureHostController {
     }
 
     #[cfg(feature = "production")]
+    fn production_read_conversation_window(
+        &self,
+        conversation_id: &str,
+        before_message_id: Option<&str>,
+        after_message_id: Option<&str>,
+        limit: Option<u32>,
+    ) -> Result<Vec<ConversationMessage>, FeatureHostError> {
+        let messages = match self
+            .runtime()?
+            .execute(RuntimeCommand::ConversationHistoryWindow {
+                conversation_id: ConversationId(conversation_id.to_string()),
+                before_message_id: before_message_id.map(ToOwned::to_owned),
+                after_message_id: after_message_id.map(ToOwned::to_owned),
+                limit,
+            })? {
+            RuntimeResponse::History { data } => data,
+            other => return Err(unexpected_response("conversation.historyWindow", other)),
+        };
+        Ok(messages
+            .into_iter()
+            .map(|message| ConversationMessage {
+                id: message.id.0,
+                role: match message.role {
+                    RuntimeMessageRole::User => MessageRole::User,
+                    _ => MessageRole::Assistant,
+                },
+                text: message.text,
+                created_at_ms: message.created_at_ms,
+            })
+            .collect())
+    }
+
+    #[cfg(feature = "production")]
     fn production_open_conversation(
         &self,
         request_id: String,
@@ -7605,12 +7636,20 @@ impl FeatureHostController {
     ) -> Result<CommandAccepted, FeatureHostError> {
         self.require_authenticated_account()?;
         let conversation_id = required(conversation_id, "conversationId")?;
-        let all_messages = self.production_read_conversation_messages(&conversation_id, 500)?;
-        let (messages, next_before_message_id) = bounded_conversation_window(
-            &all_messages,
+        let limit = limit.clamp(1, 200);
+        let mut messages = self.production_read_conversation_window(
+            &conversation_id,
             before_message_id.as_deref(),
-            limit,
-        );
+            None,
+            Some(u32::try_from(limit + 1).unwrap_or(201)),
+        )?;
+        let has_older = messages.len() > limit;
+        if has_older {
+            messages.remove(0);
+        }
+        let next_before_message_id = has_older
+            .then(|| messages.first().map(|message| message.id.clone()))
+            .flatten();
         let shipped_through_id = messages.last().map(|message| message.id.clone());
         let mut state = self.state()?;
         let was_active = state.conversation_session.active_conversation_id.as_deref()

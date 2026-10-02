@@ -295,6 +295,24 @@ pub enum RuntimeCommand {
         conversation_id: ConversationId,
         limit: Option<u32>,
     },
+    #[serde(rename = "mahayana.conversation.historyWindow")]
+    ConversationHistoryWindow {
+        #[serde(rename = "conversationId")]
+        conversation_id: ConversationId,
+        #[serde(
+            rename = "beforeMessageId",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        before_message_id: Option<String>,
+        #[serde(
+            rename = "afterMessageId",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        after_message_id: Option<String>,
+        limit: Option<u32>,
+    },
     #[serde(rename = "mahayana.conversation.send")]
     SendMessage {
         #[serde(rename = "conversationId")]

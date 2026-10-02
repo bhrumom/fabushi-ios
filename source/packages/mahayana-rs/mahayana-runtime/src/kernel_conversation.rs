@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use mahayana_conversation::select_history_window;
 use mahayana_conversation::{
     ConversationError, ConversationProvider, MAHAYANA_AI_PROVIDER_KEY, ResolveApprovalRequest,
     SendMessageRequest, SharedConversationEventSink,
@@ -214,6 +215,30 @@ impl ConversationProvider for KernelConversationProvider {
             state.mark_read(conversation_id);
         }
         Ok(messages)
+    }
+
+    async fn history_window(
+        &self,
+        conversation_id: &ConversationId,
+        before_message_id: Option<&str>,
+        after_message_id: Option<&str>,
+        limit: Option<u32>,
+    ) -> Result<Vec<Message>, ConversationError> {
+        let state = self.state.lock().map_err(|_| {
+            ConversationError::Provider("kernel conversation state mutex poisoned".into())
+        })?;
+        let matching = state
+            .history
+            .iter()
+            .filter(|message| &message.conversation_id == conversation_id)
+            .cloned()
+            .collect::<Vec<_>>();
+        select_history_window(
+            &matching,
+            before_message_id,
+            after_message_id,
+            limit,
+        )
     }
 
     async fn warmup(&self, conversation_id: &ConversationId) -> Result<(), ConversationError> {

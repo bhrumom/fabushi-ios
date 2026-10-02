@@ -2057,7 +2057,7 @@ const fn default_conversation_window_limit() -> usize {
     200
 }
 
-fn default_search_limit() -> usize {
+const fn default_search_limit() -> usize {
     50
 }
 

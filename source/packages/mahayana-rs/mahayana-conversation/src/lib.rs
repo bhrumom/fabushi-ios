@@ -42,6 +42,50 @@ pub trait ConversationEventSink: Send + Sync {
 
 pub type SharedConversationEventSink = Arc<dyn ConversationEventSink>;
 
+pub fn select_history_window(
+    messages: &[Message],
+    before_message_id: Option<&str>,
+    after_message_id: Option<&str>,
+    limit: Option<u32>,
+) -> Result<Vec<Message>, ConversationError> {
+    if before_message_id.is_some() && after_message_id.is_some() {
+        return Err(ConversationError::Provider(
+            "history window cannot specify both beforeMessageId and afterMessageId".into(),
+        ));
+    }
+
+    let (start, end) = if let Some(after_message_id) = after_message_id {
+        let Some(index) = messages
+            .iter()
+            .position(|message| message.id.as_str() == after_message_id)
+        else {
+            return Ok(Vec::new());
+        };
+        (index + 1, messages.len())
+    } else if let Some(before_message_id) = before_message_id {
+        let Some(index) = messages
+            .iter()
+            .position(|message| message.id.as_str() == before_message_id)
+        else {
+            return Ok(Vec::new());
+        };
+        (0, index)
+    } else {
+        (0, messages.len())
+    };
+
+    let mut selected = messages[start..end].to_vec();
+    if let Some(limit) = limit {
+        let limit = limit.max(1) as usize;
+        if after_message_id.is_some() {
+            selected.truncate(limit);
+        } else if selected.len() > limit {
+            selected = selected[selected.len() - limit..].to_vec();
+        }
+    }
+    Ok(selected)
+}
+
 /// One source of conversations. Implementations own provider-specific network,
 /// persistence, and approval behavior while exposing one product contract.
 #[async_trait]
@@ -62,6 +106,23 @@ pub trait ConversationProvider: Send + Sync {
         conversation_id: &ConversationId,
         limit: u32,
     ) -> Result<Vec<Message>, ConversationError>;
+
+    async fn history_window(
+        &self,
+        conversation_id: &ConversationId,
+        before_message_id: Option<&str>,
+        after_message_id: Option<&str>,
+        limit: Option<u32>,
+    ) -> Result<Vec<Message>, ConversationError> {
+        let scan_limit = limit.unwrap_or(500).max(500).min(10_000);
+        let messages = self.history(conversation_id, scan_limit).await?;
+        select_history_window(
+            &messages,
+            before_message_id,
+            after_message_id,
+            limit,
+        )
+    }
 
     /// Prepare provider-owned resources needed by the first user-visible turn
     /// without sending model input or mutating the conversation transcript.
@@ -193,6 +254,41 @@ pub enum ConversationError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn history_window_preserves_before_after_boundaries_and_missing_anchor_fails_closed() {
+        let conversation_id = ConversationId("mahayana-ai:agent:assistant".into());
+        let messages = ["a", "b", "c", "d"]
+            .into_iter()
+            .map(|id| Message {
+                id: mahayana_core::MessageId(id.into()),
+                conversation_id: conversation_id.clone(),
+                role: mahayana_core::MessageRole::Assistant,
+                text: id.into(),
+                created_at_ms: 0,
+                metadata: Value::Null,
+            })
+            .collect::<Vec<_>>();
+
+        let before = select_history_window(&messages, Some("d"), None, Some(2))
+            .expect("before window");
+        assert_eq!(
+            before.into_iter().map(|message| message.id.0).collect::<Vec<_>>(),
+            vec!["b", "c"]
+        );
+
+        let after = select_history_window(&messages, None, Some("b"), None)
+            .expect("after window");
+        assert_eq!(
+            after.into_iter().map(|message| message.id.0).collect::<Vec<_>>(),
+            vec!["c", "d"]
+        );
+
+        assert!(select_history_window(&messages, Some("missing"), None, Some(2))
+            .expect("missing anchor")
+            .is_empty());
+        assert!(select_history_window(&messages, Some("b"), Some("c"), Some(2)).is_err());
+    }
 
     #[test]
     fn routes_all_supported_peer_prefixes() {

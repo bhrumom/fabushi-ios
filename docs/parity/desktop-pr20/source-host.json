@@ -43,11 +43,11 @@
       "ios_disposition": "ios-adapted",
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs; source/packages/mahayana-rs/mahayana-app-host/src/lib.rs; source/packages/mahayana-rs/mahayana-host-protocol/src/lib.rs; source/ios-main/IOSMainRuntime.swift",
       "ios_language": "Rust + Swift",
-      "ios_platform_delta": "iOS defers activation on the canonical Host event-pump boundary instead of spawning a desktop thread. Native scene activity replaces window focus. Activation-read failure emits conversation.activationFailed with conversation+generation identity. Runtime history currently exposes at most 500 messages, so an older shipped anchor remains a fail-closed platform gap.",
+      "ios_platform_delta": "iOS defers activation on the canonical Host event-pump boundary instead of spawning a desktop thread. Native scene activity replaces window focus. Activation-read failure emits conversation.activationFailed with conversation+generation identity. Provider-owned ConversationHistoryWindow resolves before/after anchors without changing ordinary read acknowledgement.",
       "implementation_status": "implemented",
-      "production_evidence": "FeatureHostController::production_open_conversation_windowed/advance_deferred_conversation_activation and ConversationSessionState are in the mobile AppHost shipping path; AppHost::feature_session_activity is reached through MahayanaHostRuntime FFI; IOSMainRuntime forwards ScenePhase without owning Session truth.",
-      "test_evidence": "Focused Rust contracts in mahayana-feature-host implementation.rs plus mahayana-host-protocol wire-shape contract; exact-HEAD GitHub Actions pending.",
-      "notes": "Rebaselined to Desktop cbed4288 and dispositioned on iOS. Do not promote to verified until same exact iOS HEAD passes architecture/rust-host/Swift Unit+UI/device/protected-session acceptance and the canonical history/window owner can resolve retained shipped anchors beyond the current 500-message Runtime API window. Earlier pre-dispatch recovery-shaped supersession gap remains next after this blocker."
+      "production_evidence": "FeatureHostController::production_open_conversation_windowed/advance_deferred_conversation_activation and ConversationSessionState are in the mobile AppHost shipping path; RuntimeCommand::ConversationHistoryWindow delegates to ConversationProvider::history_window; KernelConversationProvider slices its full current canonical transcript; AppHost::feature_session_activity is reached through MahayanaHostRuntime FFI; IOSMainRuntime forwards ScenePhase without owning Session truth.",
+      "test_evidence": "Focused Rust contracts in mahayana-feature-host, mahayana-host-protocol, and mahayana-conversation cover activation ordering/generation, invalidation, before/after anchor slicing, strict catch-up, focus freshness, and wire shapes; exact-HEAD GitHub Actions pending.",
+      "notes": "Rebaselined to Desktop cbed4288 and dispositioned on iOS. Do not promote to verified until same exact iOS HEAD passes architecture/rust-host/Swift Unit+UI/device/protected-session acceptance. Earlier pre-dispatch recovery-shaped supersession gap is next once this exact-head evidence closes."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -5672,7 +5672,7 @@
       "implementation_status": "implemented",
       "production_evidence": "FeatureHostController event queue is the existing canonical FeatureHost projection path used by mobile AppHost; deferred activation enqueues append+activation then refreshes ConversationListed.",
       "test_evidence": "Focused deferred activation ordering and wire-shape Rust contracts; exact-HEAD GitHub Actions pending.",
-      "notes": "Implemented against cbed4288 but not verified. History-anchor visibility beyond Runtime's 500-message command window remains fail-closed and blocks verification."
+      "notes": "Implemented against cbed4288 but not verified; canonical append/activation/ConversationListed projection is wired through the existing mobile FeatureHost event owner and exact-head CI is pending."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/roster_projection.rs",
@@ -5938,11 +5938,11 @@
       "ios_disposition": "ios-adapted",
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs; source/packages/mahayana-rs/mahayana-app-host/src/lib.rs; source/ios-main/IOSMainRuntime.swift",
       "ios_language": "Rust + Swift",
-      "ios_platform_delta": "ConversationSessionState is the iOS canonical Host owner. Scene active state replaces desktop focus; no desktop live-session thread/cache is reproduced. Missing/too-old anchor fails closed.",
+      "ios_platform_delta": "ConversationSessionState is the iOS canonical Host owner. Scene active state replaces desktop focus; no desktop live-session thread/cache is reproduced. Provider-owned ConversationHistoryWindow resolves before/after anchors and missing anchors fail closed.",
       "implementation_status": "implemented",
-      "production_evidence": "ConversationSessionState is embedded in FeatureState and used by production open/window/tail, receive pump, BotDelete, session clear, account-boundary reset, and AppHost scene-contact path.",
-      "test_evidence": "Focused Rust tests cover generation supersession, explicit-switch invalidation, strict catch-up and active-only freshness; exact-HEAD GitHub Actions pending.",
-      "notes": "Implemented, pending verification. The Runtime ConversationHistory 500-message visibility limit is an unresolved platform delta for old bounded anchors."
+      "production_evidence": "ConversationSessionState is embedded in FeatureState and used by production open/window/tail, receive pump, BotDelete, session clear, account-boundary reset, and AppHost scene-contact path; deferred catch-up uses RuntimeCommand::ConversationHistoryWindow backed by ConversationProvider ownership.",
+      "test_evidence": "Focused Rust tests cover generation supersession, explicit-switch invalidation, provider-owned before/after history windows, strict catch-up and active-only freshness; exact-HEAD GitHub Actions pending.",
+      "notes": "Implemented, pending same exact-head verification."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/shared_rooms.rs",
@@ -13951,7 +13951,7 @@
       "ios_platform_delta": "iOS contracts target ConversationSessionState and FeatureHost wire projection rather than Desktop SessionRuntime/roster objects.",
       "implementation_status": "implemented",
       "production_evidence": "Tests exercise the same ConversationSessionState and FeatureHostController types used by production composition; no separate test-only state machine.",
-      "test_evidence": "deferred_conversation_activation_is_generation_fenced_and_runs_after_window_delivery; explicit_conversation_switch_invalidates_pending_activation; conversation_catch_up_is_strictly_after_shipped_anchor_and_missing_anchor_fails_closed; scene_contact_freshness_only_advances_while_active; conversation_window_commands_and_activation_events_use_stable_wire_shapes.",
+      "test_evidence": "deferred_conversation_activation_is_generation_fenced_and_runs_after_window_delivery; explicit_conversation_switch_invalidates_pending_activation; conversation_catch_up_is_strictly_after_shipped_anchor_and_missing_anchor_fails_closed; scene_contact_freshness_only_advances_while_active; conversation_window_commands_and_activation_events_use_stable_wire_shapes; history_window_preserves_before_after_boundaries_and_missing_anchor_fails_closed.",
       "notes": "Implemented test disposition for cbed4288; verification awaits same exact-head GitHub Actions."
     },
     {

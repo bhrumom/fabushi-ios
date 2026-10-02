@@ -538,6 +538,21 @@ impl MahayanaRuntime {
                 )?;
                 Ok(RuntimeResponse::History { data })
             }
+            RuntimeCommand::ConversationHistoryWindow {
+                conversation_id,
+                before_message_id,
+                after_message_id,
+                limit,
+            } => {
+                let provider = self.providers.for_conversation(&conversation_id)?;
+                let data = self.async_runtime.block_on(provider.history_window(
+                    &conversation_id,
+                    before_message_id.as_deref(),
+                    after_message_id.as_deref(),
+                    limit,
+                ))?;
+                Ok(RuntimeResponse::History { data })
+            }
             RuntimeCommand::SendMessage {
                 conversation_id,
                 text,
