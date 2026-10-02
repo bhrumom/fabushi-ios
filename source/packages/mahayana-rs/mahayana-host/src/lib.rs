@@ -574,7 +574,7 @@ fn build_runtime(
             mcp_registry,
         )?;
         let miniapp = MiniAppConversationProvider::new_for_platform_with_entitlements(
-            Arc::clone(&native_agent),
+            Arc::clone(&runner_composition.agent_backend),
             mini_apps,
             host_platform,
             Some(Arc::new(PlatformEntitlementChecker {
