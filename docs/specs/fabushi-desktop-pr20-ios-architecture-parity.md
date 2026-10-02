@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `29b10d13f1158c6b070ccabc1cf655317adcf184`
+- pinned source commit for this baseline: `1e79bdad87022dcb394b9d4ecaef9508baf7497d`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -251,6 +251,14 @@ Desktop PR #20 advanced two commits from `cf0012e6bb5ddcd1669c747994af68a5055bf0
 The new lifecycle rule is normative: after canonical Runner cancellation begins, Host shutdown must explicitly dispose the live local-tool permission projection subscriptions owned by `HostRunnerComposition`. This prevents stale permission surfaces from surviving shutdown/restart and keeps ask/projection ownership inside the Host/Runner composition rather than UI state. iOS must provide the same product effect with a native Host-owned shutdown settlement path; SwiftUI and the Coordinator may project permission state but cannot retain or clean up the canonical subscriptions themselves.
 
 No affected row is promoted by rebaseline. The shipping and composition rows remain `mapped`; the previously unreviewed local-permission contract is now reviewed and mapped only. Exact-head production wiring plus focused behavior evidence is required before `implemented` or `verified`.
+
+### 1.27 Exact-HEAD rebaseline: 2026-10-03 / `1e79bdad87022dcb394b9d4ecaef9508baf7497d`
+
+Desktop PR #20 advanced one contract-only commit from `29b10d13f1158c6b070ccabc1cf655317adcf184` to `1e79bdad87022dcb394b9d4ecaef9508baf7497d`. The selected inventory remains exactly **7,927** blobs and only `source/host/tests/host_runner_composition_production_wiring_contract.rs` changed.
+
+The strengthened contract makes two current responsibilities explicit without changing shipping Desktop source. First, `is_group_member_turn` must be supplied to the canonical `HostRunnerComposition.compose_turn_state_surfaces` path so group-member turns retain generated-Agent execution while omitting private Agent state. Second, shutdown ownership is ordered: the canonical Runner registry interrupts active turns first, then `HostRunnerComposition` disposes only the permission/projection surfaces it owns; composition must not duplicate Runner cancellation ownership.
+
+The affected iOS row remains `mapped`. Existing single-NativeEngine ownership evidence is insufficient until the native mobile shipping path proves group-aware private-state omission and Rust Host-owned shutdown settlement with the same separation of responsibilities.
 
 ## 2. Product goal
 

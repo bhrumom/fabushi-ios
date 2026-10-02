@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_DESKTOP_REPOSITORY = "bhrumom/fabushi-desktop"
 EXPECTED_DESKTOP_PR = 20
 EXPECTED_DESKTOP_BRANCH = "refactor/grok-018-architecture-rebuild"
-EXPECTED_DESKTOP_COMMIT = "29b10d13f1158c6b070ccabc1cf655317adcf184"
+EXPECTED_DESKTOP_COMMIT = "1e79bdad87022dcb394b9d4ecaef9508baf7497d"
 EXPECTED_FILES = 7927
 
 VALID_DISPOSITIONS = {

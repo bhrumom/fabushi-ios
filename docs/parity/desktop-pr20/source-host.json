@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "29b10d13f1158c6b070ccabc1cf655317adcf184",
+  "sourceCommit": "1e79bdad87022dcb394b9d4ecaef9508baf7497d",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -11481,7 +11481,7 @@
     },
     {
       "desktop_path": "source/host/tests/host_runner_composition_production_wiring_contract.rs",
-      "desktop_blob_sha": "03e513eb4dbbc6e0d02f91b37a59767a828617f1",
+      "desktop_blob_sha": "b9357bf42ba11335a3546b450a7fe9145cfa6201",
       "desktop_responsibility": "Focused production contract proving HostRunnerComposition owns turn/checkpoint/state/Runner construction and computer-use session lifecycle while shipping main.rs cannot directly acquire/release control leases or own preparation/settlement.",
       "desktop_owner": "host",
       "desktop_visible_effect": "CI rejects parallel Runner or computer-use lifecycle ownership.",
@@ -11492,7 +11492,7 @@
       "implementation_status": "mapped",
       "production_evidence": "Shipping MahayanaHost::build_runtime consumes NativeRunnerComposition::compose; that composition constructs one NativeEngine and derives both the Runtime EngineBackend and NativeAgentBackend from the same Arc owner. NativeEngine remains the canonical owner of operation control, durable active prompt/attempt state, model/tool loop, approvals, session checkpoint persistence, interruption, delivery recovery, and terminal settlement. The mobile turn-execution extension delegates back to the same Host and does not own a second model/tool/session engine.",
       "test_evidence": "Focused Rust unit contract native_runner_composition_shares_one_engine_owner validates Runtime EngineBackend pointer identity with the composed NativeEngine and verifies the same engine is retained by both Runtime and NativeAgent. The exact-head architecture workflow now runs mahayana-host --lib --features mobile-embedded before mobile app-host tests; current-head CI acceptance is still required before verified.",
-      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required. iOS production closure landed in NativeRunnerComposition; status is implemented only, not verified, until the same exact iOS HEAD completes required CI. Revalidated at Desktop PR #20 9f22a1974f02683f4ad27a2fe856987b7dd1d20f: contract-only delta requires the shipping worker to consume the same HostRunnerComposition via Arc::clone; production ownership/state semantics are unchanged, so the reviewed iOS NativeRunnerComposition implementation remains implemented but not verified. Revalidated at Desktop PR #20 cf0012e6bb5ddcd1669c747994af68a5055bf05d: upstream now makes group-member turns retain the generated-Agent lifecycle while omitting private checkpoint/state/image persistence. Current iOS NativeRunnerComposition has one canonical NativeEngine owner but no equivalent group-member composition boundary, so this affected row is deliberately reset to mapped pending shipping implementation and same-head evidence."
+      "notes": "Revalidated against Desktop PR #20 1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef; computer-use lifecycle ownership moved under HostRunnerComposition. Current iOS parity is not inherited; shipping-path audit plus same-head evidence required. iOS production closure landed in NativeRunnerComposition; status is implemented only, not verified, until the same exact iOS HEAD completes required CI. Revalidated at Desktop PR #20 9f22a1974f02683f4ad27a2fe856987b7dd1d20f: contract-only delta requires the shipping worker to consume the same HostRunnerComposition via Arc::clone; production ownership/state semantics are unchanged, so the reviewed iOS NativeRunnerComposition implementation remains implemented but not verified. Revalidated at Desktop PR #20 cf0012e6bb5ddcd1669c747994af68a5055bf05d: upstream now makes group-member turns retain the generated-Agent lifecycle while omitting private checkpoint/state/image persistence. Current iOS NativeRunnerComposition has one canonical NativeEngine owner but no equivalent group-member composition boundary, so this affected row is deliberately reset to mapped pending shipping implementation and same-head evidence. Revalidated at Desktop PR #20 1e79bdad87022dcb394b9d4ecaef9508baf7497d: focused production ownership contract now explicitly binds group-member identity into HostRunnerComposition state-surface composition and enforces shutdown ordering RunnerRegistry cancel before composition-owned surface disposal. Shipping source is unchanged; iOS remains mapped until native production behavior and exact-head evidence prove both responsibilities."
     },
     {
       "desktop_path": "source/host/tests/host_secret_store_contract.rs",

@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "29b10d13f1158c6b070ccabc1cf655317adcf184",
+  "sourceCommit": "1e79bdad87022dcb394b9d4ecaef9508baf7497d",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -3830,8 +3830,8 @@
     },
     {
       "path": "source/host/tests/host_runner_composition_production_wiring_contract.rs",
-      "blobSha": "03e513eb4dbbc6e0d02f91b37a59767a828617f1",
-      "size": 9611
+      "blobSha": "b9357bf42ba11335a3546b450a7fe9145cfa6201",
+      "size": 10716
     },
     {
       "path": "source/host/tests/host_secret_store_contract.rs",
