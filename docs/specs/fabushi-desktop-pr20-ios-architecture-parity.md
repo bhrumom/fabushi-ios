@@ -216,6 +216,14 @@ Desktop PR #20 advanced one production commit from `2126a60a388b9bc44545f11eaa22
 
 On iOS, computer-use or native-control mechanisms may differ, but control/session lifecycle truth must stay with the canonical Host/Runner owner. SwiftUI and Coordinator may transport intent and project state; they cannot own control leases, preparation truth, or terminal cleanup. The three changed rows remain `mapped` until the shipping iOS path and same-head focused/CI evidence prove this ownership.
 
+### 1.22 iOS closure contract: canonical native Runner composition
+
+For Desktop PR #20 `1d9d9b72d2b6cf2a28d641159d68ffcb3c85dbef`, `HostRunnerComposition` is the single shipping owner for production turn decoration, transcript/checkpoint sink construction, turn state surfaces, final `ProductionTurnAgentOwner`/`SandAgentRunner` construction, and computer-use preparation/control/settlement lifecycle.
+
+The iOS production analogue must be explicit in the shipping Rust Host composition, not inferred from presentation code. `MahayanaHost::build_runtime` is the composition root and must construct exactly one native Runner graph whose `NativeEngine` instance is shared by the Runtime engine backend and the `NativeAgentBackend`. NativeEngine remains the sole owner of operation control, prompt/attempt durability, model loop, approvals, tool execution, checkpointable session state, retry/delivery recovery, and terminal settlement. The mobile turn-execution extension may expose a Host-bound adapter for Desktop-derived extension contracts, but it must not construct a second model/tool/session engine or own parallel durable turn truth.
+
+The closure must therefore provide a real Host-owned composition object used by `build_runtime` on the shipping MobileEmbedded path, prove that the engine and Agent surfaces share the same NativeEngine owner, and keep SwiftUI/Coordinator outside Runner construction. Focused Rust tests must exercise that production composition seam. Only after the same iOS exact HEAD passes the required architecture/Rust/Swift/UI/archive/protected-session gates may the affected Desktop rows advance beyond `implemented`.
+
 ## 2. Product goal
 
 The goal is not to make an iOS app that separately reinterprets Grok Bot.
