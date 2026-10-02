@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `9467112079551dc9ff64d40ba2c0bed0f62a114a`
+- pinned source commit for this baseline: `f6d4c48d113d02ec2e223c4fcbad1e6417549424`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -175,6 +175,12 @@ Desktop PR #20 advanced two commits from `9e0b1701d405ebd0b2707620c01781103562b3
 The first contract now proves that AutoReview startup stale-approval sweeping is composed through `ProductionHostExtensions.start_auto_review`, with the expire-sweep failure sink installed before the startup sweep and failures reported only through the Host structured-log owner. Shipping Host must consume this centralized AutoReview owner and must not construct a second extension; Coordinator and Electron telemetry remain non-owners.
 
 The second contract strengthens the centralized production composition invariant: `CURRENT_SHIPPING_PRODUCTION_EXTENSION_IDS` must cover the exact 35 frozen Host extension slots exactly once, and no `NoopProductionExtension`/no-op placeholder may satisfy a frozen slot. The already-audited iOS architecture still has one Coordinator->Host boundary and a single Rust `FeatureHostController` rather than SwiftUI parallel Host owners, but this evidence-only upstream tightening does not promote iOS parity. The two changed rows remain mapped pending native shipping-path proof and same-iOS-HEAD acceptance.
+
+### 1.17 Exact-HEAD rebaseline: 2026-10-03 / f6d4c48d113d02ec2e223c4fcbad1e6417549424
+
+Desktop PR #20 advanced one evidence-only commit from `9467112079551dc9ff64d40ba2c0bed0f62a114a` to `f6d4c48d113d02ec2e223c4fcbad1e6417549424`. The commit changes only `projects/grok-fabu-parity/architecture-manifest.json`; no selected `frontend/** + source/**` path or blob changed, so the authoritative selected inventory remains exactly 7,926 paths and no source responsibility/status is promoted or demoted solely by this move. Nevertheless every manifest/ledger `sourceCommit`, both authority indexes, `MIGRATION_SOURCE.md`, and the strict checker are rebound to the new exact HEAD before further current-head parity claims.
+
+The preceding production-source audit remains semantically current because all selected source blobs are identical. The iOS Rust CI-session transport fix is retained as production code, but acceptance results tied to its pre-rebaseline iOS SHA are not used as proof for the post-rebaseline exact HEAD; that exact HEAD must earn its own architecture, Rust, Swift/UI, archive and protected complete-state evidence.
 
 ## 2. Product goal
 
