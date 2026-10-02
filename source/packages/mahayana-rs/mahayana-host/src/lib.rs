@@ -216,6 +216,26 @@ impl MahayanaHost {
             .map_err(HostError::from)
     }
 
+    pub fn conversation_history(
+        &self,
+        conversation_id: ConversationId,
+        limit: u32,
+    ) -> Result<Vec<mahayana_core::Message>, HostError> {
+        self.runtime
+            .conversation_history(conversation_id, limit)
+            .map_err(HostError::from)
+    }
+
+    pub fn replace_conversation_message(
+        &self,
+        conversation_id: ConversationId,
+        message: mahayana_core::Message,
+    ) -> Result<bool, HostError> {
+        self.runtime
+            .replace_conversation_message(conversation_id, message)
+            .map_err(HostError::from)
+    }
+
     pub fn execute(&self, command: RuntimeCommand) -> Result<RuntimeResponse, HostError> {
         self.runtime.execute(command).map_err(HostError::from)
     }

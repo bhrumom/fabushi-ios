@@ -1582,6 +1582,8 @@ impl FeatureHostController {
                         mode_statement: None,
                         model: None,
                         attachments: Vec::new(),
+                        reply_to_message_id: None,
+                        is_fork: false,
                     }),
                     HostMode::Production => {
                         #[cfg(feature = "production")]
@@ -1594,6 +1596,8 @@ impl FeatureHostController {
                             None,
                             None,
                             Vec::new(),
+                            None,
+                            false,
                         );
                         #[cfg(not(feature = "production"))]
                         return Err(FeatureHostError::ProductionUnavailable);
@@ -2185,7 +2189,11 @@ impl FeatureHostController {
                 display_text: None,
                 client_message_id: Some(format!("teach:{}:{}", bot.id, now_millis())),
                 hidden: true,
+                show_assistant_output: false,
                 recovery_eligible: false,
+                reply_to_message_id: None,
+                is_fork: false,
+                attachment_batch_id: None,
                 selected_image_data_urls: Vec::new(),
             })?;
             let operation_id = match response {
@@ -2644,6 +2652,7 @@ impl FeatureHostController {
                 display_text: None,
                 client_message_id: Some(client_message_id),
                 hidden: true,
+                show_assistant_output: false,
                 recovery_eligible: false,
                 selected_image_data_urls,
             })?;
@@ -3574,12 +3583,22 @@ impl FeatureHostController {
                             role: MessageRole::User,
                             text: visible_text,
                             operation_id: None,
+                            message_id: None,
+                            reply_to_message_id: None,
+                            attachment_batch_id: None,
+                            attachment: None,
+                            branched: false,
                         });
                         state.events.push_back(HostEvent::ChatMessage {
                             timestamp: timestamp(),
                             role: MessageRole::Assistant,
                             text: format!("Running workflow: {}", workflow.name),
                             operation_id: None,
+                            message_id: None,
+                            reply_to_message_id: None,
+                            attachment_batch_id: None,
+                            attachment: None,
+                            branched: false,
                         });
                         return Ok(CommandAccepted {
                             request_id,
@@ -3616,7 +3635,11 @@ impl FeatureHostController {
                                     display_text: None,
                                     client_message_id: Some(request_id.clone()),
                                     hidden: true,
+                                    show_assistant_output: false,
                                     recovery_eligible: false,
+                                    reply_to_message_id: None,
+                                    is_fork: false,
+                                    attachment_batch_id: None,
                                     selected_image_data_urls: Vec::new(),
                                 })?;
                             let operation_id = match response {
@@ -3642,6 +3665,10 @@ impl FeatureHostController {
                                 role: MessageRole::User,
                                 text: visible_text,
                                 operation_id: None,
+                                message_id: None,
+                                reply_to_message_id: None,
+                                attachment_batch_id: None,
+                                branched: false,
                             });
                             state.events.push_back(HostEvent::OperationStarted {
                                 timestamp: timestamp(),
@@ -5663,6 +5690,8 @@ impl FeatureHostController {
                         mode_statement: None,
                         model: None,
                         attachments: Vec::new(),
+                        reply_to_message_id: None,
+                        is_fork: false,
                     })?;
                 }
                 HostMode::Production => {
@@ -5677,6 +5706,8 @@ impl FeatureHostController {
                             None,
                             None,
                             Vec::new(),
+                            None,
+                            false,
                         )?;
                     }
                     #[cfg(not(feature = "production"))]
@@ -6391,7 +6422,11 @@ impl FeatureHostController {
                 context.run_id, context.group_id, context.member_id
             )),
             hidden: true,
+            show_assistant_output: false,
             recovery_eligible: false,
+            reply_to_message_id: None,
+            is_fork: false,
+            attachment_batch_id: None,
             selected_image_data_urls: Vec::new(),
         })?;
         let operation_id = match response {
@@ -6640,11 +6675,32 @@ impl FeatureHostController {
                             | RuntimeMessageRole::MiniApp
                             | RuntimeMessageRole::System => MessageRole::Assistant,
                         };
+                        let reply_to_message_id = message
+                            .metadata
+                            .get("replyToMessageId")
+                            .and_then(Value::as_str)
+                            .map(ToOwned::to_owned);
+                        let attachment_batch_id = message
+                            .metadata
+                            .get("attachmentBatchId")
+                            .and_then(Value::as_str)
+                            .map(ToOwned::to_owned);
+                        let attachment = message.metadata.get("generatedAttachment").cloned();
+                        let branched = message
+                            .metadata
+                            .get("branched")
+                            .and_then(Value::as_bool)
+                            .unwrap_or(false);
                         Some(HostEvent::ChatMessage {
                             timestamp: timestamp(),
                             role,
                             text: message.text,
+                            message_id: Some(message_id),
                             operation_id: Some(operation_id),
+                            reply_to_message_id,
+                            attachment_batch_id,
+                            attachment,
+                            branched,
                         })
                     }
                 }
@@ -7379,6 +7435,8 @@ impl FeatureHostController {
         mode_statement: Option<String>,
         model: Option<String>,
         attachments: Vec<AttachmentContext>,
+        reply_to_message_id: Option<String>,
+        is_fork: bool,
     ) -> Result<CommandAccepted, FeatureHostError> {
         self.require_authenticated_account()?;
         let text = required(text, "chat text")?;
@@ -7425,12 +7483,20 @@ impl FeatureHostController {
                 role: MessageRole::User,
                 text,
                 operation_id: None,
+                message_id: None,
+                reply_to_message_id: None,
+                attachment_batch_id: None,
+                branched: false,
             });
             state.events.push_back(HostEvent::ChatMessage {
                 timestamp: timestamp(),
                 role: MessageRole::Assistant,
                 text: reply,
                 operation_id: None,
+                message_id: None,
+                reply_to_message_id: None,
+                attachment_batch_id: None,
+                branched: false,
             });
             return Ok(CommandAccepted {
                 request_id,
@@ -7502,7 +7568,14 @@ impl FeatureHostController {
             display_text: Some(text.clone()),
             client_message_id: Some(request_id.clone()),
             hidden: false,
+            show_assistant_output: false,
             recovery_eligible: attachments.is_empty(),
+            reply_to_message_id: reply_to_message_id
+                .map(|value| value.trim().to_string())
+                .filter(|value| !value.is_empty()),
+            is_fork,
+            attachment_batch_id: (!attachments.is_empty())
+                .then(|| format!("attachment-batch:{request_id}")),
             selected_image_data_urls,
         })?;
         let operation_id = match response {
@@ -7522,6 +7595,10 @@ impl FeatureHostController {
             role: MessageRole::User,
             text,
             operation_id: None,
+            message_id: None,
+            reply_to_message_id: None,
+            attachment_batch_id: None,
+            branched: false,
         });
         state.events.push_back(HostEvent::OperationStarted {
             timestamp: timestamp(),
@@ -7834,6 +7911,8 @@ impl FeatureHostController {
                 mode_statement,
                 model,
                 attachments,
+                reply_to_message_id,
+                is_fork,
                 ..
             } => self.production_chat(
                 request_id,
@@ -7844,6 +7923,8 @@ impl FeatureHostController {
                 mode_statement,
                 model,
                 attachments,
+                reply_to_message_id,
+                is_fork,
             ),
             FeatureCommand::ConversationList { query, .. } => {
                 self.production_list_conversations(request_id, query)
@@ -7913,6 +7994,10 @@ impl FeatureHostController {
                     role: MessageRole::User,
                     text: text.clone(),
                     operation_id: None,
+                    message_id: None,
+                    reply_to_message_id: None,
+                    attachment_batch_id: None,
+                    branched: false,
                 });
                 state.events.push_back(HostEvent::OperationStarted {
                     timestamp: timestamp(),
@@ -7950,6 +8035,10 @@ impl FeatureHostController {
                         .map(|id| format!("{id}机器人收到：{text}"))
                         .unwrap_or_else(|| format!("收到：{text}")),
                     operation_id: Some(operation_id.clone()),
+                    message_id: None,
+                    reply_to_message_id: None,
+                    attachment_batch_id: None,
+                    branched: false,
                 });
                 state.events.push_back(HostEvent::UsageUpdated {
                     timestamp: timestamp(),
@@ -13284,6 +13373,8 @@ mod tests {
                 mode_statement: None,
                 model: None,
                 attachments: Vec::new(),
+                reply_to_message_id: None,
+                is_fork: false,
             })
             .expect("chat");
         controller
@@ -14382,7 +14473,11 @@ mod tests {
                 display_text: None,
                 client_message_id: Some("visible-completion".into()),
                 hidden: false,
+                show_assistant_output: false,
                 recovery_eligible: false,
+                reply_to_message_id: None,
+                is_fork: false,
+                attachment_batch_id: None,
                 selected_image_data_urls: Vec::new(),
             })
             .expect("visible production runtime send");
@@ -14432,7 +14527,11 @@ mod tests {
                 display_text: None,
                 client_message_id: Some("hidden-completion".into()),
                 hidden: true,
+                show_assistant_output: false,
                 recovery_eligible: false,
+                reply_to_message_id: None,
+                is_fork: false,
+                attachment_batch_id: None,
                 selected_image_data_urls: Vec::new(),
             })
             .expect("hidden production runtime send");

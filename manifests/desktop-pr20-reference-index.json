@@ -4,14 +4,14 @@
     "repository": "bhrumom/fabushi-desktop",
     "pullRequest": 20,
     "branch": "refactor/grok-018-architecture-rebuild",
-    "commit": "885f9e0c5ead351bd6b18b52a781633a8862df04",
+    "commit": "d3b2477ef7941554946a92d1267e5f6110e9137a",
     "generatedAt": "2026-10-03"
   },
   "roots": [
     "frontend/**",
     "source/**"
   ],
-  "fileCount": 7925,
+  "fileCount": 7926,
   "groups": [
     {
       "name": "frontend",
@@ -41,7 +41,7 @@
     {
       "name": "source-host",
       "path": "manifests/desktop-pr20/source-host.json",
-      "fileCount": 955
+      "fileCount": 956
     },
     {
       "name": "source-internal",

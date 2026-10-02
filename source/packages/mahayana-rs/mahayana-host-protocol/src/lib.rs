@@ -1069,6 +1069,10 @@ pub enum FeatureCommand {
         model: Option<String>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         attachments: Vec<AttachmentContext>,
+        #[serde(rename = "replyToMessageId", default, skip_serializing_if = "Option::is_none")]
+        reply_to_message_id: Option<String>,
+        #[serde(rename = "isFork", default)]
+        is_fork: bool,
     },
     #[serde(rename = "conversation.list")]
     ConversationList {
@@ -2175,12 +2179,22 @@ pub enum HostEvent {
         timestamp: String,
         role: MessageRole,
         text: String,
+        #[serde(rename = "messageId", default, skip_serializing_if = "Option::is_none")]
+        message_id: Option<String>,
         #[serde(
             rename = "operationId",
             default,
             skip_serializing_if = "Option::is_none"
         )]
         operation_id: Option<String>,
+        #[serde(rename = "replyToMessageId", default, skip_serializing_if = "Option::is_none")]
+        reply_to_message_id: Option<String>,
+        #[serde(rename = "attachmentBatchId", default, skip_serializing_if = "Option::is_none")]
+        attachment_batch_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        attachment: Option<Value>,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        branched: bool,
     },
     #[serde(rename = "chat.delta")]
     ChatDelta {
@@ -3000,6 +3014,48 @@ mod tests {
         let value = serde_json::to_value(event).expect("encode event");
         assert_eq!(value["type"], "operation.started");
         assert_eq!(value["operationId"], "operation-1");
+    }
+
+    #[test]
+    fn generated_chat_relation_fields_are_additive_and_projectable() {
+        let command: FeatureCommand = serde_json::from_value(serde_json::json!({
+            "type": "chat.send",
+            "requestId": "req-thread",
+            "text": "reply",
+            "replyToMessageId": "message-parent",
+            "isFork": true
+        }))
+        .expect("decode threaded chat command");
+        assert!(matches!(
+            command,
+            FeatureCommand::ChatSend {
+                reply_to_message_id: Some(ref id),
+                is_fork: true,
+                ..
+            } if id == "message-parent"
+        ));
+
+        let event = HostEvent::ChatMessage {
+            timestamp: "0".into(),
+            role: MessageRole::Assistant,
+            text: String::new(),
+            message_id: Some("generated-1".into()),
+            operation_id: Some("operation-1".into()),
+            reply_to_message_id: Some("message-parent".into()),
+            attachment_batch_id: Some("batch-1".into()),
+            attachment: Some(serde_json::json!({
+                "url": "file:///tmp/report.pdf",
+                "file_name": "report.pdf"
+            })),
+            branched: true,
+        };
+        let value = serde_json::to_value(event).expect("encode chat relation projection");
+        assert_eq!(value["type"], "chat.message");
+        assert_eq!(value["messageId"], "generated-1");
+        assert_eq!(value["replyToMessageId"], "message-parent");
+        assert_eq!(value["attachmentBatchId"], "batch-1");
+        assert_eq!(value["attachment"]["file_name"], "report.pdf");
+        assert_eq!(value["branched"], true);
     }
 
     #[test]

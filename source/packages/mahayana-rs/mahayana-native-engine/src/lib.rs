@@ -728,17 +728,36 @@ impl NativeEngine {
 
             match call.name.as_str() {
                 "send_message" => {
-                    let message = string_arg(&call.arguments, "message")?.trim();
-                    if message.is_empty() {
+                    let message = call
+                        .arguments
+                        .get("message")
+                        .and_then(Value::as_str)
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty());
+                    let attachment = call
+                        .arguments
+                        .get("attachment")
+                        .and_then(Value::as_object)
+                        .cloned()
+                        .map(Value::Object);
+                    if message.is_none() && attachment.is_none() {
                         return Err(KernelError::Backend(
-                            "send_message requires a non-empty message".into(),
+                            "send_message requires a non-empty message or attachment".into(),
                         ));
                     }
+                    let reply_to_message_id = call
+                        .arguments
+                        .get("reply_to_message_id")
+                        .and_then(Value::as_str)
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty());
                     Ok(json!({
                         "delivered": true,
-                        "characters": message.chars().count(),
+                        "characters": message.map(|value| value.chars().count()).unwrap_or_default(),
                         "generatedMessage": message,
+                        "generatedAttachment": attachment,
                         "toolCallId": call.call_id.clone(),
+                        "replyToMessageId": reply_to_message_id,
                     }))
                 }
                 "workspace_read" => {
@@ -2403,7 +2422,7 @@ fn tool_definitions(enable_process_tools: bool, enable_web_research: bool) -> Ve
         function_tool(
             "send_message",
             "Send a concise user-visible progress update or answer as a separate message bubble. Use this for meaningful milestones, confirmations, and the final answer in a multi-step task. Do not invent progress; only report work that has happened or is about to happen.",
-            json!({"type":"object","properties":{"message":{"type":"string","description":"The concise message to show the user."}},"required":["message"],"additionalProperties":false}),
+            json!({"type":"object","properties":{"message":{"type":"string","description":"Optional concise text to show the user."},"attachment":{"type":"object","properties":{"url":{"type":"string"},"file_name":{"type":"string"},"alt":{"type":"string"},"channel":{"type":"string"},"width":{"type":"integer"},"height":{"type":"integer"}},"required":["url"],"additionalProperties":false},"reply_to_message_id":{"type":"string","description":"Optional live transcript message id to reply to. Invalid or stale ids are ignored by the transcript owner."}},"anyOf":[{"required":["message"]},{"required":["attachment"]}],"additionalProperties":false}),
         ),
         function_tool(
             "workspace_read",

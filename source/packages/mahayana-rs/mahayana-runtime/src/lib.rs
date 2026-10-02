@@ -310,6 +310,9 @@ impl MahayanaRuntime {
                         client_message_id,
                         false,
                         false,
+                        None,
+                        false,
+                        None,
                         Vec::new(),
                     )?;
                 Ok(RuntimeResponse::CapabilityAccepted {
@@ -561,7 +564,11 @@ impl MahayanaRuntime {
                 display_text,
                 client_message_id,
                 hidden,
+                show_assistant_output,
                 recovery_eligible,
+                reply_to_message_id,
+                is_fork,
+                attachment_batch_id,
                 selected_image_data_urls,
             } => Ok(RuntimeResponse::Accepted {
                 operation_id: self.start_message(
@@ -570,7 +577,11 @@ impl MahayanaRuntime {
                     display_text,
                     client_message_id,
                     hidden,
+                    show_assistant_output,
                     recovery_eligible,
+                    reply_to_message_id,
+                    is_fork,
+                    attachment_batch_id,
                     selected_image_data_urls,
                 )?,
             }),
@@ -610,6 +621,28 @@ impl MahayanaRuntime {
         }
     }
 
+    pub fn conversation_history(
+        &self,
+        conversation_id: ConversationId,
+        limit: u32,
+    ) -> Result<Vec<mahayana_core::Message>, RuntimeError> {
+        let provider = self.providers.for_conversation(&conversation_id)?;
+        self.async_runtime
+            .block_on(provider.history(&conversation_id, limit.clamp(1, 10_000)))
+            .map_err(RuntimeError::from)
+    }
+
+    pub fn replace_conversation_message(
+        &self,
+        conversation_id: ConversationId,
+        message: mahayana_core::Message,
+    ) -> Result<bool, RuntimeError> {
+        let provider = self.providers.for_conversation(&conversation_id)?;
+        self.async_runtime
+            .block_on(provider.replace_message(&conversation_id, message))
+            .map_err(RuntimeError::from)
+    }
+
     fn list_conversations(&self) -> Result<Vec<Conversation>, RuntimeError> {
         let providers = self.providers.providers();
         let (mut conversations, degraded) = self.async_runtime.block_on(async move {
@@ -647,7 +680,11 @@ impl MahayanaRuntime {
         display_text: Option<String>,
         client_message_id: Option<String>,
         hidden: bool,
+        show_assistant_output: bool,
         recovery_eligible: bool,
+        reply_to_message_id: Option<String>,
+        is_fork: bool,
+        attachment_batch_id: Option<String>,
         selected_image_data_urls: Vec<String>,
     ) -> Result<OperationId, RuntimeError> {
         if text.trim().is_empty() {
@@ -664,7 +701,11 @@ impl MahayanaRuntime {
             display_text,
             client_message_id,
             hidden,
+            show_assistant_output,
             recovery_eligible,
+            reply_to_message_id,
+            is_fork,
+            attachment_batch_id,
             selected_image_data_urls,
         };
         let sink: SharedConversationEventSink = Arc::new(RuntimeEventSink {
@@ -929,7 +970,11 @@ mod tests {
                 display_text: None,
                 client_message_id: None,
                 hidden: false,
+                show_assistant_output: false,
                 recovery_eligible: false,
+                reply_to_message_id: None,
+                is_fork: false,
+                attachment_batch_id: None,
                 selected_image_data_urls: Vec::new(),
             })
             .expect("send message");
@@ -1046,7 +1091,11 @@ mod tests {
                 display_text: None,
                 client_message_id: Some("first-visible-prompt".to_string()),
                 hidden: false,
+                show_assistant_output: false,
                 recovery_eligible: true,
+                reply_to_message_id: None,
+                is_fork: false,
+                attachment_batch_id: None,
                 selected_image_data_urls: Vec::new(),
             })
             .expect("send first message");

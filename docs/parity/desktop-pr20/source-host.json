@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "885f9e0c5ead351bd6b18b52a781633a8862df04",
+  "sourceCommit": "d3b2477ef7941554946a92d1267e5f6110e9137a",
   "group": "source-host",
-  "rowCount": 955,
+  "rowCount": 956,
   "rows": [
     {
       "desktop_path": "source/host/Cargo.toml",
@@ -36,7 +36,7 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "6a97d6df81805f3e4d717bc5f46ca9105e863f33",
+      "desktop_blob_sha": "f642e361f972de960f8193f844eeb05aa3b697e9",
       "desktop_responsibility": "Shipping Host shutdown orders transcript/session lifecycle owners and releases the canonical composition once.",
       "desktop_owner": "host",
       "desktop_visible_effect": "Host termination cannot leave transcript/session process-local state or callbacks alive after the application Host is destroyed.",
@@ -44,10 +44,10 @@
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust",
       "ios_platform_delta": "MobileAppHost Drop stops extensions, shuts down and joins the Host thread; AppHost destruction drops the sole FeatureHostController, whose Drop calls close.",
-      "implementation_status": "implemented",
+      "implementation_status": "mapped",
       "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs; source/packages/mahayana-rs/mahayana-runtime/src/kernel_conversation.rs; source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs; source/packages/mahayana-rs/mahayana-host-protocol/src/lib.rs",
-      "test_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs focused production_tool_activity_uses_host_owned_client_side_tool_v2_producer; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs unit contracts; exact-HEAD GitHub Actions pending",
-      "notes": "Revalidated at Desktop f5517530. f551 routes the remaining shipping group/shared-room/widget delegate call sites through TranscriptManager. This row proves composition ownership only; unchanged shared_rooms.rs and widget_responses.rs product-behavior rows remain independently unreviewed. Pre-dispatch direct-turn wiring revalidated: Host classifies recoverable direct-send shape, Runtime owns exact operation/dispatched state; broader app main responsibilities remain as separately described. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified."
+      "test_evidence": "Prior evidence applies only to the older blob responsibility; current widget-response delta requires new focused/current-HEAD evidence.",
+      "notes": "Revalidated at Desktop f5517530. f551 routes the remaining shipping group/shared-room/widget delegate call sites through TranscriptManager. This row proves composition ownership only; unchanged shared_rooms.rs and widget_responses.rs product-behavior rows remain independently unreviewed. Pre-dispatch direct-turn wiring revalidated: Host classifies recoverable direct-send shape, Runtime owns exact operation/dispatched state; broader app main responsibilities remain as separately described. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance. Revalidated at Desktop PR #20 c81d95b2399b864d10209d4853231853b7742c50. The 0941e6b→c81d95b delta centralizes secret-store failure trays, live auto-review settlement, transcript observer/roster/focus lifecycle ownership, and session group mutations behind the canonical transcript owner. iOS keeps those applicable responsibilities inside the single FeatureHostController/Runtime owner; exact-HEAD CI remains required before verified. Revalidated at Desktop PR #20 e4e0c92a5312e27004b7eb4a195cece9ca39f165. The c81d95b→e4e0c92 delta restores automation-config and listener-connect observers through the transcript extension/manager owner; iOS keeps equivalent automation/listener projection in the single FeatureHostController owner and requires same-HEAD verification before promotion. Revalidated at Desktop PR #20 387a5ec97a06a9bb5ee1f25242a2f0a75a9c155d. The e4e0c92→387a5ec delta routes create/update/delete/list agent lifecycle gateway work through TranscriptManager, removing shipping Host direct ownership. iOS already keeps bot/agent lifecycle mutation inside the single FeatureHostController Host owner; same-HEAD focused and Actions evidence remain required before promotion."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -1266,7 +1266,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/auto_review/auto_review_service.rs",
-      "desktop_blob_sha": "d55f2d178e5aa37026683a5547fbb1f2afc6f11f",
+      "desktop_blob_sha": "113d452894668480eb4ae48c8c0183fd6e24e124",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -1277,7 +1277,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance. Revalidated at Desktop PR #20 c81d95b2399b864d10209d4853231853b7742c50. The 0941e6b→c81d95b delta centralizes secret-store failure trays, live auto-review settlement, transcript observer/roster/focus lifecycle ownership, and session group mutations behind the canonical transcript owner. iOS keeps those applicable responsibilities inside the single FeatureHostController/Runtime owner; exact-HEAD CI remains required before verified."
     },
     {
       "desktop_path": "source/host/src/extensions/auto_review/extension.rs",
@@ -5511,7 +5511,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/extension.rs",
-      "desktop_blob_sha": "4195c7208f5879f30ddc1ac56ad272a902a6ba6b",
+      "desktop_blob_sha": "eb9f9bbe65a4f9e4858f1d6fe38fb9cba3102c61",
       "desktop_responsibility": "Detach transcript subscriptions/observers and dispose TranscriptManager before Session owner shutdown.",
       "desktop_owner": "host",
       "desktop_visible_effect": "Extension callbacks cannot outlive transcript ownership or observe partially destroyed Session state.",
@@ -5519,10 +5519,10 @@
       "ios_target_path": "source/packages/mahayana-rs/mahayana-app-host-mobile/src/lib.rs",
       "ios_language": "Rust",
       "ios_platform_delta": "MobileAppHost is the native extension lifecycle owner: Drop stops StartedHostExtensions first, then shuts down/joins the single Host thread; AppHost/FeatureHostController subsequently settle canonical Host state.",
-      "implementation_status": "implemented",
+      "implementation_status": "mapped",
       "production_evidence": "source/packages/mahayana-rs/mahayana-app-host-mobile/src/lib.rs MobileAppHost::drop provides production extension-before-Host teardown ordering.",
-      "test_evidence": "Focused Rust contract `close_settles_process_local_host_lifecycle_without_erasing_durable_state`; exact-HEAD GitHub Actions required because htch-runtime lacks libpipewire-0.3.",
-      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions."
+      "test_evidence": "Prior evidence applies only to the older blob responsibility; current widget-response delta requires new focused/current-HEAD evidence.",
+      "notes": "Rebaselined against Desktop PR #20 c2767eac1383fd8db7be9b536e5acaf4a4d2b7f0; upstream blob changed and row remains unreviewed. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance. Revalidated at Desktop PR #20 c81d95b2399b864d10209d4853231853b7742c50. The 0941e6b→c81d95b delta centralizes secret-store failure trays, live auto-review settlement, transcript observer/roster/focus lifecycle ownership, and session group mutations behind the canonical transcript owner. iOS keeps those applicable responsibilities inside the single FeatureHostController/Runtime owner; exact-HEAD CI remains required before verified. Revalidated at Desktop PR #20 e4e0c92a5312e27004b7eb4a195cece9ca39f165. The c81d95b→e4e0c92 delta restores automation-config and listener-connect observers through the transcript extension/manager owner; iOS keeps equivalent automation/listener projection in the single FeatureHostController owner and requires same-HEAD verification before promotion."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/group_chat_glue.rs",
@@ -5661,7 +5661,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/roster_emit.rs",
-      "desktop_blob_sha": "8f895f594080fa1d191602541ba14d4bf201e9d8",
+      "desktop_blob_sha": "95775b9bb5c8e1e7178ca9a68c8c836e121b77a7",
       "desktop_responsibility": "Canonical transcript/Agent projection emission after Session activation, including catch-up append and roster refresh for newly active and previous Agents.",
       "desktop_owner": "host",
       "desktop_visible_effect": "Consumers see appended catch-up after the bounded snapshot and refreshed active/roster projections after canonical Session switch.",
@@ -5669,10 +5669,10 @@
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust",
       "ios_platform_delta": "iOS projects canonical conversation.windowOpened / conversation.appended / conversation.activated plus ConversationListed instead of Desktop transcript hub + Agent roster emitters; UI consumes projections and does not own activation.",
-      "implementation_status": "implemented",
+      "implementation_status": "mapped",
       "production_evidence": "FeatureHostController event queue is the existing canonical FeatureHost projection path used by mobile AppHost; deferred activation enqueues append+activation then refreshes ConversationListed.",
-      "test_evidence": "Focused deferred activation ordering and wire-shape Rust contracts; exact-HEAD GitHub Actions pending.",
-      "notes": "Implemented against cbed4288 but not verified; canonical append/activation/ConversationListed projection is wired through the existing mobile FeatureHost event owner and exact-head CI is pending."
+      "test_evidence": "Prior evidence applies only to the older blob responsibility; current widget-response delta requires new focused/current-HEAD evidence.",
+      "notes": "Implemented against cbed4288 but not verified; canonical append/activation/ConversationListed projection is wired through the existing mobile FeatureHost event owner and exact-head CI is pending. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/roster_projection.rs",
@@ -5991,7 +5991,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "desktop_blob_sha": "664625b565d62383c59e3839682a19036857b422",
+      "desktop_blob_sha": "b2f8902b6d621a7fcaea98948a3dc11c9eda40fd",
       "desktop_responsibility": "Single composition owner for transcript delegates plus ordered, idempotent lifecycle settlement before Session close.",
       "desktop_owner": "host",
       "desktop_visible_effect": "All transcript-adjacent delegates share one owner and settle exactly once without parallel state.",
@@ -5999,10 +5999,10 @@
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust",
       "ios_platform_delta": "The sole AppHost-owned FeatureHostController remains the iOS composition owner; its idempotent close/Drop now performs process-local lifecycle settlement and durable-state preservation.",
-      "implementation_status": "implemented",
+      "implementation_status": "mapped",
       "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs; source/packages/mahayana-rs/mahayana-runtime/src/kernel_conversation.rs; source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs; source/packages/mahayana-rs/mahayana-host-protocol/src/lib.rs",
-      "test_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs focused production_tool_activity_uses_host_owned_client_side_tool_v2_producer; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs unit contracts; exact-HEAD GitHub Actions pending",
-      "notes": "Ownership responsibility remains implemented after f5517530. This status does not promote the separate unchanged shared_rooms.rs/widget_responses.rs behavior rows, which remain unreviewed. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified."
+      "test_evidence": "Prior evidence applies only to the older blob responsibility; current widget-response delta requires new focused/current-HEAD evidence.",
+      "notes": "Ownership responsibility remains implemented after f5517530. This status does not promote the separate unchanged shared_rooms.rs/widget_responses.rs behavior rows, which remain unreviewed. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance. Revalidated at Desktop PR #20 c81d95b2399b864d10209d4853231853b7742c50. The 0941e6b→c81d95b delta centralizes secret-store failure trays, live auto-review settlement, transcript observer/roster/focus lifecycle ownership, and session group mutations behind the canonical transcript owner. iOS keeps those applicable responsibilities inside the single FeatureHostController/Runtime owner; exact-HEAD CI remains required before verified. Revalidated at Desktop PR #20 e4e0c92a5312e27004b7eb4a195cece9ca39f165. The c81d95b→e4e0c92 delta restores automation-config and listener-connect observers through the transcript extension/manager owner; iOS keeps equivalent automation/listener projection in the single FeatureHostController owner and requires same-HEAD verification before promotion. Revalidated at Desktop PR #20 387a5ec97a06a9bb5ee1f25242a2f0a75a9c155d. The e4e0c92→387a5ec delta routes create/update/delete/list agent lifecycle gateway work through TranscriptManager, removing shipping Host direct ownership. iOS already keeps bot/agent lifecycle mutation inside the single FeatureHostController Host owner; same-HEAD focused and Actions evidence remain required before promotion. Revalidated at Desktop PR #20 d3b2477ef7941554946a92d1267e5f6110e9137a. The 387a5ec→d3b2477 delta synchronizes Host memory active-agent lifecycle from the canonical transcript owner after successful session/agent lifecycle mutations; iOS conversation_session and account-scoped Host state remain the single lifecycle owner and require same-HEAD CI before promotion."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -6051,7 +6051,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/widget_responses.rs",
-      "desktop_blob_sha": "beaa7808fdd3c46848e96ecf6866aea78912efb2",
+      "desktop_blob_sha": "97b4b47b61b3c2cd18d381758ebec2640714f1d3",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -6062,7 +6062,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance. Revalidated at Desktop PR #20 c81d95b2399b864d10209d4853231853b7742c50. The 0941e6b→c81d95b delta centralizes secret-store failure trays, live auto-review settlement, transcript observer/roster/focus lifecycle ownership, and session group mutations behind the canonical transcript owner. iOS keeps those applicable responsibilities inside the single FeatureHostController/Runtime owner; exact-HEAD CI remains required before verified."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/workflow_commands.rs",
@@ -7341,7 +7341,7 @@
     },
     {
       "desktop_path": "source/host/src/runner/sand_auto_review.rs",
-      "desktop_blob_sha": "a307da28b0dfe4a1e55a38394962f404026e3f68",
+      "desktop_blob_sha": "00ca2ab6f5df38b1424a83111c67ae4253b61939",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -7352,7 +7352,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance."
     },
     {
       "desktop_path": "source/host/src/runner/sand_auto_review_classifier_run.rs",
@@ -13761,7 +13761,7 @@
     },
     {
       "desktop_path": "source/host/tests/transcript_manager_contract.rs",
-      "desktop_blob_sha": "7a76a0a8628f929cff57527210ab191e8e855fd2",
+      "desktop_blob_sha": "0153d5cb309887f966aae40c4f2a8a2887b3cf79",
       "desktop_responsibility": "Focused production contract for single transcript composition ownership and complete lifecycle settlement.",
       "desktop_owner": "host",
       "desktop_visible_effect": "Regression coverage fails if delegated owners split or shutdown leaves process-local state/watchers alive.",
@@ -13769,10 +13769,10 @@
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust",
       "ios_platform_delta": "The iOS focused Host contract seeds deferred/session/approval/operation/background/group state, closes twice, proves process-local settlement, durable automation retention and exactly one host.closed event.",
-      "implementation_status": "implemented",
+      "implementation_status": "mapped",
       "production_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs; source/packages/mahayana-rs/mahayana-runtime/src/kernel_conversation.rs; source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs; source/packages/mahayana-rs/mahayana-host-protocol/src/lib.rs",
-      "test_evidence": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs focused production_tool_activity_uses_host_owned_client_side_tool_v2_producer; source/packages/mahayana-rs/mahayana-feature-host/src/client_side_tool_v2.rs unit contracts; exact-HEAD GitHub Actions pending",
-      "notes": "New e8910869 focused-contract responsibility is mapped to the iOS single-controller composition replacement; no test-only parallel owner was introduced. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 5523b564; changed upstream blob requires current exact-HEAD test evidence. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified."
+      "test_evidence": "Prior evidence applies only to the older blob responsibility; current widget-response delta requires new focused/current-HEAD evidence.",
+      "notes": "New e8910869 focused-contract responsibility is mapped to the iOS single-controller composition replacement; no test-only parallel owner was introduced. Revalidated source identity at Desktop PR #20 6ac2d23d; prior exact-HEAD evidence invalidated pending current lifecycle review/verification. Reviewed against Desktop PR #20 lifecycle commit 6ac2d23; current-row verification remains gated on same-iOS-HEAD Actions. Rebound to Desktop PR #20 5523b564; changed upstream blob requires current exact-HEAD test evidence. Rebound to Desktop PR #20 69401d85; manager-owned client-side-tool producer responsibility requires new production evidence. iOS Host now owns one per-controller ClientSideToolV2Producer, routes canonical Runtime tool activity through it with exact operation-to-Agent identity, and resets producer epoch/sequence/open-call state on Host close. Same-HEAD CI remains required before verified. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance. Revalidated at Desktop PR #20 c81d95b2399b864d10209d4853231853b7742c50. The 0941e6b→c81d95b delta centralizes secret-store failure trays, live auto-review settlement, transcript observer/roster/focus lifecycle ownership, and session group mutations behind the canonical transcript owner. iOS keeps those applicable responsibilities inside the single FeatureHostController/Runtime owner; exact-HEAD CI remains required before verified. Revalidated at Desktop PR #20 e4e0c92a5312e27004b7eb4a195cece9ca39f165. The c81d95b→e4e0c92 delta restores automation-config and listener-connect observers through the transcript extension/manager owner; iOS keeps equivalent automation/listener projection in the single FeatureHostController owner and requires same-HEAD verification before promotion. Revalidated at Desktop PR #20 387a5ec97a06a9bb5ee1f25242a2f0a75a9c155d. The e4e0c92→387a5ec delta routes create/update/delete/list agent lifecycle gateway work through TranscriptManager, removing shipping Host direct ownership. iOS already keeps bot/agent lifecycle mutation inside the single FeatureHostController Host owner; same-HEAD focused and Actions evidence remain required before promotion. Revalidated at Desktop PR #20 d3b2477ef7941554946a92d1267e5f6110e9137a. The 387a5ec→d3b2477 delta synchronizes Host memory active-agent lifecycle from the canonical transcript owner after successful session/agent lifecycle mutations; iOS conversation_session and account-scoped Host state remain the single lifecycle owner and require same-HEAD CI before promotion."
     },
     {
       "desktop_path": "source/host/tests/transcript_mirror_contract.rs",
@@ -14148,6 +14148,21 @@
       "production_evidence": "",
       "test_evidence": "",
       "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+    },
+    {
+      "desktop_path": "source/host/tests/widget_responses_full_contract.rs",
+      "desktop_blob_sha": "5da37252899000c22f939207c9c93198890f2698",
+      "desktop_responsibility": "Focused production contract for complete Transcript-owned widget response behavior: durable answer/dismiss, rollback, stale/move-on fencing, auto-review expiry, secret storage/signaling, reaction toggling, active/background projection, and branch-aware surface semantics.",
+      "desktop_owner": "host",
+      "desktop_visible_effect": "Widget, secret, review, and reaction interactions mutate the canonical transcript exactly once and project the updated entry through the existing transcript/roster owner without a parallel UI store.",
+      "ios_disposition": "unreviewed",
+      "ios_target_path": "",
+      "ios_language": "",
+      "ios_platform_delta": "",
+      "implementation_status": "unreviewed",
+      "production_evidence": "",
+      "test_evidence": "",
+      "notes": "New upstream source row at Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; requires iOS responsibility review and production evidence. Rebased to Desktop PR #20 0941e6b189738d0bfaed9b64c6a186d17e6d33ec; changed upstream widget-response ownership/projection responsibility invalidates older exact-HEAD acceptance."
     },
     {
       "desktop_path": "source/host/tests/widget_responses_local_tool_permission_contract.rs",

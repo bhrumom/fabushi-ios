@@ -324,8 +324,16 @@ pub enum RuntimeCommand {
         client_message_id: Option<String>,
         #[serde(default)]
         hidden: bool,
+        #[serde(rename = "showAssistantOutput", default)]
+        show_assistant_output: bool,
         #[serde(rename = "recoveryEligible", default)]
         recovery_eligible: bool,
+        #[serde(rename = "replyToMessageId", default, skip_serializing_if = "Option::is_none")]
+        reply_to_message_id: Option<String>,
+        #[serde(rename = "isFork", default)]
+        is_fork: bool,
+        #[serde(rename = "attachmentBatchId", default, skip_serializing_if = "Option::is_none")]
+        attachment_batch_id: Option<String>,
         #[serde(
             rename = "selectedImageDataUrls",
             default,
@@ -610,7 +618,11 @@ mod tests {
             display_text: Some("你好".to_string()),
             client_message_id: Some("client-1".to_string()),
             hidden: false,
+            show_assistant_output: false,
             recovery_eligible: true,
+            reply_to_message_id: None,
+            is_fork: false,
+            attachment_batch_id: None,
             selected_image_data_urls: Vec::new(),
         };
         let json = serde_json::to_value(command).expect("serialize command");

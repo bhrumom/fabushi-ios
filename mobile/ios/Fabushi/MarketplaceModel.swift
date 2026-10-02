@@ -30,6 +30,13 @@ struct MobileChatMessage: Identifiable, Equatable {
     var actionTitle: String?
     var actionDetail: String?
     var actionStatus: String?
+    var canonicalMessageId: String?
+    var replyToMessageId: String?
+    var attachmentBatchId: String?
+    var attachmentURL: String?
+    var attachmentFileName: String?
+    var attachmentAlt: String?
+    var branched = false
     var streaming = false
     var createdAt = Date()
 }
@@ -547,7 +554,23 @@ final class MarketplaceModel {
                     let eventText = event["text"] as? String ?? ""
                     if role == .assistant {
                         removeThinking(operationId: operationId)
-                        upsertAssistantMessage(operationId: operationId, text: eventText, append: false)
+                        let generatedAttachment = event["attachment"] as? [String: Any]
+                        if eventText.isEmpty, generatedAttachment != nil, !chatMessages.contains(where: { $0.kind == .message && $0.role == .assistant && $0.operationId == operationId }) {
+                            chatMessages.append(MobileChatMessage(id: "assistant:\(operationId)", role: .assistant, text: "", operationId: operationId))
+                        } else {
+                            upsertAssistantMessage(operationId: operationId, text: eventText, append: false)
+                        }
+                        if let index = chatMessages.lastIndex(where: { $0.kind == .message && $0.role == .assistant && $0.operationId == operationId }) {
+                            chatMessages[index].canonicalMessageId = event["messageId"] as? String
+                            chatMessages[index].replyToMessageId = event["replyToMessageId"] as? String
+                            chatMessages[index].attachmentBatchId = event["attachmentBatchId"] as? String
+                            if let attachment = event["attachment"] as? [String: Any] {
+                                chatMessages[index].attachmentURL = attachment["url"] as? String
+                                chatMessages[index].attachmentFileName = attachment["file_name"] as? String
+                                chatMessages[index].attachmentAlt = attachment["alt"] as? String
+                            }
+                            chatMessages[index].branched = event["branched"] as? Bool ?? false
+                        }
                     } else if !chatMessages.contains(where: { $0.role == .user && $0.text == eventText }) {
                         chatMessages.append(MobileChatMessage(id: "user:\(UUID().uuidString)", role: .user, text: eventText))
                     }

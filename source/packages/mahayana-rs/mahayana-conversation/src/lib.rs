@@ -25,7 +25,11 @@ pub struct SendMessageRequest {
     pub display_text: Option<String>,
     pub client_message_id: Option<String>,
     pub hidden: bool,
+    pub show_assistant_output: bool,
     pub recovery_eligible: bool,
+    pub reply_to_message_id: Option<String>,
+    pub is_fork: bool,
+    pub attachment_batch_id: Option<String>,
     pub selected_image_data_urls: Vec<String>,
 }
 
@@ -124,6 +128,19 @@ pub trait ConversationProvider: Send + Sync {
             after_message_id,
             limit,
         )
+    }
+
+    /// Replaces one existing canonical message while preserving provider-owned
+    /// persistence. Providers that do not support durable local mutation fail
+    /// closed instead of accepting a parallel Host/UI transcript owner.
+    async fn replace_message(
+        &self,
+        _conversation_id: &ConversationId,
+        _message: Message,
+    ) -> Result<bool, ConversationError> {
+        Err(ConversationError::Provider(
+            "conversation provider does not support canonical message replacement".into(),
+        ))
     }
 
     /// Prepare provider-owned resources needed by the first user-visible turn

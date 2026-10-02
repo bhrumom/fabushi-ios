@@ -1,7 +1,7 @@
 {
-  "sourceCommit": "885f9e0c5ead351bd6b18b52a781633a8862df04",
+  "sourceCommit": "d3b2477ef7941554946a92d1267e5f6110e9137a",
   "group": "source-host",
-  "fileCount": 955,
+  "fileCount": 956,
   "files": [
     {
       "path": "source/host/Cargo.toml",
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "6a97d6df81805f3e4d717bc5f46ca9105e863f33",
-      "size": 514526
+      "blobSha": "f642e361f972de960f8193f844eeb05aa3b697e9",
+      "size": 518028
     },
     {
       "path": "source/host/build.rs",
@@ -425,8 +425,8 @@
     },
     {
       "path": "source/host/src/extensions/auto_review/auto_review_service.rs",
-      "blobSha": "d55f2d178e5aa37026683a5547fbb1f2afc6f11f",
-      "size": 17754
+      "blobSha": "113d452894668480eb4ae48c8c0183fd6e24e124",
+      "size": 19320
     },
     {
       "path": "source/host/src/extensions/auto_review/extension.rs",
@@ -1840,8 +1840,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/extension.rs",
-      "blobSha": "4195c7208f5879f30ddc1ac56ad272a902a6ba6b",
-      "size": 11851
+      "blobSha": "eb9f9bbe65a4f9e4858f1d6fe38fb9cba3102c61",
+      "size": 12390
     },
     {
       "path": "source/host/src/extensions/transcript/group_chat_glue.rs",
@@ -1890,8 +1890,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/roster_emit.rs",
-      "blobSha": "8f895f594080fa1d191602541ba14d4bf201e9d8",
-      "size": 16495
+      "blobSha": "95775b9bb5c8e1e7178ca9a68c8c836e121b77a7",
+      "size": 16807
     },
     {
       "path": "source/host/src/extensions/transcript/roster_projection.rs",
@@ -2000,8 +2000,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "664625b565d62383c59e3839682a19036857b422",
-      "size": 14375
+      "blobSha": "b2f8902b6d621a7fcaea98948a3dc11c9eda40fd",
+      "size": 23265
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -2020,8 +2020,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/widget_responses.rs",
-      "blobSha": "beaa7808fdd3c46848e96ecf6866aea78912efb2",
-      "size": 4994
+      "blobSha": "97b4b47b61b3c2cd18d381758ebec2640714f1d3",
+      "size": 26027
     },
     {
       "path": "source/host/src/extensions/transcript/workflow_commands.rs",
@@ -2450,8 +2450,8 @@
     },
     {
       "path": "source/host/src/runner/sand_auto_review.rs",
-      "blobSha": "a307da28b0dfe4a1e55a38394962f404026e3f68",
-      "size": 22139
+      "blobSha": "00ca2ab6f5df38b1424a83111c67ae4253b61939",
+      "size": 22607
     },
     {
       "path": "source/host/src/runner/sand_auto_review_classifier_run.rs",
@@ -4590,8 +4590,8 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "7a76a0a8628f929cff57527210ab191e8e855fd2",
-      "size": 8875
+      "blobSha": "0153d5cb309887f966aae40c4f2a8a2887b3cf79",
+      "size": 13540
     },
     {
       "path": "source/host/tests/transcript_mirror_contract.rs",
@@ -4717,6 +4717,11 @@
       "path": "source/host/tests/watched_directory_contract.rs",
       "blobSha": "a9148560812208490785b069b2b2e48cfee5ae99",
       "size": 1771
+    },
+    {
+      "path": "source/host/tests/widget_responses_full_contract.rs",
+      "blobSha": "5da37252899000c22f939207c9c93198890f2698",
+      "size": 11740
     },
     {
       "path": "source/host/tests/widget_responses_local_tool_permission_contract.rs",

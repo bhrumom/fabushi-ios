@@ -385,6 +385,27 @@ impl ConversationProvider for KernelConversationProvider {
         )
     }
 
+    async fn replace_message(
+        &self,
+        conversation_id: &ConversationId,
+        message: Message,
+    ) -> Result<bool, ConversationError> {
+        if &message.conversation_id != conversation_id {
+            return Ok(false);
+        }
+        let mut state = self.state.lock().map_err(|_| {
+            ConversationError::Provider("kernel conversation state mutex poisoned".into())
+        })?;
+        let Some(index) = state.history.iter().position(|existing| {
+            &existing.conversation_id == conversation_id && existing.id == message.id
+        }) else {
+            return Ok(false);
+        };
+        state.history[index] = message;
+        persist_history(&self.state, self.history_path.as_deref()).map_err(kernel_error)?;
+        Ok(true)
+    }
+
     async fn warmup(&self, conversation_id: &ConversationId) -> Result<(), ConversationError> {
         self.session_id(conversation_id).await.map(|_| ())
     }
@@ -449,13 +470,20 @@ impl ConversationProvider for KernelConversationProvider {
             }
         }
 
+        let turn_attachment_batch_id = request
+            .attachment_batch_id
+            .clone()
+            .unwrap_or_else(|| format!("attachment-batch:{}", request.operation_id.as_str()));
         let sink: SharedKernelEventSink = Arc::new(RuntimeKernelEventBridge {
             conversation_id: request.conversation_id,
             operation_id: request.operation_id,
             events,
             state: Arc::clone(&self.state),
             history_path: self.history_path.clone(),
-            hidden: request.hidden,
+            hide_assistant_output: request.hidden && !request.show_assistant_output,
+            reply_to_message_id: request.reply_to_message_id.clone(),
+            is_fork: request.is_fork,
+            attachment_batch_id: Some(turn_attachment_batch_id),
         });
         let result = self
             .backend
@@ -468,6 +496,9 @@ impl ConversationProvider for KernelConversationProvider {
                     required_capabilities: CapabilitySet::new([Capability::Model]),
                     metadata: json!({
                         "clientMessageId": request.client_message_id,
+                        "replyToMessageId": request.reply_to_message_id,
+                        "isFork": request.is_fork,
+                        "attachmentBatchId": request.attachment_batch_id,
                         "selectedImageDataUrls": request.selected_image_data_urls,
                     }),
                 },
@@ -574,7 +605,10 @@ struct RuntimeKernelEventBridge {
     events: SharedConversationEventSink,
     state: Arc<Mutex<ConversationState>>,
     history_path: Option<PathBuf>,
-    hidden: bool,
+    hide_assistant_output: bool,
+    reply_to_message_id: Option<String>,
+    is_fork: bool,
+    attachment_batch_id: Option<String>,
 }
 
 impl RuntimeKernelEventBridge {
@@ -630,7 +664,7 @@ impl KernelEventSink for RuntimeKernelEventBridge {
                     .map_err(|_| {
                         KernelError::Backend("kernel conversation state mutex poisoned".into())
                     })?
-                    .record_assistant_completion(message.clone(), self.hidden);
+                    .record_assistant_completion(message.clone(), self.hide_assistant_output);
                 if should_persist {
                     persist_history(&self.state, self.history_path.as_deref())?;
                 }
@@ -705,19 +739,22 @@ impl KernelEventSink for RuntimeKernelEventBridge {
                 ..
             } => {
                 if tool == "send_message" && success {
-                    let message = generated_send_message(&self.conversation_id, &output)
-                        .ok_or_else(|| KernelError::Backend(
-                            "send_message tool completed without canonical generated payload".into(),
-                        ))?;
-                    let should_persist = self
-                        .state
-                        .lock()
-                        .map_err(|_| {
-                            KernelError::Backend(
-                                "kernel conversation state mutex poisoned".into(),
-                            )
-                        })?
-                        .record_assistant_completion(message.clone(), self.hidden);
+                    let mut state = self.state.lock().map_err(|_| {
+                        KernelError::Backend("kernel conversation state mutex poisoned".into())
+                    })?;
+                    let message = generated_send_message(
+                        &self.conversation_id,
+                        &output,
+                        &state.history,
+                        self.reply_to_message_id.as_deref(),
+                        self.is_fork,
+                        self.attachment_batch_id.as_deref(),
+                    )
+                    .ok_or_else(|| KernelError::Backend(
+                        "send_message tool completed without canonical generated payload".into(),
+                    ))?;
+                    let should_persist = state.record_assistant_completion(message.clone(), self.hide_assistant_output);
+                    drop(state);
                     if should_persist {
                         persist_history(&self.state, self.history_path.as_deref())?;
                     }
@@ -802,26 +839,77 @@ fn execution_policy(profile: BuildProfile) -> ExecutionPolicy {
     }
 }
 
-fn generated_send_message(conversation_id: &ConversationId, output: &Value) -> Option<Message> {
-    let text = output.get("generatedMessage")?.as_str()?.trim();
-    if text.is_empty() {
+fn generated_send_message(
+    conversation_id: &ConversationId,
+    output: &Value,
+    history: &[Message],
+    reply_thread_target: Option<&str>,
+    is_fork: bool,
+    attachment_batch_id: Option<&str>,
+) -> Option<Message> {
+    let text = output
+        .get("generatedMessage")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .unwrap_or_default();
+    let attachment = output
+        .get("generatedAttachment")
+        .filter(|value| value.is_object())
+        .cloned();
+    if text.is_empty() && attachment.is_none() {
         return None;
     }
     let tool_call_id = output
         .get("toolCallId")
         .and_then(Value::as_str)
         .filter(|value| !value.trim().is_empty())?;
+    let message_id = MessageId::generated("generated-send");
+    let live_target = |candidate: &str| {
+        history.iter().any(|message| {
+            &message.conversation_id == conversation_id && message.id.as_str() == candidate
+        })
+    };
+    let explicit_reply = output
+        .get("replyToMessageId")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .filter(|value| *value != message_id.as_str() && live_target(value));
+    let reply_to = explicit_reply.or_else(|| {
+        reply_thread_target
+            .map(str::trim)
+            .filter(|value| !value.is_empty() && live_target(value))
+    });
+    let branched = is_fork && reply_thread_target.is_some_and(live_target);
+    let mut metadata = json!({
+        "runtime": "mahayana-kernel",
+        "generatedSend": true,
+        "toolCallId": tool_call_id,
+    });
+    if let Some(object) = metadata.as_object_mut() {
+        if let Some(reply_to) = reply_to {
+            object.insert("replyToMessageId".into(), Value::String(reply_to.to_string()));
+        }
+        if branched {
+            object.insert("branched".into(), Value::Bool(true));
+        }
+        if let Some(attachment) = attachment {
+            object.insert("generatedAttachment".into(), attachment);
+            if let Some(batch_id) = attachment_batch_id
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+            {
+                object.insert("attachmentBatchId".into(), Value::String(batch_id.to_string()));
+            }
+        }
+    }
     Some(Message {
-        id: MessageId::generated("generated-send"),
+        id: message_id,
         conversation_id: conversation_id.clone(),
         role: MessageRole::Assistant,
         text: text.to_string(),
         created_at_ms: now_ms(),
-        metadata: json!({
-            "runtime": "mahayana-kernel",
-            "generatedSend": true,
-            "toolCallId": tool_call_id,
-        }),
+        metadata,
     })
 }
 
@@ -936,12 +1024,19 @@ mod tests {
     #[test]
     fn generated_send_tool_output_becomes_canonical_transcript_message() {
         let conversation_id = conversation(mahayana_core::MAHAYANA_AI_CONVERSATION_ID);
+        let history = vec![message(&conversation_id, MessageRole::User, "reply target")];
+        let reply_target = history[0].id.as_str().to_string();
         let message = generated_send_message(
             &conversation_id,
             &json!({
                 "generatedMessage": "milestone complete",
-                "toolCallId": "call-17"
+                "toolCallId": "call-17",
+                "replyToMessageId": reply_target,
             }),
+            &history,
+            None,
+            false,
+            None,
         )
         .expect("generated send message");
 
@@ -951,6 +1046,89 @@ mod tests {
         assert_eq!(message.metadata["generatedSend"], true);
         assert_eq!(message.metadata["toolCallId"], "call-17");
         assert!(message.id.as_str().starts_with("generated-send"));
+    }
+
+    #[test]
+    fn generated_send_validates_reply_then_falls_back_to_live_thread_and_stamps_fork_batch() {
+        let conversation_id = conversation(mahayana_core::MAHAYANA_AI_CONVERSATION_ID);
+        let other_conversation = conversation("mahayana-ai:agent:other");
+        let live = Message {
+            id: MessageId("live-reply".into()),
+            conversation_id: conversation_id.clone(),
+            role: MessageRole::User,
+            text: "live".into(),
+            created_at_ms: 1,
+            metadata: Value::Null,
+        };
+        let wrong_conversation = Message {
+            id: MessageId("wrong-conversation".into()),
+            conversation_id: other_conversation,
+            role: MessageRole::User,
+            text: "wrong".into(),
+            created_at_ms: 1,
+            metadata: Value::Null,
+        };
+        let history = vec![live, wrong_conversation];
+        let generated = generated_send_message(
+            &conversation_id,
+            &json!({
+                "generatedMessage":"reply",
+                "generatedAttachment": {
+                    "url": "file:///tmp/report.pdf",
+                    "file_name": "report.pdf",
+                    "alt": "report"
+                },
+                "toolCallId":"call-thread",
+                "replyToMessageId":"stale-id"
+            }),
+            &history,
+            Some("live-reply"),
+            true,
+            Some("batch-7"),
+        )
+        .expect("generated send");
+        assert_eq!(generated.metadata["replyToMessageId"], "live-reply");
+        assert_eq!(generated.metadata["branched"], true);
+        assert_eq!(generated.metadata["attachmentBatchId"], "batch-7");
+
+        let stale = generated_send_message(
+            &conversation_id,
+            &json!({
+                "generatedMessage":"no thread",
+                "toolCallId":"call-stale",
+                "replyToMessageId":"wrong-conversation"
+            }),
+            &history,
+            Some("also-stale"),
+            true,
+            None,
+        )
+        .expect("generated stale send");
+        assert!(stale.metadata.get("replyToMessageId").is_none());
+        assert!(stale.metadata.get("branched").is_none());
+        assert!(stale.metadata.get("attachmentBatchId").is_none());
+
+        let attachment_only = generated_send_message(
+            &conversation_id,
+            &json!({
+                "generatedAttachment": {
+                    "url": "file:///tmp/image.png",
+                    "file_name": "image.png"
+                },
+                "toolCallId":"call-attachment"
+            }),
+            &history,
+            Some("live-reply"),
+            false,
+            Some("batch-attachment"),
+        )
+        .expect("attachment-only generated send");
+        assert!(attachment_only.text.is_empty());
+        assert_eq!(attachment_only.metadata["attachmentBatchId"], "batch-attachment");
+        assert_eq!(
+            attachment_only.metadata["generatedAttachment"]["file_name"],
+            "image.png"
+        );
     }
 
     #[test]
@@ -1088,7 +1266,11 @@ mod tests {
             display_text: Some("visible user turn".into()),
             client_message_id: Some("visible-message-1".into()),
             hidden: false,
+            show_assistant_output: false,
             recovery_eligible: true,
+            reply_to_message_id: None,
+            is_fork: false,
+            attachment_batch_id: None,
             selected_image_data_urls: Vec::new(),
         };
         assert_eq!(visible_user_text(&request), "visible user turn");

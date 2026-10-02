@@ -234,7 +234,11 @@ impl MahayanaWebRuntime {
                     display_text: None,
                     client_message_id,
                     hidden: false,
+                    show_assistant_output: false,
                     recovery_eligible: false,
+                    reply_to_message_id: None,
+                    is_fork: false,
+                    attachment_batch_id: None,
                     selected_image_data_urls: Vec::new(),
                 };
                 let send_command = serde_json::to_string(&send_command).map_err(js_error)?;
@@ -402,6 +406,9 @@ impl MahayanaWebRuntime {
                 client_message_id,
                 hidden,
                 recovery_eligible: _,
+                reply_to_message_id: _,
+                is_fork: _,
+                attachment_batch_id: _,
                 selected_image_data_urls: _,
             } => {
                 ensure_browser_conversation(&self.state.borrow().plugins, &conversation_id)?;

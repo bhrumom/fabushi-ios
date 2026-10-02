@@ -13,6 +13,8 @@ internal struct MobileBotChat: View {
     @State private var activeOperationId: String?
     @State private var errorText: String?
     @State private var openedMiniApp = false
+    @State private var replyTargetId: String?
+    @State private var replyIsFork = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -72,6 +74,19 @@ internal struct MobileBotChat: View {
                 .onChange(of: entries.count) { _, _ in
                     if let last = entries.last { withAnimation(.easeOut(duration: 0.16)) { proxy.scrollTo(last.id, anchor: .bottom) } }
                 }
+            }
+
+            if let replyTargetId {
+                HStack(spacing: 8) {
+                    Image(systemName: replyIsFork ? "arrow.triangle.branch" : "arrowshape.turn.up.left")
+                    Text(replyIsFork ? "Fork reply · \(replyTargetId)" : "Replying · \(replyTargetId)")
+                        .font(.caption)
+                        .lineLimit(1)
+                    Spacer()
+                    Button { self.replyTargetId = nil; replyIsFork = false } label: { Image(systemName: "xmark.circle.fill") }
+                }
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 16).padding(.top, 7)
             }
 
             HStack(alignment: .bottom, spacing: 8) {
@@ -208,22 +223,40 @@ internal struct MobileBotChat: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 15).padding(.vertical, 10)
                     .background(.black, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .contextMenu {
+                        Button("Reply") { replyTargetId = entry.canonicalMessageId ?? entry.id; replyIsFork = false }
+                        Button("Reply in Fork") { replyTargetId = entry.canonicalMessageId ?? entry.id; replyIsFork = true }
+                    }
             }
         } else {
             VStack(alignment: .leading, spacing: 3) {
                 Text(bot.name).font(.caption).foregroundStyle(.secondary).padding(.leading, 12)
                 HStack(alignment: .bottom, spacing: 7) {
                     ClothGhostAvatar(botId: bot.id, size: 20)
-                    Text(entry.text)
-                        .overlay(alignment: .trailing) {
-                            if entry.streaming {
-                                Text("▌").foregroundStyle(.black.opacity(0.65))
+                    VStack(alignment: .leading, spacing: 7) {
+                        if !entry.text.isEmpty {
+                            Text(entry.text)
+                                .overlay(alignment: .trailing) {
+                                    if entry.streaming {
+                                        Text("▌").foregroundStyle(.black.opacity(0.65))
+                                    }
+                                }
+                                .font(.system(size: 16))
+                                .foregroundStyle(.black)
+                        }
+                        if let rawURL = entry.attachmentURL, let url = URL(string: rawURL) {
+                            Link(destination: url) {
+                                Label(entry.attachmentFileName ?? entry.attachmentAlt ?? "Open attachment", systemImage: "paperclip")
+                                    .font(.caption.weight(.medium))
                             }
                         }
-                        .font(.system(size: 16))
-                        .foregroundStyle(.black)
-                        .padding(.horizontal, 15).padding(.vertical, 10)
-                        .background(Color.black.opacity(0.055), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    }
+                    .padding(.horizontal, 15).padding(.vertical, 10)
+                    .background(Color.black.opacity(0.055), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .contextMenu {
+                        Button("Reply") { replyTargetId = entry.canonicalMessageId ?? entry.id; replyIsFork = false }
+                        Button("Reply in Fork") { replyTargetId = entry.canonicalMessageId ?? entry.id; replyIsFork = true }
+                    }
                     Spacer(minLength: 30)
                 }
             }
@@ -238,7 +271,11 @@ internal struct MobileBotChat: View {
         busy = true
         errorText = nil
         let requestId = "ios-mobile-bot-chat-\(UUID().uuidString.lowercased())"
-        entries.append(MobileChatMessage(id: requestId, role: .user, text: text))
+        let replyTarget = replyTargetId
+        let sendAsFork = replyIsFork
+        replyTargetId = nil
+        replyIsFork = false
+        entries.append(MobileChatMessage(id: requestId, role: .user, text: text, canonicalMessageId: requestId, replyToMessageId: replyTarget, branched: sendAsFork))
 
         if let miniAppId = bot.miniAppId {
             await sendMiniApp(pluginId: miniAppId, text: text, operationId: requestId)
@@ -248,9 +285,11 @@ internal struct MobileBotChat: View {
         }
 
         do {
+            var command: [String: Any] = ["type": "chat.send", "requestId": requestId, "text": text, "agentId": bot.id, "mode": "agent", "isFork": sendAsFork]
+            if let replyTarget { command["replyToMessageId"] = replyTarget }
             let result = try await bridge.request(
                 method: "feature.execute",
-                params: ["command": ["type": "chat.send", "requestId": requestId, "text": text, "agentId": bot.id, "mode": "agent"]]
+                params: ["command": command]
             )
             let accepted = result.value as? [String: Any]
             let operationId = accepted?["operationId"] as? String ?? requestId
@@ -350,7 +389,24 @@ internal struct MobileBotChat: View {
                 case "chat.message":
                     guard (event["role"] as? String) != "user" else { continue }
                     removeThinking(operationId)
-                    upsertAssistant(operationId, text: event["text"] as? String ?? "", append: false, streaming: false)
+                    let eventText = event["text"] as? String ?? ""
+                    let generatedAttachment = event["attachment"] as? [String: Any]
+                    if eventText.isEmpty, generatedAttachment != nil, !entries.contains(where: { $0.kind == .message && $0.role == .assistant && $0.operationId == operationId }) {
+                        entries.append(MobileChatMessage(id: "assistant:\(operationId)", role: .assistant, text: "", operationId: operationId))
+                    } else {
+                        upsertAssistant(operationId, text: eventText, append: false, streaming: false)
+                    }
+                    if let index = entries.lastIndex(where: { $0.kind == .message && $0.role == .assistant && $0.operationId == operationId }) {
+                        entries[index].canonicalMessageId = event["messageId"] as? String
+                        entries[index].replyToMessageId = event["replyToMessageId"] as? String
+                        entries[index].attachmentBatchId = event["attachmentBatchId"] as? String
+                        if let attachment = event["attachment"] as? [String: Any] {
+                            entries[index].attachmentURL = attachment["url"] as? String
+                            entries[index].attachmentFileName = attachment["file_name"] as? String
+                            entries[index].attachmentAlt = attachment["alt"] as? String
+                        }
+                        entries[index].branched = event["branched"] as? Bool ?? false
+                    }
                 case "chat.delta":
                     removeThinking(operationId)
                     upsertAssistant(operationId, text: event["delta"] as? String ?? "", append: true, streaming: true)
