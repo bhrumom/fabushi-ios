@@ -2,7 +2,7 @@
 
 Status: active  
 Owner: Fabushi iOS  
-Last updated: 2026-10-02  
+Last updated: 2026-10-03
 Related PR: `bhrumom/fabushi-ios#3`
 
 ## 1. Decision and authority
@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `827f22da7c527ab22df0700303f356d589c2a0f4`
+- pinned source commit for this baseline: `b5f8855805ec1c0be3a821cf35a4cba047ee9d8b`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -97,6 +97,18 @@ The `4060b1f5` shipping change closes a subtler reply-nudge checkpoint bug. A sy
 Desktop PR #20 advanced one commit from `4060b1f5a0aaf64029739dc18e9d03e05c1f3838` to `827f22da7c527ab22df0700303f356d589c2a0f4`. The only source change restores the `REPLY_NUDGE_PROMPT` import in shipping `source/host/app/src/main.rs`; it repairs the Desktop build after the prior reply-nudge refactor and does not change the normalized ownership or state machine. The selected `frontend/** + source/**` inventory therefore remains 7,926 paths, with only the `main.rs` blob identity changing relative to `4060b1f5`. All sourceCommit authorities and blob identities are rebound to `827f22da` before iOS acceptance continues.
 
 The iOS adaptation from the preceding rebaseline remains the current semantic match: synthetic reply-nudge sends preserve inference-operation lineage but drop inherited user message/reply/fork/attachment checkpoint identity, and Box handoff remains owned by the transcript-adjacent FeatureHostController. No parity status is promoted from this Desktop compile-only fix; same-iOS-HEAD CI remains required.
+
+### 1.8 Exact-HEAD rebaseline: 2026-10-03 / `b5f8855805ec1c0be3a821cf35a4cba047ee9d8b`
+
+Desktop PR #20 advanced one commit from `827f22da7c527ab22df0700303f356d589c2a0f4` to `b5f8855805ec1c0be3a821cf35a4cba047ee9d8b` in `source/host/app/src/main.rs`, `source/host/src/extensions/transcript/roster_emit.rs`, `source/host/src/extensions/transcript/transcript_manager.rs`, and `source/host/tests/transcript_manager_contract.rs`. A fresh recursive Git-tree comparison confirms that the selected `frontend/** + source/**` inventory is still exactly 7,926 blobs with no added, removed, or stale paths. All manifest/ledger chunks, both indexes, the strict checker, and the four changed Desktop blob identities are rebound to this exact HEAD before iOS production work continues. Three pre-existing source-host manifest size fields whose blob identities did not change are also corrected from the current Desktop Git tree; they do not represent new upstream responsibilities.
+
+The new normative responsibility is a success-terminal automation refresh owned entirely by the Host transcript composition. After a routed provider turn has completed its result settlement successfully, shipping Host calls `TranscriptManager.emit_automations(agent_id)`; failed routed turns do not call it. The manager reads the current Agent automation records through its canonical `AutomationRuntime`/session-store owner and passes only the resulting projection to `ProductionRosterEmit`. The roster surface re-reads the canonical active Agent at emission time and emits `automations { agentId, automations }` only when the completed turn's Agent is still active. Therefore a Session/Agent switch between dispatch and terminal settlement suppresses the stale projection. Projection failure does not rewrite the already settled turn result.
+
+This ownership also defines the duplicate/recovery rules that the iOS adaptation must preserve. A successful turn may cause at most one terminal-adjacent automation snapshot for its owned operation identity; duplicate/late terminal observation must not re-project it. Interruption/provider failure must not project a success snapshot. Relaunch/recovery must source the snapshot from durable Host automation state after account/session restoration rather than a renderer cache. The renderer may consume the Agent-tagged projection but may not decide which automation state is canonical or whether the turn qualifies.
+
+Current iOS audit at `1ab164e064183473110194fdd33c1de39e831da4`: `FeatureHostController` is already the single Host automation CRUD owner; account-scoped automation persistence is reloaded on restored authentication, and the Host owns both `operation_agents` identity and `ConversationSessionState.active_conversation_id`. However, the normal `RuntimeEvent::OperationCompleted` path currently removes `operation_agents` and returns `operation.completed` without publishing an Agent-tagged automation snapshot. Failure/interruption paths likewise terminate without such a snapshot, which is correct for failure but exposes the missing success behavior. This is a real shipping-path gap, not a documentation gap. The iOS fix must extend the canonical Rust Host terminal path, carry Agent identity in the projection, gate it against the Host-owned active conversation/Agent mapping at terminal time, and consume the operation-to-Agent identity so duplicate terminal events cannot duplicate the projection. No SwiftUI/renderer fallback or second automation store is permitted.
+
+The four affected ledger rows remain `mapped` through this rebaseline. They may advance only after the iOS production path and focused contracts prove success-only active-Agent projection, inactive/session-switch suppression, duplicate-terminal suppression, failed/interrupted suppression, and persisted automation reload semantics, followed by same-iOS-HEAD required CI.
 
 ## 2. Product goal
 
