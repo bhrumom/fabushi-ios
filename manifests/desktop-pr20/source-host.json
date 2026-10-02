@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "486c478c6ca5e511de989190c63ec9b35d2ff2a6",
+  "sourceCommit": "7b41050434d76ac2a18b3b042b4dcb018122b414",
   "group": "source-host",
   "fileCount": 956,
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "b78b2763cc4ae14361fa11881ae09c2d92e40162",
-      "size": 517689
+      "blobSha": "3f054edf6f22f617864307bfe2f1410a566e6ef1",
+      "size": 517894
     },
     {
       "path": "source/host/build.rs",
@@ -946,7 +946,7 @@
     {
       "path": "source/host/src/extensions/forever_box/forever_box_service.rs",
       "blobSha": "77f4c74a76ea00418f7ed547fbec05473895b6ea",
-      "size": 16685
+      "size": 16956
     },
     {
       "path": "source/host/src/extensions/forever_box/host_box.rs",
@@ -1375,8 +1375,8 @@
     },
     {
       "path": "source/host/src/extensions/session/gateway.rs",
-      "blobSha": "4dcce8e1afc70b69e9cce94374fd8075b40490ea",
-      "size": 28243
+      "blobSha": "6811b9366a01e55280b12643416fe00b53a10c8c",
+      "size": 28730
     },
     {
       "path": "source/host/src/extensions/session/mod.rs",
@@ -1756,7 +1756,7 @@
     {
       "path": "source/host/src/extensions/transcript/agent_lifecycle.rs",
       "blobSha": "bd9e266d862b012aa63d97fb829bec1c48b17042",
-      "size": 34479
+      "size": 34664
     },
     {
       "path": "source/host/src/extensions/transcript/agent_run_error.rs",
@@ -2000,8 +2000,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "686acf7c2440675a484564276756cf860e34a58b",
-      "size": 24826
+      "blobSha": "fd92fe58f775376d33ccc7685042f8c7a68e1871",
+      "size": 31454
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -2981,12 +2981,12 @@
     {
       "path": "source/host/tests/agent_lifecycle_contract.rs",
       "blobSha": "405cffce0d1d0364228b7eb17ed60fe8c5f7e6fc",
-      "size": 23292
+      "size": 23401
     },
     {
       "path": "source/host/tests/agent_lifecycle_kickstart_production_contract.rs",
       "blobSha": "3bb75d53a91279a5b788410593c46051b7048bb1",
-      "size": 15753
+      "size": 16115
     },
     {
       "path": "source/host/tests/agent_messaging_contract.rs",
@@ -3425,8 +3425,8 @@
     },
     {
       "path": "source/host/tests/cloud_agent_pending_wake_rearm_production_contract.rs",
-      "blobSha": "c6426709af54af1a2edf262b33ddaa779e8cda5f",
-      "size": 2817
+      "blobSha": "84562ce95ef29e0b2207bdc1c538d7c1970a0af3",
+      "size": 3350
     },
     {
       "path": "source/host/tests/cloud_agent_poll_loop_contract.rs",
@@ -3661,7 +3661,7 @@
     {
       "path": "source/host/tests/extensions_forever_box_disk_pressure_contract.rs",
       "blobSha": "372e42e6e1b11be4206d3a9d7fd3362f3deed845",
-      "size": 6117
+      "size": 6432
     },
     {
       "path": "source/host/tests/extensions_local_exec_contract.rs",
@@ -4590,8 +4590,8 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "ac0b5f9f00d589697e76d3d40a663fa06c316116",
-      "size": 15121
+      "blobSha": "874975ad5b19bfc0c58f15cd94e9063b2d4cd524",
+      "size": 26445
     },
     {
       "path": "source/host/tests/transcript_mirror_contract.rs",

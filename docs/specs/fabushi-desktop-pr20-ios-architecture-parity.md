@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `486c478c6ca5e511de989190c63ec9b35d2ff2a6`
+- pinned source commit for this baseline: `7b41050434d76ac2a18b3b042b4dcb018122b414`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -47,6 +47,24 @@ The `f2a2e181 -> 4166a73b` Desktop delta changes eight Host source/contract file
 - ForeverBox disk-pressure watch installation/replacement is a lifecycle-owned resource; replacing a watch disposes the previous watch. This is a Desktop mechanism whose iOS applicability must be judged by the product effect and iOS lifecycle replacement, not by copying a desktop daemon.
 
 No affected parity row is promoted merely because its `sourceCommit` or blob SHA was refreshed. The `d7b12fe6 -> 486c478c` delta additionally makes `TranscriptManager` the single durable pending-wake rearm owner: shipping Host injects the production runtime only after Gateway/Runner resources are live, duplicate binding fails closed, durable wakes are replayed through the manager, and dispose drops the rearm owner. The subsequent `4166a73b -> d7b12fe6` single-file change only makes the shipping `box_store_sync_deletion_slot` explicitly typed as `ProductionBoxStoreSyncApi`; this preserves the existing Host deletion owner and does not create a second lifecycle owner. Memory/transcript/group/lifecycle/ForeverBox rows require current iOS production wiring plus focused same-HEAD evidence before `verified`.
+
+### 1.2 Exact-HEAD rebaseline: 2026-10-03 / `636b5a35ee1e9e30354052fcbf19c769add4e00b`
+
+Desktop PR #20 advanced from `486c478c6ca5e511de989190c63ec9b35d2ff2a6` to `636b5a35ee1e9e30354052fcbf19c769add4e00b` in two source-bearing Host commits. The selected `frontend/** + source/**` inventory remains exactly 7,926 paths; all chunk `sourceCommit` values, every `desktop_blob_sha`, the index, and the strict checker are rebound to this exact HEAD before parity work continues. No status is promoted merely by rebasing source identity.
+
+The first commit, `76e48fd8399ae86f9154dbcba7bc4faec50a68a2`, makes `TranscriptManager` the shipping facade for upgrade/recreate lifecycle state. Created-agent kickstart readiness reads manager-owned quiescing state; created-agent and background-revival paths mark durable upgrade-resume intent through the manager; Gateway health and prepare-upgrade read running turns/quiescing/carryable pending-wake state through the manager; box-store idle runtime and Host-upgrade composition receive the same manager owner; and resume-after-recreate is exposed through that owner. iOS must preserve the responsibility rather than emulate Electron upgrade machinery: the single Host owner must receive native scene suspend/resume lifecycle, quiesce new work while the scene is not runnable, retain durable recovery intent outside presentation state, and resume/replay only after Coordinator/Host/Runner resources are ready. SwiftUI and Coordinator may signal lifecycle but may not become a parallel canonical owner.
+
+The second commit, `636b5a35ee1e9e30354052fcbf19c769add4e00b`, moves ForeverBox handoff state and hand-back settlement behind `TranscriptManager`. Request start, pending lookup, forget-on-failed-persistence, hand-back decision, transcript request resolution, awaiting-user settlement, and roster projection must be performed by the same transcript-adjacent owner; shipping Gateway/SendMessage paths call that owner rather than `BoxHandoffService` directly. On iOS, any applicable remote/box handoff must therefore be represented in the canonical Host controller/runtime owner with one settlement path. UI/Swift lifecycle code may request or project handoff state but must not own pending handoff truth or transcript settlement.
+
+The changed Desktop rows (`source/host/app/src/main.rs`, `source/host/src/extensions/transcript/transcript_manager.rs`, `source/host/tests/transcript_manager_contract.rs`) remain at their existing non-verified status until current iOS production wiring plus focused contracts and same-iOS-HEAD CI prove the adapted ownership.
+
+### 1.3 Exact-HEAD rebaseline: 2026-10-03 / `7b41050434d76ac2a18b3b042b4dcb018122b414`
+
+Desktop PR #20 moved again from `636b5a35ee1e9e30354052fcbf19c769add4e00b` to `7b41050434d76ac2a18b3b042b4dcb018122b414` before the iOS rebaseline was committed. The intermediate `636b5a35` baseline is therefore historical only. The selected inventory remains exactly 7,926 paths and all manifests, ledger blob identities, index authorities and the strict checker are rebound again to `7b410504`.
+
+This two-commit delta tightens the same ownership change rather than adding a second product subsystem. The pending-wake production contract is strengthened, and the shipping routed-provider `ProductionSendMessageSink` no longer retains a parallel `BoxHandoffService`; it receives the canonical `TranscriptManager` and starts/forgets handoff state through that owner. This confirms that box-handoff ownership is not merely a Gateway projection rule: send-side production composition must also be free of a parallel handoff owner.
+
+For iOS, the audit result is fail-closed: the current single `FeatureHostController` remains the canonical Host/transcript-adjacent composition owner and Swift/Coordinator do not own box-handoff truth, but the current iOS command surface does not yet expose the Desktop ForeverBox request/help + hand-back state machine. Therefore the affected rows remain non-verified and no placeholder facade is introduced merely to satisfy the ledger. The applicable remote/box handoff product effect must be implemented on a real shipping command/runtime path before those rows can advance. Upgrade/recreate semantics continue to map through the native Coordinator/Host lifecycle and durable Runtime recovery rather than an Electron-style updater.
 
 ## 2. Product goal
 
