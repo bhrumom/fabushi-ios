@@ -760,7 +760,7 @@ impl MobileAppHost {
         )) {
             Ok(extensions) => extensions,
             Err(error) => {
-                host.shutdown();
+                let _ = host.shutdown();
                 let _ = host_thread.join();
                 return Err(format!("start mobile Host extensions: {error}"));
             }
