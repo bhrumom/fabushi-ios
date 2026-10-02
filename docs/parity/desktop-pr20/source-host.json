@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "cbed42883dec4dbd12af2d54bd60d5855b3c0327",
+  "sourceCommit": "e891086964e08a5747a056d790dfd545b12a1a43",
   "group": "source-host",
   "rowCount": 955,
   "rows": [
@@ -36,10 +36,10 @@
     },
     {
       "desktop_path": "source/host/app/src/main.rs",
-      "desktop_blob_sha": "fe748c4be3045d2ccf24808d2628f01752a6209e",
-      "desktop_responsibility": "Shipping Host composition for bounded transcript open, deferred latest-generation Session activation, shipped-through catch-up, active-session projection, roster refresh, focus/contact freshness, and activation failure identity.",
+      "desktop_blob_sha": "e4973b6ae0d154049ba04a1eaf94009264d9e294",
+      "desktop_responsibility": "Shipping Host composition for bounded/deferred Session activation plus single Transcript-owned delegated group/widget/shared-room owners; main must reuse those canonical owners instead of constructing parallel instances.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "A bounded/tail transcript response is visible before a cold conversation becomes active; only the newest pending activation may switch canonical Session state; catch-up is appended without replaying the shipped anchor; active/roster projections refresh after switch.",
+      "desktop_visible_effect": "Bounded/tail activation preserves latest-generation Session semantics while group turns, permission widget responses, and shared-room turns all reuse the same canonical transcript/session composition.",
       "ios_disposition": "ios-adapted",
       "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
       "ios_language": "Rust + Swift",
@@ -47,7 +47,7 @@
       "implementation_status": "implemented",
       "production_evidence": "FeatureHostController::production_open_conversation_windowed/advance_deferred_conversation_activation and ConversationSessionState are in the mobile AppHost shipping path; RuntimeCommand::ConversationHistoryWindow delegates to ConversationProvider::history_window; KernelConversationProvider slices its full current canonical transcript; AppHost::feature_session_activity is reached through MahayanaHostRuntime FFI; IOSMainRuntime forwards ScenePhase without owning Session truth.",
       "test_evidence": "Focused Rust contracts in mahayana-feature-host, mahayana-host-protocol, and mahayana-conversation cover activation ordering/generation, invalidation, before/after anchor slicing, strict catch-up, focus freshness, and wire shapes; exact-HEAD GitHub Actions pending.",
-      "notes": "Rebaselined to Desktop cbed4288 and dispositioned on iOS. Do not promote to verified until same exact iOS HEAD passes architecture/rust-host/Swift Unit+UI/device/protected-session acceptance. Earlier pre-dispatch recovery-shaped supersession gap is next once this exact-head evidence closes."
+      "notes": "Revalidated for Desktop PR #20 e8910869. a538679 only closes Desktop's own SessionRuntime parity status; e891086 additionally centralizes GroupChatGlue/WidgetResponses/SharedRooms under TranscriptManager. iOS uses one AppHost-owned FeatureHostController as the replacement composition owner; its group state/runs, pending approvals and Runtime all live in that one controller, with no second group/widget/session-worker owner. Exact-head CI still required."
     },
     {
       "desktop_path": "source/host/build.rs",
@@ -5931,7 +5931,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/session_runtime.rs",
-      "desktop_blob_sha": "fb41f583a5d1dd0af656c6a2ccdc3c005bbf4762",
+      "desktop_blob_sha": "85993042d19f3816f23957ece2c92b9d734040c7",
       "desktop_responsibility": "Canonical Session runtime state for active identity, deferred activation generation/claim, explicit switch/delete invalidation, shipped-through catch-up, and focus/contact freshness.",
       "desktop_owner": "host",
       "desktop_visible_effect": "Stale bounded opens cannot steal focus from newer opens; explicit switch/delete cancels pending activation; contact freshness advances only while focused/active; catch-up begins strictly after the shipped anchor.",
@@ -5942,7 +5942,7 @@
       "implementation_status": "implemented",
       "production_evidence": "ConversationSessionState is embedded in FeatureState and used by production open/window/tail, receive pump, BotDelete, session clear, account-boundary reset, and AppHost scene-contact path; deferred catch-up uses RuntimeCommand::ConversationHistoryWindow backed by ConversationProvider ownership.",
       "test_evidence": "Focused Rust tests cover generation supersession, explicit-switch invalidation, provider-owned before/after history windows, strict catch-up and active-only freshness; exact-HEAD GitHub Actions pending.",
-      "notes": "Implemented, pending same exact-head verification."
+      "notes": "Revalidated for Desktop PR #20 e8910869. Upstream production semantics are unchanged from cbed428; the diff closes the Desktop manifest/contract description around focus, live-session ownership, deferred activation/catch-up and boot ordering. iOS implementation remains applicable and implemented, pending current exact-head verification."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/shared_rooms.rs",
@@ -5991,18 +5991,18 @@
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "desktop_blob_sha": "cfd3d84e27b204a6793d697d0ad572c9060d18cc",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "950add9559d2a3dea6b01adecaa5e5e66853b81e",
+      "desktop_responsibility": "Single production composition owner for transcript delegated services, including group chat execution, widget/approval responses, shared rooms, runner registry, automation and transcript runtime.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Upstream blob changed at Desktop PR #20 b49e4567abc101ee75a60b6bd635153fba292d25; responsibility must be re-reviewed before promotion."
+      "desktop_visible_effect": "All transcript-adjacent group/permission/shared-room flows reuse one canonical session/runtime owner rather than constructing parallel delegated owners with divergent state.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "iOS has no Desktop TranscriptManager/session_workers object graph. The native replacement is the single AppHost-owned FeatureHostController: FeatureState owns groups/group runs/pending approvals and the controller owns one MahayanaHost Runtime. Group/approval flows dispatch through this same controller; AppHost does not construct a parallel group/widget owner.",
+      "implementation_status": "implemented",
+      "production_evidence": "AppHost contains exactly one FeatureHostController production field created by create_feature_host; FeatureHostController::execute routes group commands to execute_group_chat, stores group runs/operations and pending approvals in the same FeatureState, and resolves Runtime approvals through its single MahayanaHost. Existing group/member turn execution reuses self.runtime().",
+      "test_evidence": "group_chat_handles_mentions_round_order_and_pass_rules and group_crud_uses_real_host_state_and_rejects_nested_groups exercise the production FeatureHost state model; exact-head architecture/rust-host acceptance pending.",
+      "notes": "New e8910869 ownership responsibility. Implemented as an iOS-native single-controller replacement, not by introducing a duplicate TranscriptManager type. Verification is withheld until current exact-head CI."
     },
     {
       "desktop_path": "source/host/src/extensions/transcript/transcript_store.rs",
@@ -8976,18 +8976,18 @@
     },
     {
       "desktop_path": "source/host/tests/agent_open_production_wiring_contract.rs",
-      "desktop_blob_sha": "59d219c8239bf3dffb47f29226d24ab42e6f864a",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "3ab55bde63bca9270ff34bf443c3436b811c0dd4",
+      "desktop_responsibility": "Focused production-wiring contract that samples the previous active Session before open and proves Host reports/switches against the canonical transcript/session owner.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "desktop_visible_effect": "Agent/conversation open telemetry and activation use the true previous active identity and canonical Session path.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "iOS uses previous active conversation identity from ConversationSessionState and emits ConversationActivated instead of Desktop AgentOpen telemetry wiring.",
+      "implementation_status": "implemented",
+      "production_evidence": "production_open_conversation_from_runtime and advance_deferred_conversation_activation both obtain the previous identity from ConversationSessionState::switch_immediately/activate_claimed before emitting canonical activation projection.",
+      "test_evidence": "deferred_conversation_activation_is_generation_fenced_and_runs_after_window_delivery and explicit_conversation_switch_invalidates_pending_activation; exact-head CI pending.",
+      "notes": "e8910869 changes the Desktop contract needle from was_active to previous_active_agent_id; product semantics are unchanged and revalidated against the iOS canonical Session owner."
     },
     {
       "desktop_path": "source/host/tests/agent_open_telemetry_contract.rs",
@@ -13761,18 +13761,18 @@
     },
     {
       "desktop_path": "source/host/tests/transcript_manager_contract.rs",
-      "desktop_blob_sha": "f8c3f6ed5aee66ba46ed2e92e617b5b956a7372c",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "30ab7b62cc8143454ec262f5b766b404909ed6b8",
+      "desktop_responsibility": "Focused ownership contract proving TranscriptManager returns the same delegated group-chat, widget-response, shared-room, runner and acknowledgement owners across calls.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
-      "production_evidence": "",
-      "test_evidence": "",
-      "notes": "Upstream blob changed at Desktop PR #20 b49e4567abc101ee75a60b6bd635153fba292d25; responsibility must be re-reviewed before promotion."
+      "desktop_visible_effect": "Production composition cannot silently create a second transcript-adjacent delegated owner with divergent session state.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "iOS proves the replacement at the FeatureHostController boundary rather than pointer-equality accessors on a Desktop TranscriptManager.",
+      "implementation_status": "implemented",
+      "production_evidence": "The production AppHost owns a single FeatureHostController; group commands, approval state/resolution and Runtime operations are methods/state of that same object with no alternate constructor in AppHost composition.",
+      "test_evidence": "Existing group_chat_handles_mentions_round_order_and_pass_rules and group_crud_uses_real_host_state_and_rejects_nested_groups cover state continuity through the canonical controller; architecture gate validates implemented target existence; exact-head rust-host remains acceptance authority.",
+      "notes": "New e8910869 focused-contract responsibility is mapped to the iOS single-controller composition replacement; no test-only parallel owner was introduced."
     },
     {
       "desktop_path": "source/host/tests/transcript_mirror_contract.rs",

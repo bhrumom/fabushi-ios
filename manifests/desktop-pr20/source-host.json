@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "cbed42883dec4dbd12af2d54bd60d5855b3c0327",
+  "sourceCommit": "e891086964e08a5747a056d790dfd545b12a1a43",
   "group": "source-host",
   "fileCount": 955,
   "files": [
@@ -15,7 +15,7 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "fe748c4be3045d2ccf24808d2628f01752a6209e",
+      "blobSha": "e4973b6ae0d154049ba04a1eaf94009264d9e294",
       "size": 514109
     },
     {
@@ -1980,7 +1980,7 @@
     },
     {
       "path": "source/host/src/extensions/transcript/session_runtime.rs",
-      "blobSha": "fb41f583a5d1dd0af656c6a2ccdc3c005bbf4762",
+      "blobSha": "85993042d19f3816f23957ece2c92b9d734040c7",
       "size": 12394
     },
     {
@@ -2000,7 +2000,7 @@
     },
     {
       "path": "source/host/src/extensions/transcript/transcript_manager.rs",
-      "blobSha": "cfd3d84e27b204a6793d697d0ad572c9060d18cc",
+      "blobSha": "950add9559d2a3dea6b01adecaa5e5e66853b81e",
       "size": 11232
     },
     {
@@ -2995,7 +2995,7 @@
     },
     {
       "path": "source/host/tests/agent_open_production_wiring_contract.rs",
-      "blobSha": "59d219c8239bf3dffb47f29226d24ab42e6f864a",
+      "blobSha": "3ab55bde63bca9270ff34bf443c3436b811c0dd4",
       "size": 4643
     },
     {
@@ -4590,7 +4590,7 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "f8c3f6ed5aee66ba46ed2e92e617b5b956a7372c",
+      "blobSha": "30ab7b62cc8143454ec262f5b766b404909ed6b8",
       "size": 5148
     },
     {
