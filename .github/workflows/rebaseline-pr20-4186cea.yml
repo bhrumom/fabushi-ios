@@ -1,0 +1,31 @@
+name: Complete Desktop PR20 4186cea rebaseline
+on:
+  push:
+    branches: [spec/grok-bot-018-ios-parity-20260922]
+    paths:
+      - .github/workflows/rebaseline-pr20-4186cea.yml
+      - scripts/rebaseline-pr20-4186cea.py
+permissions:
+  contents: write
+jobs:
+  rebaseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: spec/grok-bot-018-ios-parity-20260922
+          fetch-depth: 0
+      - name: Rebaseline exact Desktop authority
+        run: python3 scripts/rebaseline-pr20-4186cea.py
+      - name: Verify generated baseline
+        run: |
+          git diff --check
+          python3 scripts/check-desktop-pr20-ios-architecture.py
+      - name: Commit durable rebaseline and remove helper
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm .github/workflows/rebaseline-pr20-4186cea.yml scripts/rebaseline-pr20-4186cea.py
+          git add -A
+          git commit -m "docs(parity): rebaseline PR20 at 4186cea"
+          git push origin HEAD:spec/grok-bot-018-ios-parity-20260922
