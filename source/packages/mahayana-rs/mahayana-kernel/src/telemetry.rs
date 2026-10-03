@@ -9,6 +9,12 @@ use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SessionPersistenceOperation {
+    Checkpoint,
+    Replay,
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RuntimeMetricsSnapshot {
     pub sessions_opened: u64,
@@ -34,6 +40,14 @@ pub struct RuntimeMetricsSnapshot {
     pub empty_delivery_tool_calls_total: u64,
     pub empty_delivery_stream_output_turns: u64,
     pub empty_delivery_duration_millis_total: u64,
+    pub session_checkpoints_succeeded: u64,
+    pub session_checkpoints_failed: u64,
+    pub session_checkpoint_bytes_total: u64,
+    pub session_checkpoint_duration_millis_total: u64,
+    pub session_replays_succeeded: u64,
+    pub session_replays_failed: u64,
+    pub session_replay_bytes_total: u64,
+    pub session_replay_duration_millis_total: u64,
 }
 
 impl RuntimeMetricsSnapshot {
@@ -86,6 +100,14 @@ pub struct RuntimeTelemetry {
     empty_delivery_tool_calls_total: AtomicU64,
     empty_delivery_stream_output_turns: AtomicU64,
     empty_delivery_duration_millis_total: AtomicU64,
+    session_checkpoints_succeeded: AtomicU64,
+    session_checkpoints_failed: AtomicU64,
+    session_checkpoint_bytes_total: AtomicU64,
+    session_checkpoint_duration_millis_total: AtomicU64,
+    session_replays_succeeded: AtomicU64,
+    session_replays_failed: AtomicU64,
+    session_replay_bytes_total: AtomicU64,
+    session_replay_duration_millis_total: AtomicU64,
 }
 
 impl RuntimeTelemetry {
@@ -182,6 +204,44 @@ impl RuntimeTelemetry {
         );
     }
 
+    pub fn session_persistence_finished(
+        &self,
+        operation: SessionPersistenceOperation,
+        bytes: u64,
+        duration: Duration,
+        success: bool,
+    ) {
+        let duration_millis = duration.as_millis().min(u128::from(u64::MAX)) as u64;
+        match operation {
+            SessionPersistenceOperation::Checkpoint => {
+                if success {
+                    self.session_checkpoints_succeeded
+                        .fetch_add(1, Ordering::Relaxed);
+                } else {
+                    self.session_checkpoints_failed
+                        .fetch_add(1, Ordering::Relaxed);
+                }
+                self.session_checkpoint_bytes_total
+                    .fetch_add(bytes, Ordering::Relaxed);
+                self.session_checkpoint_duration_millis_total
+                    .fetch_add(duration_millis, Ordering::Relaxed);
+            }
+            SessionPersistenceOperation::Replay => {
+                if success {
+                    self.session_replays_succeeded
+                        .fetch_add(1, Ordering::Relaxed);
+                } else {
+                    self.session_replays_failed
+                        .fetch_add(1, Ordering::Relaxed);
+                }
+                self.session_replay_bytes_total
+                    .fetch_add(bytes, Ordering::Relaxed);
+                self.session_replay_duration_millis_total
+                    .fetch_add(duration_millis, Ordering::Relaxed);
+            }
+        }
+    }
+
     pub fn snapshot(&self) -> RuntimeMetricsSnapshot {
         RuntimeMetricsSnapshot {
             sessions_opened: self.sessions_opened.load(Ordering::Relaxed),
@@ -207,6 +267,14 @@ impl RuntimeTelemetry {
             empty_delivery_tool_calls_total: self.empty_delivery_tool_calls_total.load(Ordering::Relaxed),
             empty_delivery_stream_output_turns: self.empty_delivery_stream_output_turns.load(Ordering::Relaxed),
             empty_delivery_duration_millis_total: self.empty_delivery_duration_millis_total.load(Ordering::Relaxed),
+            session_checkpoints_succeeded: self.session_checkpoints_succeeded.load(Ordering::Relaxed),
+            session_checkpoints_failed: self.session_checkpoints_failed.load(Ordering::Relaxed),
+            session_checkpoint_bytes_total: self.session_checkpoint_bytes_total.load(Ordering::Relaxed),
+            session_checkpoint_duration_millis_total: self.session_checkpoint_duration_millis_total.load(Ordering::Relaxed),
+            session_replays_succeeded: self.session_replays_succeeded.load(Ordering::Relaxed),
+            session_replays_failed: self.session_replays_failed.load(Ordering::Relaxed),
+            session_replay_bytes_total: self.session_replay_bytes_total.load(Ordering::Relaxed),
+            session_replay_duration_millis_total: self.session_replay_duration_millis_total.load(Ordering::Relaxed),
         }
     }
 }
@@ -227,6 +295,30 @@ mod tests {
         telemetry.model_finished(Duration::from_millis(40), true);
         telemetry.closing_send_nudge();
         telemetry.turn_empty_delivery(3, 4, true, Duration::from_millis(1250));
+        telemetry.session_persistence_finished(
+            SessionPersistenceOperation::Checkpoint,
+            4096,
+            Duration::from_millis(12),
+            true,
+        );
+        telemetry.session_persistence_finished(
+            SessionPersistenceOperation::Checkpoint,
+            1024,
+            Duration::from_millis(3),
+            false,
+        );
+        telemetry.session_persistence_finished(
+            SessionPersistenceOperation::Replay,
+            2048,
+            Duration::from_millis(7),
+            true,
+        );
+        telemetry.session_persistence_finished(
+            SessionPersistenceOperation::Replay,
+            512,
+            Duration::from_millis(2),
+            false,
+        );
         telemetry.operation_failed();
 
         let snapshot = telemetry.snapshot();
@@ -242,6 +334,14 @@ mod tests {
         assert_eq!(snapshot.empty_delivery_tool_calls_total, 4);
         assert_eq!(snapshot.empty_delivery_stream_output_turns, 1);
         assert_eq!(snapshot.empty_delivery_duration_millis_total, 1250);
+        assert_eq!(snapshot.session_checkpoints_succeeded, 1);
+        assert_eq!(snapshot.session_checkpoints_failed, 1);
+        assert_eq!(snapshot.session_checkpoint_bytes_total, 5120);
+        assert_eq!(snapshot.session_checkpoint_duration_millis_total, 15);
+        assert_eq!(snapshot.session_replays_succeeded, 1);
+        assert_eq!(snapshot.session_replays_failed, 1);
+        assert_eq!(snapshot.session_replay_bytes_total, 2560);
+        assert_eq!(snapshot.session_replay_duration_millis_total, 9);
         assert_eq!(snapshot.average_model_latency_millis(), Some(40.0));
         assert_eq!(snapshot.operation_success_ratio(), 0.0);
     }
