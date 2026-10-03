@@ -44,6 +44,49 @@ struct MobileChatMessage: Identifiable, Equatable {
     var createdAt = Date()
 }
 
+func projectListenerConnectTranscriptCard(
+    event: [String: Any],
+    operationId: String?
+) -> MobileChatMessage? {
+    guard let card = event["card"] as? [String: Any],
+          card["kind"] as? String == "listenerConnect",
+          let platform = card["platform"] as? String,
+          !platform.isEmpty
+    else { return nil }
+
+    let displayName: String
+    switch platform.lowercased() {
+    case "slack": displayName = "Slack"
+    case "github": displayName = "GitHub"
+    case "git": displayName = "Git"
+    case "teams": displayName = "Microsoft Teams"
+    case "linear": displayName = "Linear"
+    case "sentry": displayName = "Sentry"
+    case "pagerduty": displayName = "PagerDuty"
+    default: displayName = platform
+    }
+
+    let connected = card["connected"] as? Bool ?? false
+    let pending = card["pending"] as? Bool ?? false
+    let reason = (card["reason"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let detail = reason?.isEmpty == false
+        ? reason
+        : (connected ? "(displayName) 已连接。" : "连接 (displayName) 后，此例程才能接收对应事件。")
+    let entryId = (event["entryId"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        ?? "listener-connect:(platform.lowercased())"
+
+    return MobileChatMessage(
+        id: entryId,
+        role: .assistant,
+        text: "",
+        kind: .action,
+        operationId: operationId,
+        actionTitle: connected ? "(displayName) 已连接" : "连接 (displayName)",
+        actionDetail: detail,
+        actionStatus: connected ? "completed" : (pending ? "pending" : "waiting")
+    )
+}
+
 struct MiniAppToolContract: Equatable, Sendable {
     let name: String
     let description: String
@@ -651,6 +694,16 @@ final class MarketplaceModel {
                     let title = event["title"] as? String ?? "助手动作"
                     let stepId = event["stepId"] as? String ?? "step-\(UUID().uuidString)"
                     upsertAction(operationId: operationId, stepId: stepId, title: title, detail: event["detail"] as? String, status: event["status"] as? String ?? "completed")
+                case "transcript.card":
+                    guard let row = projectListenerConnectTranscriptCard(
+                        event: event,
+                        operationId: event["operationId"] as? String ?? operationId
+                    ) else { continue }
+                    if let index = chatMessages.firstIndex(where: { $0.id == row.id }) {
+                        chatMessages[index] = row
+                    } else {
+                        chatMessages.append(row)
+                    }
                 case "operation.completed", "operation.interrupted":
                     guard event["operationId"] as? String == operationId else { continue }
                     removeThinking(operationId: operationId)
