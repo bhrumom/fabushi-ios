@@ -73,9 +73,9 @@ p.write_text(text)
 
 p=Path("docs/specs/fabushi-desktop-pr20-ios-architecture-parity.md")
 text=p.read_text()
-needle=f"- pinned source commit for this baseline: \`{OLD}\`"
+needle=f"- pinned source commit for this baseline: `{OLD}`"
 assert needle in text
-text=text.replace(needle,f"- pinned source commit for this baseline: \`{NEW}\`",1)
+text=text.replace(needle,f"- pinned source commit for this baseline: `{NEW}`",1)
 assert "### 1.35 Exact-HEAD rebaseline" not in text
 section="""### 1.35 Exact-HEAD rebaseline: 2026-10-03 / `0b38b53a1a6b7cfe9957cf26732799cd657470a4`
 
