@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `0e94c970c63eaadea8b1ea605a807a487a0519e2`
+- pinned source commit for this baseline: `c43b246c8cd4b85359acba7850dd64d5a2fececc`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -316,6 +316,14 @@ Desktop PR #20 advanced one focused-contract commit from `42ac4967196e33e991e6c4
 The strengthened contract makes Auto Review ownership explicit: shipping `main.rs` supplies live review dependencies into `worker_host_runner_composition.compose_production_turn(...)`, and `HostRunnerComposition` is the canonical owner that decorates routine Auto Review, Box shell review, and Subagent task review on the generated turn. A second direct Host builder path is not acceptable.
 
 The iOS row was previously unreviewed. It is now reviewed and `mapped` only; no Desktop implementation/evidence is inherited. iOS must audit its Rust Host/Runner review composition and prove that SwiftUI/Coordinator do not own execution review decoration before promotion.
+
+### 1.34 Exact-HEAD rebaseline: 2026-10-03 / `c43b246c8cd4b85359acba7850dd64d5a2fececc`
+
+Desktop PR #20 advanced one production commit from `0e94c970c63eaadea8b1ea605a807a487a0519e2` to `c43b246c8cd4b85359acba7850dd64d5a2fececc`. The selected inventory remains exactly **7,927** blobs. Two `source-host` blobs changed: `runner/turn_agent_composition.rs` and `tests/runner_production_bridge_contract.rs`.
+
+The new responsibility closes a production-boundary gap rather than changing the MCP state schema itself. `TurnAgentComposition::execute_mcp_state()` now adapts the exact `RoutedToolBridge` already owned by that generated turn into the canonical `mcp_state_executor`. This preserves first-seen provider grouping and exact tool metadata/schema without constructing a second MCP discovery owner. The focused production-bridge contract executes that shipping composition path. Desktop deliberately reset the manifest responsibility from `implemented` to `existing-needs-parity` until this new wiring receives its own exact-head Host/Runner and Electron evidence.
+
+Accordingly, iOS does not inherit either the prior Desktop status or the prior iOS `implemented` status on the changed turn-composition row. The iOS native equivalent is the existing `RuntimeCommand::McpServers -> NativeAgentBackend::list_mcp_servers` path backed by the generation-safe `NativeMcpServerStateStore`; all native/per-turn consumers must use that one owner. Exact-head behavior evidence must prove this production consumer boundary, including loading/connected/error status, status detail, tool schema, stale-generation rejection, reset fencing, and absence of a parallel Swift/Runner discovery registry.
 
 ## 2. Product goal
 

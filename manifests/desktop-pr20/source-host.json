@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "0e94c970c63eaadea8b1ea605a807a487a0519e2",
+  "sourceCommit": "c43b246c8cd4b85359acba7850dd64d5a2fececc",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -2705,8 +2705,8 @@
     },
     {
       "path": "source/host/src/runner/turn_agent_composition.rs",
-      "blobSha": "9486a6c721cd655212bc64e56fb9f2c538809da8",
-      "size": 19259
+      "blobSha": "abb81bd076d24d784af0d4eb140fec9e37e33ed4",
+      "size": 20218
     },
     {
       "path": "source/host/src/runner/turn_memory.rs",
@@ -4225,8 +4225,8 @@
     },
     {
       "path": "source/host/tests/runner_production_bridge_contract.rs",
-      "blobSha": "2e652cebe8dabe03a7519924815c1f7c31ff334f",
-      "size": 7366
+      "blobSha": "73b5cc168d29edad000546403268c18197399495",
+      "size": 10650
     },
     {
       "path": "source/host/tests/runner_prompt_glue_contract.rs",

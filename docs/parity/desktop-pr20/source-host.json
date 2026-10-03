@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "0e94c970c63eaadea8b1ea605a807a487a0519e2",
+  "sourceCommit": "c43b246c8cd4b85359acba7850dd64d5a2fececc",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -6737,7 +6737,7 @@
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence. Revalidated at Desktop PR #20 42ac4967196e33e991e6c4d9e794a7c221ed0c63: Desktop architecture manifest now marks the canonical MCP state executor implemented with shipping Box consumers and exact-head production evidence. No selected source blob changed. Desktop status is not inherited by iOS; affected iOS rows remain mapped until one iOS-owned Rust shipping state owner preserves provider/tool/status/status-detail semantics and exact-head CI proves it."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence. Revalidated at Desktop PR #20 42ac4967196e33e991e6c4d9e794a7c221ed0c63: Desktop architecture manifest now marks the canonical MCP state executor implemented with shipping Box consumers and exact-head production evidence. No selected source blob changed. Desktop status is not inherited by iOS; affected iOS rows remain mapped until one iOS-owned Rust shipping state owner preserves provider/tool/status/status-detail semantics and exact-head CI proves it. Revalidated at Desktop PR #20 c43b246c8cd4b85359acba7850dd64d5a2fececc: canonical MCP state execution is now bound into each shipping TurnAgentComposition from that turn's existing RoutedToolBridge; Desktop itself reset this responsibility to existing-needs-parity pending exact-head gates. iOS must not inherit prior implemented status and must prove its per-turn/runtime consumer uses the same canonical MCP state owner without a second discovery registry."
     },
     {
       "desktop_path": "source/host/src/ports/mod.rs",
@@ -8106,18 +8106,18 @@
     },
     {
       "desktop_path": "source/host/src/runner/turn_agent_composition.rs",
-      "desktop_blob_sha": "9486a6c721cd655212bc64e56fb9f2c538809da8",
-      "desktop_responsibility": "Wrap the durable provider checkpoint store, remember only the latest checkpoint for the current run, clear it before every run, and expose provider-neutral silent-tool-tail classification.",
+      "desktop_blob_sha": "abb81bd076d24d784af0d4eb140fec9e37e33ed4",
+      "desktop_responsibility": "Canonical per-turn Runner composition owns provider checkpoint/recovery surfaces and now executes canonical MCP state from the exact RoutedToolBridge already owned by that turn, without creating a second MCP discovery owner.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "Checkpoint state cannot leak across runs and closing-send recovery inspects the exact durable checkpoint.",
+      "desktop_visible_effect": "Each generated turn sees one provider/tool state projection with stable provider grouping and full tool schema, while checkpoint/recovery state remains scoped to the current run.",
       "ios_disposition": "ios-adapted",
-      "ios_target_path": "source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-native-agent/src/lib.rs",
       "ios_language": "Rust",
-      "ios_platform_delta": "",
-      "implementation_status": "implemented",
+      "ios_platform_delta": "Use the iOS-owned NativeAgent/Runtime turn path as the canonical native MCP state owner and feed all per-turn/native state consumers from it; do not add a parallel Swift or Runner discovery registry.",
+      "implementation_status": "mapped",
       "production_evidence": "mahayana-native-engine/src/lib.rs and mahayana-kernel/src/telemetry.rs: the shipping iOS NativeEngine remains the sole Runner/Agent-loop owner for bounded reply nudges, durable operation-scoped closing-send recovery in persisted NativeSession.history, real send_message delivery state, post-delivery tool-work detection, cancellation/suspension fences, and content-free empty-delivery telemetry aggregates.",
       "test_evidence": "Focused Rust tests cover ack→tool→hidden terminal→single closing nudge→real final send, durable operation marker, bounded no-delivery telemetry, and one-shot/cancel fences; kernel telemetry tests cover the aggregate report. Exact-HEAD GitHub Actions is still pending, so status is implemented, not verified.",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. iOS uses the existing NativeEngine/NativeSession owner rather than copying Desktop checkpoint wrappers. The separate ed06 production-wiring row remains mapped until reaction-as-delivery is audited in the iOS shipping reaction owner."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. iOS uses the existing NativeEngine/NativeSession owner rather than copying Desktop checkpoint wrappers. The separate ed06 production-wiring row remains mapped until reaction-as-delivery is audited in the iOS shipping reaction owner. Revalidated at Desktop PR #20 c43b246c8cd4b85359acba7850dd64d5a2fececc: canonical MCP state execution is now bound into each shipping TurnAgentComposition from that turn's existing RoutedToolBridge; Desktop itself reset this responsibility to existing-needs-parity pending exact-head gates. iOS must not inherit prior implemented status and must prove its per-turn/runtime consumer uses the same canonical MCP state owner without a second discovery registry."
     },
     {
       "desktop_path": "source/host/src/runner/turn_memory.rs",
@@ -12666,18 +12666,18 @@
     },
     {
       "desktop_path": "source/host/tests/runner_production_bridge_contract.rs",
-      "desktop_blob_sha": "2e652cebe8dabe03a7519924815c1f7c31ff334f",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "73b5cc168d29edad000546403268c18197399495",
+      "desktop_responsibility": "Focused production bridge contract executes the shipping TurnAgentComposition MCP-state path from its existing RoutedToolBridge and proves first-seen provider grouping plus exact tool metadata/schema survive the canonical projection.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "desktop_visible_effect": "CI rejects a test-only MCP state helper or a second discovery owner that is not reachable through the production turn composition.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-native-agent/src/lib.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "Exercise the production NativeAgent/Runtime MCP state owner and its real consumer boundary; helper-only projection tests are insufficient.",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 c43b246c8cd4b85359acba7850dd64d5a2fececc: canonical MCP state execution is now bound into each shipping TurnAgentComposition from that turn's existing RoutedToolBridge; Desktop itself reset this responsibility to existing-needs-parity pending exact-head gates. iOS must not inherit prior implemented status and must prove its per-turn/runtime consumer uses the same canonical MCP state owner without a second discovery registry."
     },
     {
       "desktop_path": "source/host/tests/runner_prompt_glue_contract.rs",
