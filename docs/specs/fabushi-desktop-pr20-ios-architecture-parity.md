@@ -341,6 +341,15 @@ The changed contract makes checkpoint/transcript journal composition ownership e
 
 For iOS this is `ios-adapted`, not mechanism-equivalent. NativeEngine/session persistence and Rust telemetry are the platform-owned replacement for Desktop transcript-journal storage and Host structured logging, but the product responsibility still applies: one shipping runtime composition must own persistence outcome truth, one Rust telemetry owner must report it, and SwiftUI/Coordinator may only project that state. The changed ledger row is reviewed from `unreviewed` to `mapped`; existing durable session/checkpoint primitives are not enough to claim implementation until their production outcome/reporting path and unique ownership are demonstrated.
 
+The iOS-adapted production contract for this slice is:
+
+- `NativeEngine::persist_session_state_if_configured` remains the sole durable main-session checkpoint writer. It must emit a content-free checkpoint outcome through the engine-owned `RuntimeTelemetry` on both success and failure, including byte count and elapsed time where available; callers must not recreate that outcome in Swift or Coordinator code.
+- persisted-session replay remains owned by `NativeEngine::open_session` / `restore_session`. A present snapshot records replay success or failure through the same `RuntimeTelemetry`; a missing snapshot or a snapshot older than the canonical transcript remains a normal non-replay path and must not be mislabeled as a failure.
+- persistence telemetry contains no prompt, transcript, path, token, secret, or user content. It records only operation class (checkpoint/replay), outcome, bounded byte/time aggregates, and counters suitable for diagnostics.
+- reporting must not change existing recovery behavior: unreadable/invalid persisted data may continue to fall back exactly where the current shipping path already falls back, while a restore failure that currently propagates remains propagating.
+- focused contracts must exercise the real NativeEngine checkpoint/replay boundaries and the single RuntimeTelemetry owner; a helper-only counter test is insufficient for parity promotion.
+
+
 ## 2. Product goal
 
 The goal is not to make an iOS app that separately reinterprets Grok Bot.
