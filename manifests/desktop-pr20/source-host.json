@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "0b38b53a1a6b7cfe9957cf26732799cd657470a4",
+  "sourceCommit": "2d7320aacff322010238a2fca5431adce5c108a3",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -3920,8 +3920,8 @@
     },
     {
       "path": "source/host/tests/journal_outcome_production_wiring_contract.rs",
-      "blobSha": "a4368db240f6a7d2f12d8924d3d78462b79b353a",
-      "size": 1117
+      "blobSha": "7d4700e748b15362718071204800ffcc92edf470",
+      "size": 1417
     },
     {
       "path": "source/host/tests/large_output_spill_contract.rs",

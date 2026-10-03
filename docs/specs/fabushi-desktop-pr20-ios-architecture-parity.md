@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `0b38b53a1a6b7cfe9957cf26732799cd657470a4`
+- pinned source commit for this baseline: `2d7320aacff322010238a2fca5431adce5c108a3`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -332,6 +332,14 @@ Desktop PR #20 advanced two commits from `c43b246c8cd4b85359acba7850dd64d5a2fece
 The changed contract now proves more than child-session existence. Shipping Task launch must carry the real tool-call identity into Subagent review, a denied review must fence dispatch before the sink runs, and accepted review/sink dependencies must enter generated turns through canonical `HostRunnerComposition` / `TurnToolset`. The shipping Host remains the child Runner/session and live-parent projection owner, and child sessions do not recursively install Task.
 
 For iOS this is `ios-adapted`. The existing `NativeEngine` already owns `subagent_run`, receives the actual model function-call id, and passes every tool through its Rust approval boundary before executing the SubagentScheduler. That overlap is not enough to inherit implementation status for the expanded Desktop responsibility. The row is reviewed to `mapped` until the iOS shipping path proves one child lifecycle owner, parent live projection, no recursive launch owner, and the same real-call identity review fence without a Swift/Coordinator parallel owner.
+
+### 1.36 Exact-HEAD rebaseline: 2026-10-03 / `2d7320aacff322010238a2fca5431adce5c108a3`
+
+Desktop PR #20 advanced one commit from `0b38b53a1a6b7cfe9957cf26732799cd657470a4` to `2d7320aacff322010238a2fca5431adce5c108a3`. The selected inventory remains exactly **7,927** blobs. The only selected-source blob change is `source/host/tests/journal_outcome_production_wiring_contract.rs`.
+
+The changed contract makes checkpoint/transcript journal composition ownership explicit: shipping `app/main.rs` must delegate production checkpoint-sink construction to `HostRunnerComposition::compose_production_checkpoint_sink`; that composition owns the one-time connection to `ProductionTranscriptMirrorProvider::with_reporter`, while journal outcomes continue through the unique Host telemetry owner. Coordinator and renderer/Electron telemetry remain non-owners.
+
+For iOS this is `ios-adapted`, not mechanism-equivalent. NativeEngine/session persistence and Rust telemetry are the platform-owned replacement for Desktop transcript-journal storage and Host structured logging, but the product responsibility still applies: one shipping runtime composition must own persistence outcome truth, one Rust telemetry owner must report it, and SwiftUI/Coordinator may only project that state. The changed ledger row is reviewed from `unreviewed` to `mapped`; existing durable session/checkpoint primitives are not enough to claim implementation until their production outcome/reporting path and unique ownership are demonstrated.
 
 ## 2. Product goal
 

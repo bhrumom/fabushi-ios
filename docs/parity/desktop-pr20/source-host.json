@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "0b38b53a1a6b7cfe9957cf26732799cd657470a4",
+  "sourceCommit": "2d7320aacff322010238a2fca5431adce5c108a3",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -11751,18 +11751,18 @@
     },
     {
       "desktop_path": "source/host/tests/journal_outcome_production_wiring_contract.rs",
-      "desktop_blob_sha": "a4368db240f6a7d2f12d8924d3d78462b79b353a",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "7d4700e748b15362718071204800ffcc92edf470",
+      "desktop_responsibility": "Focused production wiring contract proving transcript/checkpoint journal outcomes are created by the shipping Runner checkpoint composition, reported through the unique Host telemetry owner, and not re-owned by Coordinator or renderer telemetry.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "desktop_visible_effect": "Checkpoint/transcript persistence failures and outcomes keep one shipping owner and one telemetry projection, so runtime recovery evidence cannot drift across parallel composition or UI/Coordinator telemetry paths.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "Use the iOS-owned NativeEngine/session persistence and Rust telemetry owners as the native replacement for Desktop transcript-journal checkpoint composition. Preserve one composition/reporting owner; SwiftUI and Coordinator may only project outcomes and must not rebuild persistence truth.",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 2d7320aacff322010238a2fca5431adce5c108a3: journal outcome production wiring moved behind canonical HostRunnerComposition.compose_production_checkpoint_sink while HostTelemetryService remains the unique structured-log owner and Coordinator/Electron remain non-owners. iOS has durable NativeEngine session/checkpoint state and Rust telemetry primitives, but this row remains mapped until the shipping persistence outcome path and unique telemetry ownership are proven without a Swift/Coordinator parallel owner."
     },
     {
       "desktop_path": "source/host/tests/large_output_spill_contract.rs",
