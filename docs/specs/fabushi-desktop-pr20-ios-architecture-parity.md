@@ -292,6 +292,14 @@ The Desktop manifest now records the MCP state executor as implemented: one Rust
 
 This changes Desktop acceptance status only. iOS does not inherit `implemented`. Its current production `RuntimeCommand::McpServers -> NativeAgentBackend::list_mcp_servers` path is the native state surface, but it currently projects only server name/plugin/status/runtime and drops the already-owned MCP tool schemas. The iOS closure must therefore enrich that existing Rust owner and keep `FeatureHostController::McpList` as a projection consumer; it must not introduce an unused Desktop-style protobuf layer merely for mechanism symmetry. If a remote Runner/Box wire is later required, serialization must adapt the same canonical iOS state owner.
 
+### 1.32 Protected iOS CI account import contract
+
+The protected Global Dharma acceptance must launch the real app with a bounded, refresh-token-free account session produced by `.github/scripts/prepare-ios-ci-session.mjs` and consumed by the Rust product/session owner. The preparation and Rust validation layers are one security contract: a credential accepted and emitted by preparation must not be rejected by a stricter, undocumented length rule at app startup. The account is still constrained by GitHub Actions provenance, `ciRunner=true`, Bearer token type, no refresh token, bounded lifetime, exact CI device/session identity, consistent top-level/nested user identity, maximum session size, and trusted-runner-only transport.
+
+The current preparation contract accepts non-whitespace account access/refresh credentials from the real login response at **24..=16 KiB**. Rust CI-session validation must use the same minimum for the imported access credential; it must continue rejecting values below 24, whitespace/control bytes, oversized credentials, invalid provenance/identity, refresh tokens, and out-of-window lifetime. This alignment is not a relaxation of the protected journey: it removes a contradictory second validator that previously allowed preparation to succeed and then fatally rejected the same bounded session before `auth_status` or the UI could run.
+
+Acceptance remains the unchanged real `GlobalDharmaJourneyUITests/testGlobalDharmaMarketplaceBotWebMcpCommerceJourney` plus the complete-state assertion. Unit/contract evidence must cover the exact 24-character lower boundary and rejection below it, and current-head protected-session evidence must show authenticated home restoration without browser interaction.
+
 ## 2. Product goal
 
 The goal is not to make an iOS app that separately reinterprets Grok Bot.
