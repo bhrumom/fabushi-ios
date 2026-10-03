@@ -21,7 +21,7 @@ use mahayana_kernel::{
 use mahayana_mcp_runtime::{NativeMcpRegistry, ResolvedMcpPlugin};
 use mahayana_native_engine::NativeEngine;
 use serde_json::{Value, json};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -390,20 +390,22 @@ impl AgentBackend for NativeAgentBackend {
             .mcp_sessions
             .lock()
             .map_err(|_| AgentError::Backend("native MCP session registry poisoned".into()))?;
-        let mut servers = sessions
-            .values()
-            .map(|session| {
-                json!({
-                    "name":session.plugin.server_name,
-                    "pluginId":session.plugin.plugin_id,
-                    "status":"connected",
-                    "runtime":"mahayana-native"
-                })
-            })
-            .collect::<Vec<_>>();
-        servers.sort_by(|left, right| left["name"].as_str().cmp(&right["name"].as_str()));
-        servers.dedup_by(|left, right| left["name"] == right["name"]);
-        Ok(servers)
+        let mut by_server = BTreeMap::<String, Value>::new();
+        for session in sessions.values() {
+            let server_identifier = session.plugin.server_name.clone();
+            by_server
+                .entry(server_identifier.clone())
+                .or_insert_with(|| {
+                    project_mcp_server_state(
+                        &server_identifier,
+                        &session.plugin.plugin_id,
+                        "connected",
+                        None,
+                        &session.tools,
+                    )
+                });
+        }
+        Ok(by_server.into_values().collect())
     }
 
     async fn list_connector_apps(&self) -> Result<Vec<Value>, AgentError> {
@@ -578,6 +580,50 @@ impl AgentBackend for NativeAgentBackend {
     }
 }
 
+fn project_mcp_server_state(
+    server_identifier: &str,
+    plugin_id: &str,
+    status: &str,
+    status_detail: Option<&str>,
+    tools: &[Value],
+) -> Value {
+    let tool_definitions = tools
+        .iter()
+        .filter_map(|tool| {
+            let name = tool.get("name")?.as_str()?.trim();
+            if name.is_empty() {
+                return None;
+            }
+            let description = tool
+                .get("description")
+                .and_then(Value::as_str)
+                .filter(|value| !value.trim().is_empty());
+            let input_schema = tool
+                .get("inputSchema")
+                .or_else(|| tool.get("input_schema"))
+                .cloned()
+                .unwrap_or(Value::Null);
+            Some(json!({
+                "name": name,
+                "providerIdentifier": server_identifier,
+                "toolName": name,
+                "description": description,
+                "inputSchema": input_schema,
+            }))
+        })
+        .collect::<Vec<_>>();
+
+    json!({
+        "name": server_identifier,
+        "serverIdentifier": server_identifier,
+        "pluginId": plugin_id,
+        "status": status,
+        "statusDetail": status_detail.filter(|value| !value.trim().is_empty()),
+        "runtime": "mahayana-native",
+        "tools": tool_definitions,
+    })
+}
+
 fn command_tools(tools: &[Value]) -> HashMap<String, String> {
     let mut commands = HashMap::new();
     for tool in tools {
@@ -738,5 +784,58 @@ mod tests {
             tool_gates(&tools).get("publish").map(String::as_str),
             Some("publish.pro")
         );
+    }
+}
+
+#[cfg(test)]
+mod mcp_state_projection_tests {
+    use super::*;
+
+    #[test]
+    fn canonical_mcp_state_projection_preserves_tool_schema_and_status_detail() {
+        let state = project_mcp_server_state(
+            "calendar",
+            "calendar-plugin",
+            "connected",
+            Some("healthy detail"),
+            &[
+                json!({
+                    "name": "search",
+                    "description": "Search calendar entries",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {"query": {"type": "string"}}
+                    }
+                }),
+                json!({"name": "create", "inputSchema": {"type": "object"}}),
+            ],
+        );
+
+        assert_eq!(state["serverIdentifier"], "calendar");
+        assert_eq!(state["pluginId"], "calendar-plugin");
+        assert_eq!(state["status"], "connected");
+        assert_eq!(state["statusDetail"], "healthy detail");
+        assert_eq!(state["tools"].as_array().map(Vec::len), Some(2));
+        assert_eq!(state["tools"][0]["providerIdentifier"], "calendar");
+        assert_eq!(state["tools"][0]["toolName"], "search");
+        assert_eq!(state["tools"][0]["description"], "Search calendar entries");
+        assert_eq!(
+            state["tools"][0]["inputSchema"]["properties"]["query"]["type"],
+            "string"
+        );
+    }
+
+    #[test]
+    fn canonical_mcp_state_projection_filters_empty_detail_and_invalid_tools() {
+        let state = project_mcp_server_state(
+            "files",
+            "files-plugin",
+            "connected",
+            Some("   "),
+            &[json!({"description": "missing name"}), json!({"name": "   "})],
+        );
+
+        assert!(state["statusDetail"].is_null());
+        assert_eq!(state["tools"].as_array().map(Vec::len), Some(0));
     }
 }
