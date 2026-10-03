@@ -2935,7 +2935,11 @@ fn ci_session_identifier(value: Option<&Value>) -> Option<String> {
 fn validate_ci_account_session(value: Value, now: i64) -> Result<Value, ProductError> {
     let token = access_token(&value)
         .ok_or_else(|| ProductError::Session("CI account session is missing accessToken".into()))?;
-    let token_is_safe = (32..=16 * 1024).contains(&token.len())
+    // Keep this lower bound identical to the protected-session preparation
+    // contract. The credential already came from the real account login and is
+    // additionally constrained by trusted GitHub Actions provenance, identity,
+    // lifetime, and refresh-token-free import rules below.
+    let token_is_safe = (24..=16 * 1024).contains(&token.len())
         && !token
             .bytes()
             .any(|byte| byte.is_ascii_whitespace() || byte.is_ascii_control());
@@ -3751,6 +3755,15 @@ mod tests {
             validate_ci_account_session(ios_app.clone(), now),
             Ok(ios_app)
         );
+        let mut minimum_access_credential = session.clone();
+        minimum_access_credential["accessToken"] = Value::String("a".repeat(24));
+        assert_eq!(
+            validate_ci_account_session(minimum_access_credential.clone(), now),
+            Ok(minimum_access_credential)
+        );
+        let mut undersized_access_credential = session.clone();
+        undersized_access_credential["accessToken"] = Value::String("a".repeat(23));
+        assert!(validate_ci_account_session(undersized_access_credential, now).is_err());
         let mut with_refresh = session.clone();
         with_refresh["refreshToken"] = Value::String("forbidden".into());
         assert!(validate_ci_account_session(with_refresh, now).is_err());
