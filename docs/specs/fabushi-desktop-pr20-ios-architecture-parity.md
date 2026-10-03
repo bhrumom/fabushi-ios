@@ -358,6 +358,14 @@ The strengthened contract binds the routine post-write integration path to the c
 
 For iOS this is `ios-adapted`. `FeatureHostController` already owns native automations and listener summaries, but the current shipping path does not yet prove the Desktop product effect of post-write listener connect guidance plus Host-owned connection watching and automatic routine resume. The changed row is therefore reviewed to `mapped` only. The eventual iOS implementation must keep watcher/resume truth in the Rust Host/runtime owner and let SwiftUI/Coordinator project state rather than create a parallel listener lifecycle.
 
+The iOS-adapted production contract for this slice is:
+
+- creating or updating an enabled event-triggered automation whose listener platform is not connected must surface one transcript `listenerConnect` card from the canonical Rust Host owner and arm one deduplicated pending listener-resume identity keyed by Agent + platform;
+- SwiftUI/Coordinator may render the card or initiate the platform-native connection flow, but may not own the pending-resume registry or decide when the automation setup turn resumes;
+- when that exact listener becomes connected, the Host must consume the pending identity at most once, clear it before dispatch, and resume the owning Agent through the normal Rust Host/runtime chat path with hidden/system-style continuation semantics rather than firing the automation itself;
+- disconnecting, closing the Host, deleting/disabling the automation, or deleting the owning Agent must not leave a stale resume that can wake a future unrelated turn;
+- focused Rust contracts must exercise the production FeatureHostController command path and prove card emission, dedupe, one-shot resume, stale cleanup, and absence of a Swift-side registry.
+
 ## 2. Product goal
 
 The goal is not to make an iOS app that separately reinterprets Grok Bot.
