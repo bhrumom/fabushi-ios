@@ -38,7 +38,9 @@ jobs:
       - name: Test canonical Rust Host Runner composition
         run: cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-host --lib --profile ci --features mobile-embedded
       - name: Test iOS-owned Rust Host modules
-        run: cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-app-host-mobile --lib --profile ci
+        run: |
+          cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-feature-host --lib --profile ci
+          cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-app-host-mobile --lib --profile ci
       - name: Test native MCP, persistence telemetry, Runtime projection, and protected account contracts
         run: |
           cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-kernel --lib --profile ci
