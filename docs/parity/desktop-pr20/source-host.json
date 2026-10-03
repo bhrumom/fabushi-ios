@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "f138ffbcff2f6e541899a3f17dc95d25b06b1bcd",
+  "sourceCommit": "ea29726d33da17bae8fbe5e1c145ba3c828081ee",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -3471,18 +3471,18 @@
     },
     {
       "desktop_path": "source/host/src/extensions/mcp/box_mcp_exec.rs",
-      "desktop_blob_sha": "aaa4adf5b4f7208f94eebc29874bae50f3a146f0",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "d691fc1a059588d33f3ceaccff5e35303c184008",
+      "desktop_responsibility": "Shipping Host Box MCP execution adapter maps canonical MCP state servers/tools into Box-visible server state without re-owning the wire schema, including status and non-empty status detail.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "desktop_visible_effect": "Remote/Box MCP state shows the canonical server/tool projection and preserves actionable server status detail.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-host/src/lib.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "Use the iOS-owned Rust Host/remote Runner adapter to project canonical MCP state into native/remote capability state; do not duplicate protobuf ownership in Swift.",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence."
     },
     {
       "desktop_path": "source/host/src/extensions/mcp/coordinator_relay.rs",
@@ -3621,7 +3621,7 @@
     },
     {
       "desktop_path": "source/host/src/extensions/mcp/production_box_state.rs",
-      "desktop_blob_sha": "f0b771f445446c033f7dbcaef9e6bf77b141a19f",
+      "desktop_blob_sha": "ed10c6b76df61a0f3fdf5aa1f60844ace5f172b2",
       "desktop_responsibility": "Shipping Box MCP state adapter delegates canonical agent.v1 state argument/result protobuf ownership to the Host MCP state executor port and only projects decoded server status into Box state.",
       "desktop_owner": "host",
       "desktop_visible_effect": "One canonical MCP state wire schema feeds Box status; the Box extension cannot drift into a second protobuf/tool-schema implementation.",
@@ -3632,7 +3632,7 @@
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence."
     },
     {
       "desktop_path": "source/host/src/extensions/mcp/skill_publish.rs",
@@ -6726,7 +6726,7 @@
     },
     {
       "desktop_path": "source/host/src/ports/mcp_state_executor.rs",
-      "desktop_blob_sha": "ee2e306419d868859146959fe2a51c67f9ab69dc",
+      "desktop_blob_sha": "a10ca73079bfbb8bee93f8b82211285ded01c4c1",
       "desktop_responsibility": "Canonical Host MCP state executor owns agent.v1 McpStateExecArgs/McpStateExecResult protobuf encoding/decoding, tool schema projection, provider grouping, state execution, and error/rejected normalization.",
       "desktop_owner": "host",
       "desktop_visible_effect": "MCP discovery/state consumers receive one schema-accurate provider/tool projection with stable field numbers and normalized failures.",
@@ -6737,7 +6737,7 @@
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence."
     },
     {
       "desktop_path": "source/host/src/ports/mod.rs",

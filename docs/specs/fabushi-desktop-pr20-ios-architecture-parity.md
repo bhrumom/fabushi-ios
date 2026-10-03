@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `f138ffbcff2f6e541899a3f17dc95d25b06b1bcd`
+- pinned source commit for this baseline: `ea29726d33da17bae8fbe5e1c145ba3c828081ee`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -275,6 +275,14 @@ Desktop PR #20 advanced two production commits from `39e1eeaee2d861b18a5db5864da
 The normative change removes a duplicate MCP protobuf owner. `mcp_state_executor` now owns the canonical `agent.v1` MCP state argument/result wire contract, exact field/schema projection, provider grouping, tool definitions, and error/rejected normalization. `ProductionBoxMcpStateLoader` is an adapter over that port and may not maintain a second protobuf/tool schema. The focused contract proves semantic state survives the canonical wire round trip.
 
 These rows were previously unreviewed. They are now reviewed and `mapped` only; no Desktop implementation status or old iOS evidence is inherited. iOS must audit its shipping MCP state owner and either reuse one Rust Host port or close any parallel schema before promotion.
+
+### 1.30 Exact-HEAD rebaseline: 2026-10-03 / `ea29726d33da17bae8fbe5e1c145ba3c828081ee`
+
+Desktop PR #20 advanced two production fixes from `f138ffbcff2f6e541899a3f17dc95d25b06b1bcd` to `ea29726d33da17bae8fbe5e1c145ba3c828081ee`. The selected inventory remains exactly **7,927** blobs. Three `source-host` blobs changed: `box_mcp_exec.rs`, `production_box_state.rs`, and `mcp_state_executor.rs`.
+
+The canonical MCP state contract now preserves server `error_message` through encode/decode and both Box adapters project a non-empty value as `status_detail`. This is part of the same single-owner rule introduced at `f138ffbc…`: the Host MCP state executor owns the `agent.v1` state wire schema; Box execution/state layers consume the canonical result and may only adapt the visible projection.
+
+The previously unreviewed `box_mcp_exec.rs` row is now reviewed and `mapped`. All three affected iOS rows remain `mapped`; no Desktop implementation status or historical iOS evidence is inherited.
 
 ## 2. Product goal
 
