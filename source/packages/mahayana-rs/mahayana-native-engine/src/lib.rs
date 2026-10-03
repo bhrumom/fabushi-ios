@@ -10,7 +10,9 @@ use mahayana_kernel::supervisor::{
     ApprovalLedger, ApprovalOutcome, ApprovalRecord, LoopDisposition, LoopPolicy, LoopState,
     PermissionDecision, PermissionKey, PermissionLedger, PermissionMemory,
 };
-use mahayana_kernel::telemetry::{RuntimeMetricsSnapshot, RuntimeTelemetry};
+use mahayana_kernel::telemetry::{
+    RuntimeMetricsSnapshot, RuntimeTelemetry, SessionPersistenceOperation,
+};
 use mahayana_kernel::{
     ApprovalResolution, BackendDescriptor, Capability, CapabilitySet, EngineBackend,
     ExecutionPolicy, KernelError, KernelEvent, OpenSessionRequest, OperationId,
@@ -404,46 +406,61 @@ impl NativeEngine {
         let Some(path) = path else {
             return Ok(());
         };
-        let state = NativeSnapshotState {
-            session: session.clone(),
-            memory: self
-                .memory
-                .lock()
-                .map_err(|_| KernelError::Backend("memory store poisoned".into()))?
-                .clone(),
-            workflows: self
-                .workflows
-                .lock()
-                .map_err(|_| KernelError::Backend("workflow store poisoned".into()))?
-                .clone(),
-            subagents: self
-                .subagents
-                .lock()
-                .map_err(|_| KernelError::Backend("subagent scheduler poisoned".into()))?
-                .clone(),
-            hooks: self
-                .hooks
-                .lock()
-                .map_err(|_| KernelError::Backend("hook registry poisoned".into()))?
-                .clone(),
-        };
-        let snapshot = KernelSessionSnapshot {
-            session_id: session_id.clone(),
-            backend_id: "mahayana-native".into(),
-            state: serde_json::to_value(state)
-                .map_err(|error| KernelError::Backend(error.to_string()))?,
-            metadata: json!({"snapshotVersion": 1, "updatedAtMs": session.updated_at_ms}),
-        };
-        let bytes = serde_json::to_vec(&snapshot)
-            .map_err(|error| KernelError::Backend(error.to_string()))?;
-        let parent = path
-            .parent()
-            .ok_or_else(|| KernelError::Backend("persisted session path has no parent".into()))?;
-        std::fs::create_dir_all(parent).map_err(|error| KernelError::Backend(error.to_string()))?;
-        let temporary = path.with_extension(format!("json.{}.tmp", Uuid::new_v4()));
-        write_private_file(&temporary, &bytes)?;
-        replace_file(&temporary, &path)?;
-        Ok(())
+
+        let started = Instant::now();
+        let mut byte_count = 0_u64;
+        let result = (|| -> Result<(), KernelError> {
+            let state = NativeSnapshotState {
+                session: session.clone(),
+                memory: self
+                    .memory
+                    .lock()
+                    .map_err(|_| KernelError::Backend("memory store poisoned".into()))?
+                    .clone(),
+                workflows: self
+                    .workflows
+                    .lock()
+                    .map_err(|_| KernelError::Backend("workflow store poisoned".into()))?
+                    .clone(),
+                subagents: self
+                    .subagents
+                    .lock()
+                    .map_err(|_| KernelError::Backend("subagent scheduler poisoned".into()))?
+                    .clone(),
+                hooks: self
+                    .hooks
+                    .lock()
+                    .map_err(|_| KernelError::Backend("hook registry poisoned".into()))?
+                    .clone(),
+            };
+            let snapshot = KernelSessionSnapshot {
+                session_id: session_id.clone(),
+                backend_id: "mahayana-native".into(),
+                state: serde_json::to_value(state)
+                    .map_err(|error| KernelError::Backend(error.to_string()))?,
+                metadata: json!({"snapshotVersion": 1, "updatedAtMs": session.updated_at_ms}),
+            };
+            let bytes = serde_json::to_vec(&snapshot)
+                .map_err(|error| KernelError::Backend(error.to_string()))?;
+            byte_count = bytes.len().min(u64::MAX as usize) as u64;
+            let parent = path.parent().ok_or_else(|| {
+                KernelError::Backend("persisted session path has no parent".into())
+            })?;
+            std::fs::create_dir_all(parent)
+                .map_err(|error| KernelError::Backend(error.to_string()))?;
+            let temporary = path.with_extension(format!("json.{}.tmp", Uuid::new_v4()));
+            write_private_file(&temporary, &bytes)?;
+            replace_file(&temporary, &path)?;
+            Ok(())
+        })();
+
+        self.telemetry.session_persistence_finished(
+            SessionPersistenceOperation::Checkpoint,
+            byte_count,
+            started.elapsed(),
+            result.is_ok(),
+        );
+        result
     }
 
     async fn persist_session_if_configured(
@@ -1608,29 +1625,72 @@ impl EngineBackend for NativeEngine {
             .filter(|conversation_id| *conversation_id == MAIN_ASSISTANT_CONVERSATION_ID)
             .and(self.config.session_state_path.clone());
         if let Some(path) = persisted_path.as_ref()
-            && let Ok(bytes) = std::fs::read(path)
-            && let Ok(snapshot) = serde_json::from_slice::<KernelSessionSnapshot>(&bytes)
+            && path.exists()
         {
-            let snapshot_updated_at_ms = snapshot
-                .metadata
-                .get("updatedAtMs")
-                .and_then(Value::as_i64)
-                .unwrap_or(0);
-            let transcript_updated_at_ms = request
-                .metadata
-                .get("transcriptUpdatedAtMs")
-                .and_then(Value::as_i64)
-                .unwrap_or(0);
-            if snapshot_updated_at_ms >= transcript_updated_at_ms {
-                let session_id = self.restore_session(snapshot).await?;
-                self.persisted_sessions
-                    .lock()
-                    .map_err(|_| {
-                        KernelError::Backend("persisted session registry poisoned".into())
-                    })?
-                    .insert(session_id.as_str().to_owned(), path.clone());
-                self.telemetry.session_opened();
-                return Ok(session_id);
+            let started = Instant::now();
+            match std::fs::read(path) {
+                Ok(bytes) => match serde_json::from_slice::<KernelSessionSnapshot>(&bytes) {
+                    Ok(snapshot) => {
+                        let snapshot_updated_at_ms = snapshot
+                            .metadata
+                            .get("updatedAtMs")
+                            .and_then(Value::as_i64)
+                            .unwrap_or(0);
+                        let transcript_updated_at_ms = request
+                            .metadata
+                            .get("transcriptUpdatedAtMs")
+                            .and_then(Value::as_i64)
+                            .unwrap_or(0);
+                        if snapshot_updated_at_ms >= transcript_updated_at_ms {
+                            let byte_count = bytes.len().min(u64::MAX as usize) as u64;
+                            match self.restore_session(snapshot).await {
+                                Ok(session_id) => {
+                                    self.telemetry.session_persistence_finished(
+                                        SessionPersistenceOperation::Replay,
+                                        byte_count,
+                                        started.elapsed(),
+                                        true,
+                                    );
+                                    self.persisted_sessions
+                                        .lock()
+                                        .map_err(|_| {
+                                            KernelError::Backend(
+                                                "persisted session registry poisoned".into(),
+                                            )
+                                        })?
+                                        .insert(session_id.as_str().to_owned(), path.clone());
+                                    self.telemetry.session_opened();
+                                    return Ok(session_id);
+                                }
+                                Err(error) => {
+                                    self.telemetry.session_persistence_finished(
+                                        SessionPersistenceOperation::Replay,
+                                        byte_count,
+                                        started.elapsed(),
+                                        false,
+                                    );
+                                    return Err(error);
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        self.telemetry.session_persistence_finished(
+                            SessionPersistenceOperation::Replay,
+                            bytes.len().min(u64::MAX as usize) as u64,
+                            started.elapsed(),
+                            false,
+                        );
+                    }
+                },
+                Err(_) => {
+                    self.telemetry.session_persistence_finished(
+                        SessionPersistenceOperation::Replay,
+                        0,
+                        started.elapsed(),
+                        false,
+                    );
+                }
             }
         }
         let workspace_root = request
@@ -3653,6 +3713,10 @@ mod tests {
             observed.load(Ordering::SeqCst),
             "model inference must observe the active prompt and matching running operation attempt already persisted"
         );
+        let metrics = engine.metrics_snapshot();
+        assert!(metrics.session_checkpoints_succeeded >= 1);
+        assert_eq!(metrics.session_checkpoints_failed, 0);
+        assert!(metrics.session_checkpoint_bytes_total > 0);
         std::fs::remove_dir_all(root).expect("cleanup");
     }
 
@@ -3772,6 +3836,42 @@ mod tests {
                 .contains("remember across providers")
         );
         assert!(snapshot.state.to_string().contains("first provider reply"));
+        let replay_metrics = second.metrics_snapshot();
+        assert_eq!(replay_metrics.session_replays_succeeded, 1);
+        assert_eq!(replay_metrics.session_replays_failed, 0);
+        assert!(replay_metrics.session_replay_bytes_total > 0);
+        std::fs::remove_dir_all(root).expect("cleanup");
+    }
+
+    #[tokio::test]
+    async fn invalid_persisted_session_records_replay_failure_without_changing_fallback() {
+        let root =
+            std::env::temp_dir().join(format!("mahayana-invalid-session-{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&root).expect("create temp root");
+        let state_path = root.join("assistant.json");
+        std::fs::write(&state_path, b"{not-valid-json").expect("seed invalid persisted state");
+
+        let model = Arc::new(FakeModel {
+            outputs: Mutex::new(VecDeque::new()),
+        });
+        let mut config = NativeEngineConfig::desktop("fallback-model");
+        config.session_state_path = Some(state_path);
+        let engine = NativeEngine::new(model, config).expect("create fallback engine");
+        let session = engine
+            .open_session(OpenSessionRequest {
+                profile: mahayana_kernel::RuntimeProfile::DesktopFull,
+                workspace_root: None,
+                model: None,
+                metadata: json!({"conversationId": MAIN_ASSISTANT_CONVERSATION_ID}),
+            })
+            .await
+            .expect("invalid persisted state must keep existing fresh-session fallback");
+
+        assert!(engine.session(&session).is_ok());
+        let metrics = engine.metrics_snapshot();
+        assert_eq!(metrics.session_replays_succeeded, 0);
+        assert_eq!(metrics.session_replays_failed, 1);
+        assert!(metrics.session_replay_bytes_total > 0);
         std::fs::remove_dir_all(root).expect("cleanup");
     }
 }
