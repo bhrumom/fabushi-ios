@@ -1122,6 +1122,98 @@ mod tests {
         assert_eq!(starts.load(Ordering::SeqCst), 1);
     }
 
+    struct McpProjectionAgent {
+        list_calls: Arc<AtomicUsize>,
+    }
+
+    #[async_trait]
+    impl AgentBackend for McpProjectionAgent {
+        async fn start_thread(
+            &self,
+            _request: StartThreadRequest,
+        ) -> Result<AgentThreadId, AgentError> {
+            AgentThreadId::new("thread:mcp-projection")
+                .map_err(|error| AgentError::Backend(error.to_string()))
+        }
+
+        async fn send_message(
+            &self,
+            _request: AgentMessageRequest,
+            _events: SharedAgentEventSink,
+        ) -> Result<(), AgentError> {
+            Ok(())
+        }
+
+        async fn interrupt(&self, _operation_id: &OperationId) -> Result<(), AgentError> {
+            Ok(())
+        }
+
+        async fn resolve_approval(
+            &self,
+            _resolution: ApprovalResolution,
+        ) -> Result<(), AgentError> {
+            Ok(())
+        }
+
+        async fn list_mcp_servers(&self) -> Result<Vec<Value>, AgentError> {
+            self.list_calls.fetch_add(1, Ordering::SeqCst);
+            Ok(vec![serde_json::json!({
+                "name": "calendar",
+                "serverIdentifier": "calendar",
+                "pluginId": "calendar-plugin",
+                "status": "error",
+                "statusDetail": "transport handshake failed",
+                "runtime": "mahayana-native",
+                "tools": [{
+                    "name": "search",
+                    "providerIdentifier": "calendar",
+                    "toolName": "search",
+                    "description": "Search calendar entries",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {"query": {"type": "string"}}
+                    }
+                }]
+            })])
+        }
+
+        fn name(&self) -> &'static str {
+            "mcp-projection-test"
+        }
+    }
+
+    #[test]
+    fn mcp_servers_delegates_once_and_preserves_canonical_backend_projection() {
+        let list_calls = Arc::new(AtomicUsize::new(0));
+        let runtime = RuntimeBuilder::new(RuntimeConfig::default())
+            .with_agent_backend(Arc::new(McpProjectionAgent {
+                list_calls: Arc::clone(&list_calls),
+            }))
+            .expect("register MCP projection backend")
+            .build()
+            .expect("build runtime");
+
+        let response = runtime
+            .execute(RuntimeCommand::McpServers)
+            .expect("list canonical MCP server state");
+        let RuntimeResponse::McpServers { data } = response else {
+            panic!("expected MCP server response");
+        };
+
+        assert_eq!(list_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(data.len(), 1);
+        assert_eq!(data[0]["serverIdentifier"], "calendar");
+        assert_eq!(data[0]["status"], "error");
+        assert_eq!(data[0]["statusDetail"], "transport handshake failed");
+        assert_eq!(data[0]["runtime"], "mahayana-native");
+        assert_eq!(data[0]["tools"][0]["providerIdentifier"], "calendar");
+        assert_eq!(data[0]["tools"][0]["toolName"], "search");
+        assert_eq!(
+            data[0]["tools"][0]["inputSchema"]["properties"]["query"]["type"],
+            "string"
+        );
+    }
+
     #[test]
     fn rejects_cloud_agent_configuration_at_runtime_creation() {
         let config = RuntimeConfig {
