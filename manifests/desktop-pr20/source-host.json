@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "2d7320aacff322010238a2fca5431adce5c108a3",
+  "sourceCommit": "4186cea169a71a0ebe38849f844dc153de204078",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -4200,8 +4200,8 @@
     },
     {
       "path": "source/host/tests/runner_communicate_listener_contract.rs",
-      "blobSha": "d20f22d2757d9a00d8a89aca75670dc581213691",
-      "size": 9727
+      "blobSha": "33f2a98dbdde90f09fd79d8204c27213ff461a8c",
+      "size": 10116
     },
     {
       "path": "source/host/tests/runner_context_production_provider_contract.rs",

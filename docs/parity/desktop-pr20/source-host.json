@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "2d7320aacff322010238a2fca5431adce5c108a3",
+  "sourceCommit": "4186cea169a71a0ebe38849f844dc153de204078",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -12591,18 +12591,18 @@
     },
     {
       "desktop_path": "source/host/tests/runner_communicate_listener_contract.rs",
-      "desktop_blob_sha": "d20f22d2757d9a00d8a89aca75670dc581213691",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "33f2a98dbdde90f09fd79d8204c27213ff461a8c",
+      "desktop_responsibility": "Focused production contract proving routine post-write listener-connect cards and automatic connection watching are installed through the canonical HostRunnerComposition hook rather than a parallel shipping owner.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "desktop_visible_effect": "After a routine writes to an integration that is not connected, the user sees the required connect card/instruction and the Host watches connection state so the routine can resume automatically without moving lifecycle truth into UI code.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-feature-host/src/implementation.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "Reuse the iOS FeatureHostController as the canonical automation/listener owner. Add the iOS-native post-write listener-connect and resume-watch behavior there or in one subordinate Rust Host service; SwiftUI/Coordinator may project cards and connection state but must not own watcher or routine-resume truth.",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 4186cea169a71a0ebe38849f844dc153de204078: routine post-write listener connection handling is now explicitly bound through HostRunnerComposition. Current iOS FeatureHostController owns automations and listener summaries, but no equivalent shipping post-write connect-card plus connection-watcher resume path is yet proven, so this row remains mapped."
     },
     {
       "desktop_path": "source/host/tests/runner_context_production_provider_contract.rs",

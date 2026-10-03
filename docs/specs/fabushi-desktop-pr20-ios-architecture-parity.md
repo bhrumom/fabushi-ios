@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `2d7320aacff322010238a2fca5431adce5c108a3`
+- pinned source commit for this baseline: `4186cea169a71a0ebe38849f844dc153de204078`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -349,6 +349,14 @@ The iOS-adapted production contract for this slice is:
 - reporting must not change existing recovery behavior: unreadable/invalid persisted data may continue to fall back exactly where the current shipping path already falls back, while a restore failure that currently propagates remains propagating.
 - focused contracts must exercise the real NativeEngine checkpoint/replay boundaries and the single RuntimeTelemetry owner; a helper-only counter test is insufficient for parity promotion.
 
+
+### 1.37 Exact-HEAD rebaseline: 2026-10-03 / `4186cea169a71a0ebe38849f844dc153de204078`
+
+Desktop PR #20 advanced one commit from `2d7320aacff322010238a2fca5431adce5c108a3` to `4186cea169a71a0ebe38849f844dc153de204078`. The selected inventory remains exactly **7,927** blobs. The only selected-source blob change is `source/host/tests/runner_communicate_listener_contract.rs`.
+
+The strengthened contract binds the routine post-write integration path to the canonical `HostRunnerComposition`: after a routine writes to a target whose listener platform is not connected, shipping Host surfaces the frozen connect card/instruction and arms the lifecycle connection watcher, while the turn still consumes the same production composition hook. This is an ownership/lifecycle requirement, not merely a UI-string contract.
+
+For iOS this is `ios-adapted`. `FeatureHostController` already owns native automations and listener summaries, but the current shipping path does not yet prove the Desktop product effect of post-write listener connect guidance plus Host-owned connection watching and automatic routine resume. The changed row is therefore reviewed to `mapped` only. The eventual iOS implementation must keep watcher/resume truth in the Rust Host/runtime owner and let SwiftUI/Coordinator project state rather than create a parallel listener lifecycle.
 
 ## 2. Product goal
 
