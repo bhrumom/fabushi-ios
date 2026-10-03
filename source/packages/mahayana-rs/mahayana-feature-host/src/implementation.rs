@@ -6036,6 +6036,70 @@ impl FeatureHostController {
         self.dispatch_listener_connection_resumes(platform, agent_ids)
     }
 
+    fn poll_pending_listener_connection_resumes(&self) -> Result<(), FeatureHostError> {
+        let pending_platforms = {
+            let state = self.state()?;
+            state
+                .pending_listener_resumes
+                .iter()
+                .map(|(_, platform)| *platform)
+                .collect::<BTreeSet<_>>()
+        };
+        if pending_platforms.is_empty() {
+            return Ok(());
+        }
+
+        match self.config.mode {
+            HostMode::Test => {
+                let connected = {
+                    let state = self.state()?;
+                    pending_platforms
+                        .into_iter()
+                        .filter(|platform| {
+                            state
+                                .listeners
+                                .get(platform)
+                                .is_some_and(|integration| integration.is_connected)
+                        })
+                        .collect::<Vec<_>>()
+                };
+                for platform in connected {
+                    self.consume_listener_connection_resumes(platform)?;
+                }
+            }
+            HostMode::Production => {
+                #[cfg(feature = "production")]
+                {
+                    let Ok((connectors, _)) = self.production_connector_snapshot() else {
+                        return Ok(());
+                    };
+                    let connected = pending_platforms
+                        .into_iter()
+                        .filter(|platform| {
+                            connector_for_listener_platform(*platform)
+                                .and_then(|connector_id| {
+                                    connectors
+                                        .iter()
+                                        .find(|connector| connector.id == connector_id)
+                                })
+                                .is_some_and(|connector| {
+                                    connector.status == ConnectorStatus::Connected
+                                })
+                        })
+                        .collect::<Vec<_>>();
+                    for platform in connected {
+                        self.consume_listener_connection_resumes(platform)?;
+                    }
+                }
+                #[cfg(not(feature = "production"))]
+                {
+                    return Err(FeatureHostError::ProductionUnavailable);
+                }
+            }
+        }
+        Ok(())
+    }
+
     #[cfg(feature = "production")]
     fn dispatch_hidden_listener_resume(
         &self,
@@ -6407,6 +6471,10 @@ impl FeatureHostController {
             return Ok(Some(event));
         }
         if let Some(event) = self.advance_deferred_conversation_activation()? {
+            return Ok(Some(event));
+        }
+        self.poll_pending_listener_connection_resumes()?;
+        if let Some(event) = self.state()?.events.pop_front() {
             return Ok(Some(event));
         }
         match self.config.mode {
@@ -13734,6 +13802,67 @@ mod tests {
                 HostEvent::TransportEvent { channel, .. } if channel == "listener-resume"
             )),
             "consumed resume identity must never wake twice"
+        );
+    }
+
+    #[test]
+    fn listener_resume_watcher_observes_connection_without_manual_list_or_connect_command() {
+        let controller = controller();
+        drain(&controller);
+
+        controller
+            .execute(FeatureCommand::AutomationUpsert {
+                request_id: "listener-watch-create".into(),
+                id: Some("listener-watch".into()),
+                agent_id: None,
+                name: "Slack listener".into(),
+                prompt: "Handle matching messages.".into(),
+                schedule: "event:slack:message".into(),
+                trigger: Some(AutomationTrigger::Event {
+                    source: ListenerPlatform::Slack,
+                    event: "message".into(),
+                    filter: None,
+                }),
+                enabled: true,
+            })
+            .expect("create listener automation");
+        let first = drain(&controller);
+        assert!(first.into_iter().any(|event| matches!(
+            event,
+            HostEvent::TranscriptCard {
+                card: TranscriptCard::ListenerConnect {
+                    platform: ListenerPlatform::Slack,
+                    pending: Some(true),
+                    ..
+                },
+                ..
+            }
+        )));
+
+        controller
+            .state()
+            .expect("state")
+            .listeners
+            .get_mut(&ListenerPlatform::Slack)
+            .expect("slack listener")
+            .is_connected = true;
+
+        let resumed = controller.receive().expect("poll listener watcher");
+        assert!(matches!(
+            resumed,
+            Some(HostEvent::TransportEvent { channel, payload })
+                if channel == "listener-resume"
+                    && payload["agentId"] == "mahayana-assistant"
+                    && payload["platform"] == "slack"
+                    && payload["hidden"] == true
+        ));
+        assert!(
+            controller
+                .state()
+                .expect("state")
+                .pending_listener_resumes
+                .is_empty(),
+            "watcher must consume the pending resume identity before dispatch"
         );
     }
 
