@@ -292,6 +292,15 @@ The Desktop manifest now records the MCP state executor as implemented: one Rust
 
 This changes Desktop acceptance status only. iOS does not inherit `implemented`. Its current production `RuntimeCommand::McpServers -> NativeAgentBackend::list_mcp_servers` path is the native state surface, but it currently projects only server name/plugin/status/runtime and drops the already-owned MCP tool schemas. The iOS closure must therefore enrich that existing Rust owner and keep `FeatureHostController::McpList` as a projection consumer; it must not introduce an unused Desktop-style protobuf layer merely for mechanism symmetry. If a remote Runner/Box wire is later required, serialization must adapt the same canonical iOS state owner.
 
+The shipping iOS MCP state closure must also preserve the Desktop status/error semantics rather than only the tool schema:
+
+- `NativeAgentBackend` remains the single canonical owner of native MCP server runtime state. SwiftUI, Coordinator, FeatureHost, and shared Swift MCP presentation may request or project that state, but they may not maintain a second startup/error registry.
+- After a plugin resolves to an exact MCP server identifier, each open attempt receives a monotonically newer per-server generation and records `loading`. A completion may settle state only while that generation is still current, so an older concurrent attempt cannot overwrite a newer result.
+- Successful tool discovery settles the same state to `connected`, clears stale detail, and stores the exact discovered tool definitions/schema. Tool-discovery join/transport/protocol failure settles it to `error` with the non-empty normalized failure message as `statusDetail`; the failed state remains listable even though no runnable MCP session was created.
+- `AgentBackend::list_mcp_servers` projects this canonical state and must not manufacture `connected` merely because an MCP session exists. Account/session reset clears runnable MCP sessions and their canonical server-state truth together.
+- Focused contracts must exercise the production state owner, including status-detail preservation and stale-generation rejection. A helper-only projection test is not sufficient for parity promotion.
+
+
 ### 1.32 Protected iOS CI account import contract
 
 The protected Global Dharma acceptance must launch the real app with a bounded, refresh-token-free account session produced by `.github/scripts/prepare-ios-ci-session.mjs` and consumed by the Rust product/session owner. The preparation and Rust validation layers are one security contract: a credential accepted and emitted by preparation must not be rejected by a stricter, undocumented length rule at app startup. The account is still constrained by GitHub Actions provenance, `ciRunner=true`, Bearer token type, no refresh token, bounded lifetime, exact CI device/session identity, consistent top-level/nested user identity, maximum session size, and trusted-runner-only transport.
