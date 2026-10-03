@@ -85,7 +85,9 @@ impl ClientSideToolV2Producer {
 
     #[cfg(test)]
     pub(crate) fn reset(&mut self, agent_id: &str) -> Option<Value> {
-        let agent_id = nonempty(agent_id)?;
+        if agent_id.is_empty() {
+            return None;
+        }
         self.open_calls.remove(agent_id);
         Some(self.event(agent_id, "reset", None))
     }
