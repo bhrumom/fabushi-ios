@@ -45,11 +45,86 @@ struct NativeMcpSession {
     tools: Vec<Value>,
 }
 
+#[derive(Clone)]
+struct NativeMcpServerState {
+    plugin_id: String,
+    status: String,
+    status_detail: Option<String>,
+    tools: Vec<Value>,
+    generation: u64,
+}
+
+#[derive(Default)]
+struct NativeMcpServerStateStore {
+    by_server: BTreeMap<String, NativeMcpServerState>,
+}
+
+impl NativeMcpServerStateStore {
+    fn begin(&mut self, server_identifier: &str, plugin_id: &str) -> u64 {
+        let generation = self
+            .by_server
+            .get(server_identifier)
+            .map(|state| state.generation.saturating_add(1))
+            .unwrap_or(1);
+        self.by_server.insert(
+            server_identifier.to_string(),
+            NativeMcpServerState {
+                plugin_id: plugin_id.to_string(),
+                status: "loading".into(),
+                status_detail: None,
+                tools: Vec::new(),
+                generation,
+            },
+        );
+        generation
+    }
+
+    fn settle(
+        &mut self,
+        server_identifier: &str,
+        generation: u64,
+        status: &str,
+        status_detail: Option<String>,
+        tools: Vec<Value>,
+    ) -> bool {
+        let Some(state) = self.by_server.get_mut(server_identifier) else {
+            return false;
+        };
+        if state.generation != generation {
+            return false;
+        }
+        state.status = status.to_string();
+        state.status_detail = status_detail.filter(|detail| !detail.trim().is_empty());
+        state.tools = tools;
+        true
+    }
+
+    fn projected(&self) -> Vec<Value> {
+        self.by_server
+            .iter()
+            .map(|(server_identifier, state)| {
+                project_mcp_server_state(
+                    server_identifier,
+                    &state.plugin_id,
+                    &state.status,
+                    state.status_detail.as_deref(),
+                    &state.tools,
+                )
+            })
+            .collect()
+    }
+
+    fn clear(&mut self) {
+        self.by_server.clear();
+    }
+}
+
 pub struct NativeAgentBackend {
     engine: Arc<NativeEngine>,
     config: NativeAgentConfig,
     threads: Mutex<HashMap<String, NativeThread>>,
     mcp_sessions: Mutex<HashMap<String, NativeMcpSession>>,
+    mcp_server_state: Mutex<NativeMcpServerStateStore>,
     disabled_tools: Mutex<HashMap<String, HashSet<String>>>,
 }
 
@@ -60,6 +135,7 @@ impl NativeAgentBackend {
             config,
             threads: Mutex::new(HashMap::new()),
             mcp_sessions: Mutex::new(HashMap::new()),
+            mcp_server_state: Mutex::new(NativeMcpServerStateStore::default()),
             disabled_tools: Mutex::new(HashMap::new()),
         }
     }
@@ -119,6 +195,35 @@ impl NativeAgentBackend {
             .map_err(|_| AgentError::Backend("MCP tool policy registry poisoned".into()))?
             .get(server)
             .is_some_and(|tools| tools.contains(tool)))
+    }
+
+    fn begin_mcp_server_attempt(&self, plugin: &ResolvedMcpPlugin) -> Result<u64, AgentError> {
+        Ok(self
+            .mcp_server_state
+            .lock()
+            .map_err(|_| AgentError::Backend("native MCP server state poisoned".into()))?
+            .begin(&plugin.server_name, &plugin.plugin_id))
+    }
+
+    fn settle_mcp_server_attempt(
+        &self,
+        server_identifier: &str,
+        generation: u64,
+        status: &str,
+        status_detail: Option<String>,
+        tools: Vec<Value>,
+    ) -> Result<bool, AgentError> {
+        Ok(self
+            .mcp_server_state
+            .lock()
+            .map_err(|_| AgentError::Backend("native MCP server state poisoned".into()))?
+            .settle(
+                server_identifier,
+                generation,
+                status,
+                status_detail,
+                tools,
+            ))
     }
 
     async fn mcp_call(
@@ -378,6 +483,10 @@ impl AgentBackend for NativeAgentBackend {
             .lock()
             .map_err(|_| AgentError::Backend("native MCP session registry poisoned".into()))?
             .clear();
+        self.mcp_server_state
+            .lock()
+            .map_err(|_| AgentError::Backend("native MCP server state poisoned".into()))?
+            .clear();
         self.disabled_tools
             .lock()
             .map_err(|_| AgentError::Backend("MCP tool policy registry poisoned".into()))?
@@ -386,26 +495,11 @@ impl AgentBackend for NativeAgentBackend {
     }
 
     async fn list_mcp_servers(&self) -> Result<Vec<Value>, AgentError> {
-        let sessions = self
-            .mcp_sessions
+        Ok(self
+            .mcp_server_state
             .lock()
-            .map_err(|_| AgentError::Backend("native MCP session registry poisoned".into()))?;
-        let mut by_server = BTreeMap::<String, Value>::new();
-        for session in sessions.values() {
-            let server_identifier = session.plugin.server_name.clone();
-            by_server
-                .entry(server_identifier.clone())
-                .or_insert_with(|| {
-                    project_mcp_server_state(
-                        &server_identifier,
-                        &session.plugin.plugin_id,
-                        "connected",
-                        None,
-                        &session.tools,
-                    )
-                });
-        }
-        Ok(by_server.into_values().collect())
+            .map_err(|_| AgentError::Backend("native MCP server state poisoned".into()))?
+            .projected())
     }
 
     async fn list_connector_apps(&self) -> Result<Vec<Value>, AgentError> {
@@ -471,14 +565,48 @@ impl AgentBackend for NativeAgentBackend {
                 .await
                 .map_err(|error| AgentError::Backend(error.to_string()))?
                 .map_err(|error| AgentError::Unavailable(error.to_string()))?;
+        let server_identifier = resolved.server_name.clone();
+        let generation = self.begin_mcp_server_attempt(&resolved)?;
         let client = resolved.client();
-        let tools = tokio::task::spawn_blocking({
+        let tools = match tokio::task::spawn_blocking({
             let client = client.clone();
             move || client.list_tools()
         })
         .await
-        .map_err(|error| AgentError::Backend(error.to_string()))?
-        .map_err(|error| AgentError::Backend(error.to_string()))?;
+        {
+            Ok(Ok(tools)) => {
+                self.settle_mcp_server_attempt(
+                    &server_identifier,
+                    generation,
+                    "connected",
+                    None,
+                    tools.clone(),
+                )?;
+                tools
+            }
+            Ok(Err(error)) => {
+                let detail = error.to_string();
+                self.settle_mcp_server_attempt(
+                    &server_identifier,
+                    generation,
+                    "error",
+                    Some(detail.clone()),
+                    Vec::new(),
+                )?;
+                return Err(AgentError::Backend(detail));
+            }
+            Err(error) => {
+                let detail = error.to_string();
+                self.settle_mcp_server_attempt(
+                    &server_identifier,
+                    generation,
+                    "error",
+                    Some(detail.clone()),
+                    Vec::new(),
+                )?;
+                return Err(AgentError::Backend(detail));
+            }
+        };
         let resources = tokio::task::spawn_blocking({
             let client = client.clone();
             move || client.list_resources().unwrap_or_default()
@@ -790,6 +918,58 @@ mod tests {
 #[cfg(test)]
 mod mcp_state_projection_tests {
     use super::*;
+
+    #[test]
+    fn production_mcp_state_store_preserves_failure_detail_and_rejects_stale_settlement() {
+        let mut store = NativeMcpServerStateStore::default();
+        let first = store.begin("calendar", "calendar-plugin");
+        let second = store.begin("calendar", "calendar-plugin");
+        assert!(second > first);
+
+        assert!(!store.settle(
+            "calendar",
+            first,
+            "connected",
+            None,
+            vec![json!({"name": "stale"})],
+        ));
+        assert!(store.settle(
+            "calendar",
+            second,
+            "error",
+            Some("transport handshake failed".into()),
+            Vec::new(),
+        ));
+
+        let projected = store.projected();
+        assert_eq!(projected.len(), 1);
+        assert_eq!(projected[0]["status"], "error");
+        assert_eq!(projected[0]["statusDetail"], "transport handshake failed");
+        assert_eq!(projected[0]["tools"].as_array().map(Vec::len), Some(0));
+    }
+
+    #[test]
+    fn production_mcp_state_store_settles_tools_on_current_generation() {
+        let mut store = NativeMcpServerStateStore::default();
+        let generation = store.begin("calendar", "calendar-plugin");
+        assert!(store.settle(
+            "calendar",
+            generation,
+            "connected",
+            None,
+            vec![json!({
+                "name": "search",
+                "description": "Search calendar entries",
+                "inputSchema": {"type": "object"}
+            })],
+        ));
+
+        let projected = store.projected();
+        assert_eq!(projected[0]["status"], "connected");
+        assert!(projected[0]["statusDetail"].is_null());
+        assert_eq!(projected[0]["tools"][0]["toolName"], "search");
+        assert_eq!(projected[0]["tools"][0]["inputSchema"]["type"], "object");
+    }
 
     #[test]
     fn canonical_mcp_state_projection_preserves_tool_schema_and_status_detail() {
