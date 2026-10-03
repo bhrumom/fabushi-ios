@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "4186cea169a71a0ebe38849f844dc153de204078",
+  "sourceCommit": "c51bf2344c21e200b6a05dacaa7d3382b02abcc0",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -2705,8 +2705,8 @@
     },
     {
       "path": "source/host/src/runner/turn_agent_composition.rs",
-      "blobSha": "abb81bd076d24d784af0d4eb140fec9e37e33ed4",
-      "size": 20218
+      "blobSha": "1dffb881bbd29b3c8f59537f6122f20c7949e978",
+      "size": 22259
     },
     {
       "path": "source/host/src/runner/turn_memory.rs",
@@ -3746,7 +3746,7 @@
     {
       "path": "source/host/tests/generated_subagent_production_cutover_contract.rs",
       "blobSha": "68e50bb055ddd4356da85644a00bf8ae0bdf59e6",
-      "size": 6085
+      "size": 7236
     },
     {
       "path": "source/host/tests/grok_small_foundation_parity_contract.rs",
@@ -4025,8 +4025,8 @@
     },
     {
       "path": "source/host/tests/mcp_state_executor_contract.rs",
-      "blobSha": "66c3e94de2b6ac9252746a219855e544a5556b4b",
-      "size": 3076
+      "blobSha": "e69ca6ca82568d6a27b1191059a1b9705faceda3",
+      "size": 5709
     },
     {
       "path": "source/host/tests/media_mime_contract.rs",
@@ -4365,8 +4365,8 @@
     },
     {
       "path": "source/host/tests/sand_subagent_management_tools_contract.rs",
-      "blobSha": "8b2092523f1f25f515b4a699c6f6d7fc9012c975",
-      "size": 9247
+      "blobSha": "dd19979f5fd9c49461c99f5006d6f328623c7a1b",
+      "size": 9923
     },
     {
       "path": "source/host/tests/search_index_db_contract.rs",

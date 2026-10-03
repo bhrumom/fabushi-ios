@@ -46,4 +46,21 @@ final class MarketplaceModelLifecycleTests: XCTestCase {
         XCTAssertEqual(connected.actionStatus, "completed")
         XCTAssertTrue(connected.actionDetail?.contains("已连接") == true)
     }
+    func testListenerProjectionFallbackIdentityAndDefaultDetailArePlatformSpecific() throws {
+        func card(_ platform: String, connected: Bool) throws -> MobileChatMessage {
+            try XCTUnwrap(projectListenerConnectTranscriptCard(
+                event: ["card": ["kind": "listenerConnect", "platform": platform,
+                                  "connected": connected, "reason": "  "]],
+                operationId: nil
+            ))
+        }
+        let slack = try card("Slack", connected: false)
+        let github = try card("github", connected: true)
+        XCTAssertEqual(slack.id, "listener-connect:slack")
+        XCTAssertEqual(github.id, "listener-connect:github")
+        XCTAssertNotEqual(slack.id, github.id)
+        XCTAssertEqual(slack.actionDetail, "连接 Slack 后，此例程才能接收对应事件。")
+        XCTAssertEqual(github.actionDetail, "GitHub 已连接。")
+    }
+
 }

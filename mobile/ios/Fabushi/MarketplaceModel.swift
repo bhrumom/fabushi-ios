@@ -71,9 +71,9 @@ func projectListenerConnectTranscriptCard(
     let reason = (card["reason"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
     let detail = reason?.isEmpty == false
         ? reason
-        : (connected ? "(displayName) 已连接。" : "连接 (displayName) 后，此例程才能接收对应事件。")
+        : (connected ? "\(displayName) 已连接。" : "连接 \(displayName) 后，此例程才能接收对应事件。")
     let entryId = (event["entryId"] as? String).flatMap { $0.isEmpty ? nil : $0 }
-        ?? "listener-connect:(platform.lowercased())"
+        ?? "listener-connect:\(platform.lowercased())"
 
     return MobileChatMessage(
         id: entryId,
@@ -81,7 +81,7 @@ func projectListenerConnectTranscriptCard(
         text: "",
         kind: .action,
         operationId: operationId,
-        actionTitle: connected ? "(displayName) 已连接" : "连接 (displayName)",
+        actionTitle: connected ? "\(displayName) 已连接" : "连接 \(displayName)",
         actionDetail: detail,
         actionStatus: connected ? "completed" : (pending ? "pending" : "waiting")
     )

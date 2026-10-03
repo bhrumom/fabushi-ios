@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `4186cea169a71a0ebe38849f844dc153de204078`
+- pinned source commit for this baseline: `c51bf2344c21e200b6a05dacaa7d3382b02abcc0`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -1030,3 +1030,12 @@ On iOS the equivalent invariant is that account/conversation lifecycle and activ
 Desktop PR #20 advanced from `d3b2477ef7941554946a92d1267e5f6110e9137a` to `f2a2e1811bbd2f1d7677672fd4b88f48e54b4cef` in one production Host commit. The selected inventory remains 7,926 rows; four existing `source/host/**` blobs changed and no selected source path was added or removed. Shipping Host main no longer binds the WidgetResponses channel-config callback directly. `TranscriptManager` now creates and owns the callback proxy, the production Transcript extension binds the manager-owned observer to `transcript.channel-config-changed`, and dispose clears that observer. The focused manager contract rejects a second WidgetResponses channel-config owner and proves the signal is emitted after successful channel-credential persistence.
 
 This is applicable to iOS as an ownership and lifecycle rule, not an Electron mechanism. The current iOS replacement remains the single Host-owned `FeatureHostController`; no SwiftUI or secondary observer registry may become canonical. The affected Desktop rows are rebound to the new blob identities and remain `mapped`: iOS still needs equivalent credential-change projection plus current exact-HEAD focused behavior/Actions evidence before any promotion. Older acceptance bound to d3b2477/cbe85ca is historical only.
+
+
+## Recovery baseline 2026-10-03: c51bf234
+
+Current Desktop PR #20 authority is `c51bf2344c21e200b6a05dacaa7d3382b02abcc0`, replacing `4186cea169a71a0ebe38849f844dc153de204078`. Earlier rebaseline sections and their acceptance statements are historical. The selected inventory remains 7,927 blobs. The changed responsibilities are TurnAgentComposition MCP discovery projection and its MCP-state/subagent contracts. Shipping Desktop wraps the routed bridge with the canonical MCP-state projection before observation/audit and built-in tool injection, while execution and partial-call observation delegate to the existing bridge. iOS must independently prove the same discovery semantics on its native shipping path; changed rows cannot inherit implemented/verified evidence. No Coordinator/Host/Runner boundary is collapsed.
+
+The listener transcript projection must interpolate the platform display name in pending/connected titles and default detail, preserve the Host-provided entry identity, and use a platform-specific fallback identity when entryId is absent. Swift remains a projection only; resume ownership remains in Rust Host. Existing Swift contract assertions must remain strict, with additional fallback identity/default-detail coverage.
+
+Current iOS 380c6dc8 Actions evidence is partial: Rust Host and unsigned device archive succeeded; Swift listener projection assertions failed, ordinary UI tests were skipped, and protected Global Dharma auto-login failed before complete-state verification. No listener acceptance promotion is authorized. The protected failure requires separate diagnosis of session restoration/preparation and cannot be relabeled as success or a runner cancellation.
