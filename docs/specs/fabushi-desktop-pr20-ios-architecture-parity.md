@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `c51bf2344c21e200b6a05dacaa7d3382b02abcc0`
+- pinned source commit for this baseline: `9a748dc4acb3058815b24b662613e420445857e6`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -1039,3 +1039,8 @@ Current Desktop PR #20 authority is `c51bf2344c21e200b6a05dacaa7d3382b02abcc0`, 
 The listener transcript projection must interpolate the platform display name in pending/connected titles and default detail, preserve the Host-provided entry identity, and use a platform-specific fallback identity when entryId is absent. Swift remains a projection only; resume ownership remains in Rust Host. Existing Swift contract assertions must remain strict, with additional fallback identity/default-detail coverage.
 
 Current iOS 380c6dc8 Actions evidence is partial: Rust Host and unsigned device archive succeeded; Swift listener projection assertions failed, ordinary UI tests were skipped, and protected Global Dharma auto-login failed before complete-state verification. No listener acceptance promotion is authorized. The protected failure requires separate diagnosis of session restoration/preparation and cannot be relabeled as success or a runner cancellation.
+
+
+### Recovery follow-up authority: 9a748dc4
+
+Desktop advanced to `9a748dc4acb3058815b24b662613e420445857e6` after the recovery commit. The only changed blob is `source/host/tests/system_prompt_shipping_wiring_contract.rs`: assertions now follow HostRunnerComposition computer preparation/lease/finish delegation instead of the superseded direct owner calls. This is a Desktop contract correction, not new iOS shipping behavior. All 7,927 source identities are rebound; the changed row requires independent review and no acceptance status is promoted.

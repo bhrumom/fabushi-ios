@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "c51bf2344c21e200b6a05dacaa7d3382b02abcc0",
+  "sourceCommit": "9a748dc4acb3058815b24b662613e420445857e6",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -13656,7 +13656,7 @@
     },
     {
       "desktop_path": "source/host/tests/system_prompt_shipping_wiring_contract.rs",
-      "desktop_blob_sha": "63ecceaa82ae202d946e58cee88ae67a538143dd",
+      "desktop_blob_sha": "2e841675cb4464f0bd99628a492b79e0af417768",
       "desktop_responsibility": "pending-review",
       "desktop_owner": "host",
       "desktop_visible_effect": "pending-review",
@@ -13667,7 +13667,7 @@
       "implementation_status": "unreviewed",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. 9a748dc4 upstream contract correction; independent iOS acceptance remains required."
     },
     {
       "desktop_path": "source/host/tests/teach_recording_extension_contract.rs",

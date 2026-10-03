@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "c51bf2344c21e200b6a05dacaa7d3382b02abcc0",
+  "sourceCommit": "9a748dc4acb3058815b24b662613e420445857e6",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -4555,8 +4555,8 @@
     },
     {
       "path": "source/host/tests/system_prompt_shipping_wiring_contract.rs",
-      "blobSha": "63ecceaa82ae202d946e58cee88ae67a538143dd",
-      "size": 3474
+      "blobSha": "2e841675cb4464f0bd99628a492b79e0af417768",
+      "size": 3894
     },
     {
       "path": "source/host/tests/teach_recording_extension_contract.rs",
