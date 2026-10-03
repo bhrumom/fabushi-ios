@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `42ac4967196e33e991e6c4d9e794a7c221ed0c63`
+- pinned source commit for this baseline: `0e94c970c63eaadea8b1ea605a807a487a0519e2`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -308,6 +308,14 @@ The protected Global Dharma acceptance must launch the real app with a bounded, 
 The current preparation contract accepts non-whitespace account access/refresh credentials from the real login response at **24..=16 KiB**. Rust CI-session validation must use the same minimum for the imported access credential; it must continue rejecting values below 24, whitespace/control bytes, oversized credentials, invalid provenance/identity, refresh tokens, and out-of-window lifetime. This alignment is not a relaxation of the protected journey: it removes a contradictory second validator that previously allowed preparation to succeed and then fatally rejected the same bounded session before `auth_status` or the UI could run.
 
 Acceptance remains the unchanged real `GlobalDharmaJourneyUITests/testGlobalDharmaMarketplaceBotWebMcpCommerceJourney` plus the complete-state assertion. Unit/contract evidence must cover the exact 24-character lower boundary and rejection below it, and current-head protected-session evidence must show authenticated home restoration without browser interaction.
+
+### 1.33 Exact-HEAD rebaseline: 2026-10-03 / `0e94c970c63eaadea8b1ea605a807a487a0519e2`
+
+Desktop PR #20 advanced one focused-contract commit from `42ac4967196e33e991e6c4d9e794a7c221ed0c63` to `0e94c970c63eaadea8b1ea605a807a487a0519e2`. The selected inventory remains exactly **7,927** blobs. Only `source/host/tests/auto_review_gate_contract.rs` changed.
+
+The strengthened contract makes Auto Review ownership explicit: shipping `main.rs` supplies live review dependencies into `worker_host_runner_composition.compose_production_turn(...)`, and `HostRunnerComposition` is the canonical owner that decorates routine Auto Review, Box shell review, and Subagent task review on the generated turn. A second direct Host builder path is not acceptable.
+
+The iOS row was previously unreviewed. It is now reviewed and `mapped` only; no Desktop implementation/evidence is inherited. iOS must audit its Rust Host/Runner review composition and prove that SwiftUI/Coordinator do not own execution review decoration before promotion.
 
 ## 2. Product goal
 

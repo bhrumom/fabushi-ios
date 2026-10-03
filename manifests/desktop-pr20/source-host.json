@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "42ac4967196e33e991e6c4d9e794a7c221ed0c63",
+  "sourceCommit": "0e94c970c63eaadea8b1ea605a807a487a0519e2",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -3070,8 +3070,8 @@
     },
     {
       "path": "source/host/tests/auto_review_gate_contract.rs",
-      "blobSha": "046797ef0d076bfe9be637681fe17143947509d1",
-      "size": 7988
+      "blobSha": "8446bb9af4bef4b6f9d456e4355428c9e05d7fe5",
+      "size": 8778
     },
     {
       "path": "source/host/tests/auto_review_production_wiring_contract.rs",

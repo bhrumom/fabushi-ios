@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "42ac4967196e33e991e6c4d9e794a7c221ed0c63",
+  "sourceCommit": "0e94c970c63eaadea8b1ea605a807a487a0519e2",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -9201,18 +9201,18 @@
     },
     {
       "desktop_path": "source/host/tests/auto_review_gate_contract.rs",
-      "desktop_blob_sha": "046797ef0d076bfe9be637681fe17143947509d1",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "8446bb9af4bef4b6f9d456e4355428c9e05d7fe5",
+      "desktop_responsibility": "Focused production ownership contract proving the shared Auto Review gate and routine/Box/Subagent review callbacks enter each generated turn through canonical HostRunnerComposition.compose_production_turn rather than a parallel Host builder path.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "desktop_visible_effect": "All generated turn side effects share one review gate/approval identity surface; canonical Runner composition owns routine, Box shell, external shell, cloud-agent and Subagent review decoration.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-host/src/lib.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "Keep Auto Review/approval hooks in the iOS-owned Rust Host/Runner composition; SwiftUI/Coordinator may request or project review state but may not decorate execution independently.",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 0e94c970c63eaadea8b1ea605a807a487a0519e2: focused Auto Review gate contract now binds routine/Box/Subagent review hooks to canonical HostRunnerComposition.compose_production_turn ownership rather than accepting direct builder-only wiring in app/main.rs. iOS is mapped only pending native shipping-owner audit and exact-head behavior evidence."
     },
     {
       "desktop_path": "source/host/tests/auto_review_production_wiring_contract.rs",
