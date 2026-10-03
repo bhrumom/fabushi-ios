@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "c43b246c8cd4b85359acba7850dd64d5a2fececc",
+  "sourceCommit": "0b38b53a1a6b7cfe9957cf26732799cd657470a4",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -11226,18 +11226,18 @@
     },
     {
       "desktop_path": "source/host/tests/generated_subagent_production_cutover_contract.rs",
-      "desktop_blob_sha": "a554d4ba73ce0f5d2b473195934867c3d2bfec9b",
-      "desktop_responsibility": "pending-review",
+      "desktop_blob_sha": "68e50bb055ddd4356da85644a00bf8ae0bdf59e6",
+      "desktop_responsibility": "Focused production cutover contract proving generated subagent Task dispatch carries the real tool-call identity through review before launch, binds review and sink through canonical HostRunnerComposition/TurnToolset, creates the child Runner/session under the shipping Host owner, and projects live child lifecycle to the parent without recursively installing Task in child sessions.",
       "desktop_owner": "host",
-      "desktop_visible_effect": "pending-review",
-      "ios_disposition": "unreviewed",
-      "ios_target_path": "",
-      "ios_language": "",
-      "ios_platform_delta": "",
-      "implementation_status": "unreviewed",
+      "desktop_visible_effect": "A generated subagent cannot launch before its exact Task call passes the shared review boundary; accepted launches have one child Runner/lifecycle owner and appear/disappear on the parent projection with the original tool-call identity.",
+      "ios_disposition": "ios-adapted",
+      "ios_target_path": "source/packages/mahayana-rs/mahayana-native-engine/src/lib.rs",
+      "ios_language": "Rust",
+      "ios_platform_delta": "Use the iOS-owned NativeEngine/SubagentScheduler and its real function-call identity/approval boundary; preserve child lifecycle and parent projection semantics without copying Desktop process mechanics or adding a Swift-side launch owner.",
+      "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 0b38b53a1a6b7cfe9957cf26732799cd657470a4: the contract now requires real Task tool_call_id review fencing plus canonical HostRunnerComposition/TurnToolset launch ownership and live parent projection. Current iOS NativeEngine already authorizes subagent_run before dispatch, but this row remains mapped until exact child lifecycle/parent projection and shared review-owner behavior are proven on the shipping path."
     },
     {
       "desktop_path": "source/host/tests/grok_small_foundation_parity_contract.rs",

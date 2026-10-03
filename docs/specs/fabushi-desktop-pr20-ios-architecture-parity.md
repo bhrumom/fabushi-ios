@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `c43b246c8cd4b85359acba7850dd64d5a2fececc`
+- pinned source commit for this baseline: `0b38b53a1a6b7cfe9957cf26732799cd657470a4`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -324,6 +324,14 @@ Desktop PR #20 advanced one production commit from `0e94c970c63eaadea8b1ea605a80
 The new responsibility closes a production-boundary gap rather than changing the MCP state schema itself. `TurnAgentComposition::execute_mcp_state()` now adapts the exact `RoutedToolBridge` already owned by that generated turn into the canonical `mcp_state_executor`. This preserves first-seen provider grouping and exact tool metadata/schema without constructing a second MCP discovery owner. The focused production-bridge contract executes that shipping composition path. Desktop deliberately reset the manifest responsibility from `implemented` to `existing-needs-parity` until this new wiring receives its own exact-head Host/Runner and Electron evidence.
 
 Accordingly, iOS does not inherit either the prior Desktop status or the prior iOS `implemented` status on the changed turn-composition row. The iOS native equivalent is the existing `RuntimeCommand::McpServers -> NativeAgentBackend::list_mcp_servers` path backed by the generation-safe `NativeMcpServerStateStore`; all native/per-turn consumers must use that one owner. Exact-head behavior evidence must prove this production consumer boundary, including loading/connected/error status, status detail, tool schema, stale-generation rejection, reset fencing, and absence of a parallel Swift/Runner discovery registry.
+
+### 1.35 Exact-HEAD rebaseline: 2026-10-03 / `0b38b53a1a6b7cfe9957cf26732799cd657470a4`
+
+Desktop PR #20 advanced two commits from `c43b246c8cd4b85359acba7850dd64d5a2fececc` to `0b38b53a1a6b7cfe9957cf26732799cd657470a4`. The selected inventory remains exactly **7,927** blobs. The only selected-source blob change is `source/host/tests/generated_subagent_production_cutover_contract.rs`.
+
+The changed contract now proves more than child-session existence. Shipping Task launch must carry the real tool-call identity into Subagent review, a denied review must fence dispatch before the sink runs, and accepted review/sink dependencies must enter generated turns through canonical `HostRunnerComposition` / `TurnToolset`. The shipping Host remains the child Runner/session and live-parent projection owner, and child sessions do not recursively install Task.
+
+For iOS this is `ios-adapted`. The existing `NativeEngine` already owns `subagent_run`, receives the actual model function-call id, and passes every tool through its Rust approval boundary before executing the SubagentScheduler. That overlap is not enough to inherit implementation status for the expanded Desktop responsibility. The row is reviewed to `mapped` until the iOS shipping path proves one child lifecycle owner, parent live projection, no recursive launch owner, and the same real-call identity review fence without a Swift/Coordinator parallel owner.
 
 ## 2. Product goal
 

@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "c43b246c8cd4b85359acba7850dd64d5a2fececc",
+  "sourceCommit": "0b38b53a1a6b7cfe9957cf26732799cd657470a4",
   "group": "source-host",
   "fileCount": 957,
   "files": [
@@ -3745,7 +3745,7 @@
     },
     {
       "path": "source/host/tests/generated_subagent_production_cutover_contract.rs",
-      "blobSha": "a554d4ba73ce0f5d2b473195934867c3d2bfec9b",
+      "blobSha": "68e50bb055ddd4356da85644a00bf8ae0bdf59e6",
       "size": 6085
     },
     {
