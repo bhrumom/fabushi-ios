@@ -483,44 +483,6 @@ fn prune_pending_listener_resumes(state: &mut FeatureState) {
         .retain(|key| required.contains(key));
 }
 
-fn arm_listener_resume_after_automation_write(
-    state: &mut FeatureState,
-    automation: &AutomationSummary,
-) {
-    prune_pending_listener_resumes(state);
-    let Some((agent_id, platform)) = automation_listener_resume_key(automation) else {
-        return;
-    };
-    if state
-        .listeners
-        .get(&platform)
-        .is_some_and(|integration| integration.is_connected)
-    {
-        state.pending_listener_resumes.remove(&(agent_id, platform));
-        return;
-    }
-    if !state
-        .pending_listener_resumes
-        .insert((agent_id.clone(), platform))
-    {
-        return;
-    }
-    state.events.push_back(HostEvent::TranscriptCard {
-        timestamp: timestamp(),
-        entry_id: format!(
-            "listener-connect:{agent_id}:{}",
-            listener_platform_slug(platform)
-        ),
-        operation_id: None,
-        card: TranscriptCard::ListenerConnect {
-            platform,
-            reason: Some("so this routine can fire".into()),
-            connected: false,
-            pending: Some(true),
-        },
-    });
-}
-
 fn take_pending_listener_resumes(
     state: &mut FeatureState,
     platform: ListenerPlatform,
@@ -528,7 +490,7 @@ fn take_pending_listener_resumes(
     let mut agents = state
         .pending_listener_resumes
         .iter()
-        .filter(|(_, pending_platform)| *pending_platform == &platform)
+        .filter(|(_, pending_platform)| **pending_platform == platform)
         .map(|(agent_id, _)| agent_id.clone())
         .collect::<Vec<_>>();
     agents.sort();
@@ -1753,12 +1715,13 @@ impl FeatureHostController {
                 };
                 state.automations.insert(id, automation.clone());
                 self.persist_automations(&state.automations)?;
-                arm_listener_resume_after_automation_write(&mut state, &automation);
                 state.events.push_back(HostEvent::AutomationChanged {
                     timestamp: timestamp(),
                     action: action.into(),
-                    automation,
+                    automation: automation.clone(),
                 });
+                drop(state);
+                self.arm_listener_resume_after_automation_write(&automation)?;
                 Ok(CommandAccepted {
                     request_id,
                     operation_id: None,
@@ -1787,16 +1750,18 @@ impl FeatureHostController {
                     automation_next_run(&trigger, &automation.schedule, enabled, now_millis());
                 let automation = automation.clone();
                 self.persist_automations(&state.automations)?;
-                if enabled {
-                    arm_listener_resume_after_automation_write(&mut state, &automation);
-                } else {
+                if !enabled {
                     prune_pending_listener_resumes(&mut state);
                 }
                 state.events.push_back(HostEvent::AutomationChanged {
                     timestamp: timestamp(),
                     action: if enabled { "resumed" } else { "paused" }.into(),
-                    automation,
+                    automation: automation.clone(),
                 });
+                drop(state);
+                if enabled {
+                    self.arm_listener_resume_after_automation_write(&automation)?;
+                }
                 Ok(CommandAccepted {
                     request_id,
                     operation_id: None,
@@ -5955,6 +5920,79 @@ impl FeatureHostController {
             request_id,
             operation_id: None,
         })
+    }
+
+    fn listener_connected_for_automation_write(
+        &self,
+        platform: ListenerPlatform,
+    ) -> Option<bool> {
+        match self.config.mode {
+            HostMode::Test => self
+                .state()
+                .ok()?
+                .listeners
+                .get(&platform)
+                .map(|integration| integration.is_connected),
+            HostMode::Production => {
+                #[cfg(feature = "production")]
+                {
+                    let connector_id = connector_for_listener_platform(platform)?;
+                    let (connectors, _) = self.production_connector_snapshot().ok()?;
+                    connectors
+                        .iter()
+                        .find(|connector| connector.id == connector_id)
+                        .map(|connector| connector.status == ConnectorStatus::Connected)
+                }
+                #[cfg(not(feature = "production"))]
+                {
+                    let _ = platform;
+                    None
+                }
+            }
+        }
+    }
+
+    fn arm_listener_resume_after_automation_write(
+        &self,
+        automation: &AutomationSummary,
+    ) -> Result<(), FeatureHostError> {
+        let Some((agent_id, platform)) = automation_listener_resume_key(automation) else {
+            let mut state = self.state()?;
+            prune_pending_listener_resumes(&mut state);
+            return Ok(());
+        };
+        let Some(is_connected) = self.listener_connected_for_automation_write(platform) else {
+            // Match Desktop fail-soft listener lookup: an unavailable connection
+            // projection must not block or mutate a successfully persisted routine.
+            return Ok(());
+        };
+        let mut state = self.state()?;
+        prune_pending_listener_resumes(&mut state);
+        if is_connected {
+            state.pending_listener_resumes.remove(&(agent_id, platform));
+            return Ok(());
+        }
+        if !state
+            .pending_listener_resumes
+            .insert((agent_id.clone(), platform))
+        {
+            return Ok(());
+        }
+        state.events.push_back(HostEvent::TranscriptCard {
+            timestamp: timestamp(),
+            entry_id: format!(
+                "listener-connect:{agent_id}:{}",
+                listener_platform_slug(platform)
+            ),
+            operation_id: None,
+            card: TranscriptCard::ListenerConnect {
+                platform,
+                reason: Some("so this routine can fire".into()),
+                connected: false,
+                pending: Some(true),
+            },
+        });
+        Ok(())
     }
 
     fn dispatch_listener_connection_resumes(
