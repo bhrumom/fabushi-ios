@@ -395,6 +395,7 @@ struct FeatureState {
     group_runs: BTreeMap<String, GroupRunState>,
     group_operations: BTreeMap<String, GroupOperationContext>,
     listeners: BTreeMap<ListenerPlatform, ListenerIntegrationSummary>,
+    pending_listener_resumes: BTreeSet<(String, ListenerPlatform)>,
     update_state: UpdateState,
 }
 
@@ -430,6 +431,7 @@ impl Default for FeatureState {
             group_runs: BTreeMap::new(),
             group_operations: BTreeMap::new(),
             listeners: default_listeners(),
+            pending_listener_resumes: BTreeSet::new(),
             update_state: UpdateState::UpToDate {
                 version: env!("CARGO_PKG_VERSION").into(),
             },
@@ -447,6 +449,96 @@ fn active_agent_id_for_state(state: &FeatureState) -> Option<String> {
         .values()
         .find(|bot| bot.conversation_id.as_deref() == Some(conversation_id))
         .map(|bot| bot.id.clone())
+}
+
+fn automation_listener_resume_key(
+    automation: &AutomationSummary,
+) -> Option<(String, ListenerPlatform)> {
+    if !automation.enabled {
+        return None;
+    }
+    let AutomationTrigger::Event { source, .. } = automation.trigger.as_ref()? else {
+        return None;
+    };
+    if !matches!(source, ListenerPlatform::Slack | ListenerPlatform::Github) {
+        return None;
+    }
+    Some((
+        automation
+            .agent_id
+            .clone()
+            .unwrap_or_else(|| "mahayana-assistant".into()),
+        *source,
+    ))
+}
+
+fn prune_pending_listener_resumes(state: &mut FeatureState) {
+    let required = state
+        .automations
+        .values()
+        .filter_map(automation_listener_resume_key)
+        .collect::<BTreeSet<_>>();
+    state
+        .pending_listener_resumes
+        .retain(|key| required.contains(key));
+}
+
+fn arm_listener_resume_after_automation_write(
+    state: &mut FeatureState,
+    automation: &AutomationSummary,
+) {
+    prune_pending_listener_resumes(state);
+    let Some((agent_id, platform)) = automation_listener_resume_key(automation) else {
+        return;
+    };
+    if state
+        .listeners
+        .get(&platform)
+        .is_some_and(|integration| integration.is_connected)
+    {
+        state.pending_listener_resumes.remove(&(agent_id, platform));
+        return;
+    }
+    if !state
+        .pending_listener_resumes
+        .insert((agent_id.clone(), platform))
+    {
+        return;
+    }
+    state.events.push_back(HostEvent::TranscriptCard {
+        timestamp: timestamp(),
+        entry_id: format!(
+            "listener-connect:{agent_id}:{}",
+            listener_platform_slug(platform)
+        ),
+        operation_id: None,
+        card: TranscriptCard::ListenerConnect {
+            platform,
+            reason: Some("so this routine can fire".into()),
+            connected: false,
+            pending: Some(true),
+        },
+    });
+}
+
+fn take_pending_listener_resumes(
+    state: &mut FeatureState,
+    platform: ListenerPlatform,
+) -> Vec<String> {
+    let mut agents = state
+        .pending_listener_resumes
+        .iter()
+        .filter(|(_, pending_platform)| *pending_platform == &platform)
+        .map(|(agent_id, _)| agent_id.clone())
+        .collect::<Vec<_>>();
+    agents.sort();
+    agents.dedup();
+    for agent_id in &agents {
+        state
+            .pending_listener_resumes
+            .remove(&(agent_id.clone(), platform));
+    }
+    agents
 }
 
 fn queue_active_agent_automation_projection(state: &mut FeatureState, agent_id: &str) -> bool {
@@ -1661,6 +1753,7 @@ impl FeatureHostController {
                 };
                 state.automations.insert(id, automation.clone());
                 self.persist_automations(&state.automations)?;
+                arm_listener_resume_after_automation_write(&mut state, &automation);
                 state.events.push_back(HostEvent::AutomationChanged {
                     timestamp: timestamp(),
                     action: action.into(),
@@ -1694,6 +1787,11 @@ impl FeatureHostController {
                     automation_next_run(&trigger, &automation.schedule, enabled, now_millis());
                 let automation = automation.clone();
                 self.persist_automations(&state.automations)?;
+                if enabled {
+                    arm_listener_resume_after_automation_write(&mut state, &automation);
+                } else {
+                    prune_pending_listener_resumes(&mut state);
+                }
                 state.events.push_back(HostEvent::AutomationChanged {
                     timestamp: timestamp(),
                     action: if enabled { "resumed" } else { "paused" }.into(),
@@ -1715,6 +1813,7 @@ impl FeatureHostController {
                     .remove(&id)
                     .expect("automation checked above");
                 self.persist_automations(&state.automations)?;
+                prune_pending_listener_resumes(&mut state);
                 state.events.push_back(HostEvent::AutomationChanged {
                     timestamp: timestamp(),
                     action: "deleted".into(),
@@ -1967,6 +2066,9 @@ impl FeatureHostController {
                 if let Some(conversation_id) = bot.conversation_id.as_deref() {
                     state.conversation_session.mark_deleted(conversation_id);
                 }
+                state
+                    .pending_listener_resumes
+                    .retain(|(agent_id, _)| agent_id != &id);
                 ("deleted", bot)
             }
             FeatureCommand::BotSetHidden { id, hidden, .. } => {
@@ -5093,6 +5195,13 @@ impl FeatureHostController {
                         });
                     }
                 }
+                let agent_ids = take_pending_listener_resumes(&mut state, platform);
+                drop(state);
+                self.dispatch_listener_connection_resumes(platform, agent_ids)?;
+                return Ok(CommandAccepted {
+                    request_id,
+                    operation_id: None,
+                });
             }
             FeatureCommand::ListenerDisconnect { platform, .. } => {
                 let integration = state.listeners.get_mut(&platform).ok_or_else(|| {
@@ -5120,6 +5229,9 @@ impl FeatureHostController {
                         });
                     }
                 }
+                state
+                    .pending_listener_resumes
+                    .retain(|(_, pending_platform)| *pending_platform != platform);
             }
             FeatureCommand::UpdateStatus { .. } => {
                 let update_state = state.update_state.clone();
@@ -5250,10 +5362,18 @@ impl FeatureHostController {
         match command {
             FeatureCommand::ConnectorList { .. } => {
                 let (connectors, _) = self.production_connector_snapshot()?;
+                let connected_listener_platforms = connectors
+                    .iter()
+                    .filter(|connector| connector.status == ConnectorStatus::Connected)
+                    .filter_map(|connector| listener_platform_for_connector(&connector.id))
+                    .collect::<BTreeSet<_>>();
                 self.state()?.events.push_back(HostEvent::ConnectorListed {
                     timestamp: timestamp(),
                     connectors,
                 });
+                for platform in connected_listener_platforms {
+                    self.consume_listener_connection_resumes(platform)?;
+                }
                 Ok(Some(CommandAccepted {
                     request_id,
                     operation_id: None,
@@ -5514,10 +5634,18 @@ impl FeatureHostController {
                         }
                     }
                 }
+                let connected_platforms = integrations
+                    .iter()
+                    .filter(|integration| integration.is_connected)
+                    .map(|integration| integration.platform)
+                    .collect::<BTreeSet<_>>();
                 self.state()?.events.push_back(HostEvent::ListenerListed {
                     timestamp: timestamp(),
                     integrations,
                 });
+                for platform in connected_platforms {
+                    self.consume_listener_connection_resumes(platform)?;
+                }
                 Ok(Some(CommandAccepted {
                     request_id,
                     operation_id: None,
@@ -5537,6 +5665,7 @@ impl FeatureHostController {
                         timestamp: timestamp(),
                         integration,
                     });
+                    self.consume_listener_connection_resumes(*platform)?;
                     return Ok(Some(CommandAccepted {
                         request_id,
                         operation_id: None,
@@ -5611,10 +5740,16 @@ impl FeatureHostController {
                     .product_execute("mahayana.listener.disconnect", &payload)?;
                 let integration =
                     decode_product_field(response, "integration", "mahayana.listener.disconnect")?;
-                self.state()?.events.push_back(HostEvent::ListenerChanged {
-                    timestamp: timestamp(),
-                    integration,
-                });
+                {
+                    let mut state = self.state()?;
+                    state.events.push_back(HostEvent::ListenerChanged {
+                        timestamp: timestamp(),
+                        integration,
+                    });
+                    state
+                        .pending_listener_resumes
+                        .retain(|(_, pending_platform)| *pending_platform != *platform);
+                }
                 Ok(Some(CommandAccepted {
                     request_id,
                     operation_id: None,
@@ -5820,6 +5955,124 @@ impl FeatureHostController {
             request_id,
             operation_id: None,
         })
+    }
+
+    fn dispatch_listener_connection_resumes(
+        &self,
+        platform: ListenerPlatform,
+        agent_ids: Vec<String>,
+    ) -> Result<(), FeatureHostError> {
+        for agent_id in agent_ids {
+            match self.config.mode {
+                HostMode::Test => {
+                    self.state()?.events.push_back(HostEvent::TransportEvent {
+                        channel: "listener-resume".into(),
+                        payload: json!({
+                            "agentId": agent_id,
+                            "platform": listener_platform_slug(platform),
+                            "hidden": true,
+                        }),
+                    });
+                }
+                HostMode::Production => {
+                    #[cfg(feature = "production")]
+                    {
+                        self.dispatch_hidden_listener_resume(&agent_id, platform)?;
+                    }
+                    #[cfg(not(feature = "production"))]
+                    return Err(FeatureHostError::ProductionUnavailable);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn consume_listener_connection_resumes(
+        &self,
+        platform: ListenerPlatform,
+    ) -> Result<(), FeatureHostError> {
+        let agent_ids = {
+            let mut state = self.state()?;
+            take_pending_listener_resumes(&mut state, platform)
+        };
+        self.dispatch_listener_connection_resumes(platform, agent_ids)
+    }
+
+    #[cfg(feature = "production")]
+    fn dispatch_hidden_listener_resume(
+        &self,
+        agent_id: &str,
+        platform: ListenerPlatform,
+    ) -> Result<(), FeatureHostError> {
+        self.require_authenticated_account()?;
+        let conversation_id = if agent_id == "mahayana-assistant" {
+            ConversationId(MAHAYANA_AI_CONVERSATION_ID.to_string())
+        } else {
+            let state = self.state()?;
+            ConversationId(
+                state
+                    .bots
+                    .get(agent_id)
+                    .and_then(|bot| bot.conversation_id.clone())
+                    .ok_or_else(|| {
+                        FeatureHostError::Contract(format!(
+                            "listener resume owner no longer exists: {agent_id}"
+                        ))
+                    })?,
+            )
+        };
+        let (provider, routed_model) = match self.runtime()?.execute(RuntimeCommand::Status)? {
+            RuntimeResponse::Status(status) => (
+                format!("{:?}", status.model_provider).to_lowercase(),
+                status.model,
+            ),
+            other => return Err(unexpected_response("runtime.status", other)),
+        };
+        let request_id = format!(
+            "listener-resume:{agent_id}:{}:{}",
+            listener_platform_slug(platform),
+            now_millis()
+        );
+        let prompt = format!(
+            "[MAHAYANA_HIDDEN_CONTEXT] {} is now connected. Continue the interrupted routine setup that was waiting for this listener. Do not fire the saved automation merely because the connection completed.",
+            listener_platform_display(platform)
+        );
+        let response = self.runtime()?.execute(RuntimeCommand::SendMessage {
+            conversation_id,
+            text: prompt,
+            display_text: None,
+            client_message_id: Some(request_id),
+            hidden: true,
+            show_assistant_output: false,
+            recovery_eligible: true,
+            reply_to_message_id: None,
+            is_fork: false,
+            attachment_batch_id: None,
+            selected_image_data_urls: Vec::new(),
+        })?;
+        let operation_id = match response {
+            RuntimeResponse::Accepted { operation_id } => operation_id.to_string(),
+            other => return Err(unexpected_response("listener.resume", other)),
+        };
+        let mut state = self.state()?;
+        state.operations.insert(operation_id.clone());
+        state
+            .operation_agents
+            .insert(operation_id.clone(), agent_id.to_string());
+        state.events.push_back(HostEvent::OperationStarted {
+            timestamp: timestamp(),
+            operation_id: operation_id.clone(),
+            label: "listener-connect-resume".into(),
+            interruptible: true,
+        });
+        state.events.push_back(HostEvent::ModelRouted {
+            timestamp: timestamp(),
+            operation_id,
+            provider,
+            model: routed_model,
+            mode: AgentMode::Agent,
+        });
+        Ok(())
     }
 
     /// Delivers a verified listener event into the automation engine. This is
@@ -6493,6 +6746,7 @@ impl FeatureHostController {
             state.operation_terminals.clear();
             state.background_operations.clear();
             state.pending_box_handoffs.clear();
+            state.pending_listener_resumes.clear();
             state.remote_computer_sessions.clear();
             state.group_runs.clear();
             state.group_operations.clear();
@@ -13338,6 +13592,173 @@ mod tests {
                 .to_string()
                 .contains("does not belong to agent incident-bot")
         );
+    }
+
+    #[test]
+    fn event_automation_write_arms_one_listener_connect_resume_and_consumes_it_once() {
+        let controller = controller();
+        drain(&controller);
+
+        controller
+            .execute(FeatureCommand::AutomationUpsert {
+                request_id: "listener-routine-create".into(),
+                id: Some("listener-routine".into()),
+                agent_id: None,
+                name: "Slack listener".into(),
+                prompt: "Handle matching messages.".into(),
+                schedule: "event:slack:message".into(),
+                trigger: Some(AutomationTrigger::Event {
+                    source: ListenerPlatform::Slack,
+                    event: "message".into(),
+                    filter: None,
+                }),
+                enabled: true,
+            })
+            .expect("create listener automation");
+        let first = drain(&controller);
+        assert_eq!(
+            first
+                .iter()
+                .filter(|event| matches!(
+                    event,
+                    HostEvent::TranscriptCard {
+                        card: TranscriptCard::ListenerConnect {
+                            platform: ListenerPlatform::Slack,
+                            connected: false,
+                            pending: Some(true),
+                            ..
+                        },
+                        ..
+                    }
+                ))
+                .count(),
+            1
+        );
+
+        controller
+            .execute(FeatureCommand::AutomationUpsert {
+                request_id: "listener-routine-update".into(),
+                id: Some("listener-routine".into()),
+                agent_id: None,
+                name: "Slack listener updated".into(),
+                prompt: "Handle matching messages carefully.".into(),
+                schedule: "event:slack:message".into(),
+                trigger: Some(AutomationTrigger::Event {
+                    source: ListenerPlatform::Slack,
+                    event: "message".into(),
+                    filter: None,
+                }),
+                enabled: true,
+            })
+            .expect("update listener automation");
+        assert!(
+            drain(&controller).into_iter().all(|event| !matches!(
+                event,
+                HostEvent::TranscriptCard {
+                    card: TranscriptCard::ListenerConnect { .. },
+                    ..
+                }
+            )),
+            "same Agent/platform watcher must be deduplicated"
+        );
+
+        controller
+            .execute(FeatureCommand::ListenerConnect {
+                request_id: "listener-connect".into(),
+                platform: ListenerPlatform::Slack,
+            })
+            .expect("connect listener");
+        let connected = drain(&controller);
+        assert_eq!(
+            connected
+                .iter()
+                .filter(|event| matches!(
+                    event,
+                    HostEvent::TransportEvent { channel, payload }
+                        if channel == "listener-resume"
+                            && payload["agentId"] == "mahayana-assistant"
+                            && payload["platform"] == "slack"
+                            && payload["hidden"] == true
+                ))
+                .count(),
+            1
+        );
+
+        controller
+            .execute(FeatureCommand::ListenerConnect {
+                request_id: "listener-connect-again".into(),
+                platform: ListenerPlatform::Slack,
+            })
+            .expect("repeat connected observation");
+        assert!(
+            drain(&controller).into_iter().all(|event| !matches!(
+                event,
+                HostEvent::TransportEvent { channel, .. } if channel == "listener-resume"
+            )),
+            "consumed resume identity must never wake twice"
+        );
+    }
+
+    #[test]
+    fn listener_resume_is_pruned_on_disable_delete_disconnect_and_close() {
+        let controller = controller();
+        drain(&controller);
+        let create = |controller: &FeatureHostController, id: &str| {
+            controller
+                .execute(FeatureCommand::AutomationUpsert {
+                    request_id: format!("create-{id}"),
+                    id: Some(id.into()),
+                    agent_id: None,
+                    name: id.into(),
+                    prompt: "Handle events.".into(),
+                    schedule: "event:github:push".into(),
+                    trigger: Some(AutomationTrigger::Event {
+                        source: ListenerPlatform::Github,
+                        event: "push".into(),
+                        filter: None,
+                    }),
+                    enabled: true,
+                })
+                .expect("create event automation");
+            drain(controller);
+        };
+
+        create(&controller, "github-a");
+        controller
+            .execute(FeatureCommand::AutomationSetEnabled {
+                request_id: "disable-github-a".into(),
+                id: "github-a".into(),
+                agent_id: None,
+                enabled: false,
+            })
+            .expect("disable");
+        drain(&controller);
+        assert!(controller.state().expect("state").pending_listener_resumes.is_empty());
+
+        create(&controller, "github-b");
+        controller
+            .execute(FeatureCommand::AutomationDelete {
+                request_id: "delete-github-b".into(),
+                id: "github-b".into(),
+                agent_id: None,
+            })
+            .expect("delete");
+        drain(&controller);
+        assert!(controller.state().expect("state").pending_listener_resumes.is_empty());
+
+        create(&controller, "github-c");
+        controller
+            .execute(FeatureCommand::ListenerDisconnect {
+                request_id: "disconnect-github".into(),
+                platform: ListenerPlatform::Github,
+            })
+            .expect("disconnect");
+        drain(&controller);
+        assert!(controller.state().expect("state").pending_listener_resumes.is_empty());
+
+        create(&controller, "github-d");
+        controller.close().expect("close");
+        assert!(controller.state().expect("state").pending_listener_resumes.is_empty());
     }
 
     #[test]
