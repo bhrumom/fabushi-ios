@@ -39,6 +39,10 @@ jobs:
         run: cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-host --lib --profile ci --features mobile-embedded
       - name: Test iOS-owned Rust Host modules
         run: cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-app-host-mobile --lib --profile ci
+      - name: Test native MCP state and protected account contracts
+        run: |
+          cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-native-agent --lib --profile ci
+          cargo test --manifest-path source/packages/mahayana-rs/Cargo.toml -p mahayana-product --lib --profile ci
 
   build-and-test:
     needs:
