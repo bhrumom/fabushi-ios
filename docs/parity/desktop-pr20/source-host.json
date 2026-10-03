@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "ea29726d33da17bae8fbe5e1c145ba3c828081ee",
+  "sourceCommit": "42ac4967196e33e991e6c4d9e794a7c221ed0c63",
   "group": "source-host",
   "rowCount": 957,
   "rows": [
@@ -3482,7 +3482,7 @@
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence. Revalidated at Desktop PR #20 42ac4967196e33e991e6c4d9e794a7c221ed0c63: Desktop architecture manifest now marks the canonical MCP state executor implemented with shipping Box consumers and exact-head production evidence. No selected source blob changed. Desktop status is not inherited by iOS; affected iOS rows remain mapped until one iOS-owned Rust shipping state owner preserves provider/tool/status/status-detail semantics and exact-head CI proves it."
     },
     {
       "desktop_path": "source/host/src/extensions/mcp/coordinator_relay.rs",
@@ -3632,7 +3632,7 @@
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence. Revalidated at Desktop PR #20 42ac4967196e33e991e6c4d9e794a7c221ed0c63: Desktop architecture manifest now marks the canonical MCP state executor implemented with shipping Box consumers and exact-head production evidence. No selected source blob changed. Desktop status is not inherited by iOS; affected iOS rows remain mapped until one iOS-owned Rust shipping state owner preserves provider/tool/status/status-detail semantics and exact-head CI proves it."
     },
     {
       "desktop_path": "source/host/src/extensions/mcp/skill_publish.rs",
@@ -6737,7 +6737,7 @@
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence. Revalidated at Desktop PR #20 ea29726d33da17bae8fbe5e1c145ba3c828081ee: canonical MCP state now round-trips server error_message/status detail and Box projections preserve non-empty status_detail. iOS remains mapped until its Rust Host has one canonical MCP state wire owner and behavior evidence. Revalidated at Desktop PR #20 42ac4967196e33e991e6c4d9e794a7c221ed0c63: Desktop architecture manifest now marks the canonical MCP state executor implemented with shipping Box consumers and exact-head production evidence. No selected source blob changed. Desktop status is not inherited by iOS; affected iOS rows remain mapped until one iOS-owned Rust shipping state owner preserves provider/tool/status/status-detail semantics and exact-head CI proves it."
     },
     {
       "desktop_path": "source/host/src/ports/mod.rs",
@@ -12077,7 +12077,7 @@
       "implementation_status": "mapped",
       "production_evidence": "",
       "test_evidence": "",
-      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence."
+      "notes": "Rebaseline from Desktop PR #20; previous Grok-direct status is not inherited. Revalidated at Desktop PR #20 f138ffbcff2f6e541899a3f17dc95d25b06b1bcd: canonical agent.v1 MCP state protobuf ownership moved into mcp_state_executor; ProductionBoxMcpStateLoader now consumes that port instead of maintaining a duplicate wire schema. iOS row is mapped only pending shipping-owner audit and exact-head behavior evidence. Revalidated at Desktop PR #20 42ac4967196e33e991e6c4d9e794a7c221ed0c63: Desktop architecture manifest now marks the canonical MCP state executor implemented with shipping Box consumers and exact-head production evidence. No selected source blob changed. Desktop status is not inherited by iOS; affected iOS rows remain mapped until one iOS-owned Rust shipping state owner preserves provider/tool/status/status-detail semantics and exact-head CI proves it."
     },
     {
       "desktop_path": "source/host/tests/media_mime_contract.rs",

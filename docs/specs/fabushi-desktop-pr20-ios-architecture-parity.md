@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `ea29726d33da17bae8fbe5e1c145ba3c828081ee`
+- pinned source commit for this baseline: `42ac4967196e33e991e6c4d9e794a7c221ed0c63`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -283,6 +283,14 @@ Desktop PR #20 advanced two production fixes from `f138ffbcff2f6e541899a3f17dc95
 The canonical MCP state contract now preserves server `error_message` through encode/decode and both Box adapters project a non-empty value as `status_detail`. This is part of the same single-owner rule introduced at `f138ffbc…`: the Host MCP state executor owns the `agent.v1` state wire schema; Box execution/state layers consume the canonical result and may only adapt the visible projection.
 
 The previously unreviewed `box_mcp_exec.rs` row is now reviewed and `mapped`. All three affected iOS rows remain `mapped`; no Desktop implementation status or historical iOS evidence is inherited.
+
+### 1.31 Exact-HEAD rebaseline: 2026-10-03 / `42ac4967196e33e991e6c4d9e794a7c221ed0c63`
+
+Desktop PR #20 advanced one architecture-manifest-only commit from `ea29726d33da17bae8fbe5e1c145ba3c828081ee` to `42ac4967196e33e991e6c4d9e794a7c221ed0c63`. The selected `frontend/** + source/**` inventory remains exactly **7,927** blobs and every selected blob SHA is unchanged.
+
+The Desktop manifest now records the MCP state executor as implemented: one Rust Host owner controls provider grouping, tool metadata/schema, canonical state/result semantics, status and status-detail preservation, and the shipping Box adapters consume that owner rather than maintaining a parallel state decoder.
+
+This changes Desktop acceptance status only. iOS does not inherit `implemented`. Its current production `RuntimeCommand::McpServers -> NativeAgentBackend::list_mcp_servers` path is the native state surface, but it currently projects only server name/plugin/status/runtime and drops the already-owned MCP tool schemas. The iOS closure must therefore enrich that existing Rust owner and keep `FeatureHostController::McpList` as a projection consumer; it must not introduce an unused Desktop-style protobuf layer merely for mechanism symmetry. If a remote Runner/Box wire is later required, serialization must adapt the same canonical iOS state owner.
 
 ## 2. Product goal
 
