@@ -490,7 +490,7 @@ fn take_pending_listener_resumes(
     let mut agents = state
         .pending_listener_resumes
         .iter()
-        .filter(|(_, pending_platform)| **pending_platform == platform)
+        .filter(|(_, pending_platform)| *pending_platform == platform)
         .map(|(agent_id, _)| agent_id.clone())
         .collect::<Vec<_>>();
     agents.sort();
