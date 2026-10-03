@@ -57,15 +57,13 @@ struct NativeMcpServerState {
 #[derive(Default)]
 struct NativeMcpServerStateStore {
     by_server: BTreeMap<String, NativeMcpServerState>,
+    next_generation: u64,
 }
 
 impl NativeMcpServerStateStore {
-    fn begin(&mut self, server_identifier: &str, plugin_id: &str) -> u64 {
-        let generation = self
-            .by_server
-            .get(server_identifier)
-            .map(|state| state.generation.saturating_add(1))
-            .unwrap_or(1);
+    fn begin(&mut self, server_identifier: &str, plugin_id: &str) -> Option<u64> {
+        let generation = self.next_generation.checked_add(1)?;
+        self.next_generation = generation;
         self.by_server.insert(
             server_identifier.to_string(),
             NativeMcpServerState {
@@ -76,7 +74,13 @@ impl NativeMcpServerStateStore {
                 generation,
             },
         );
-        generation
+        Some(generation)
+    }
+
+    fn is_current(&self, server_identifier: &str, generation: u64) -> bool {
+        self.by_server
+            .get(server_identifier)
+            .is_some_and(|state| state.generation == generation)
     }
 
     fn settle(
@@ -198,11 +202,11 @@ impl NativeAgentBackend {
     }
 
     fn begin_mcp_server_attempt(&self, plugin: &ResolvedMcpPlugin) -> Result<u64, AgentError> {
-        Ok(self
-            .mcp_server_state
+        self.mcp_server_state
             .lock()
             .map_err(|_| AgentError::Backend("native MCP server state poisoned".into()))?
-            .begin(&plugin.server_name, &plugin.plugin_id))
+            .begin(&plugin.server_name, &plugin.plugin_id)
+            .ok_or_else(|| AgentError::Backend("native MCP server generation exhausted".into()))
     }
 
     fn settle_mcp_server_attempt(
@@ -575,13 +579,18 @@ impl AgentBackend for NativeAgentBackend {
         .await
         {
             Ok(Ok(tools)) => {
-                self.settle_mcp_server_attempt(
+                let settled = self.settle_mcp_server_attempt(
                     &server_identifier,
                     generation,
                     "connected",
                     None,
                     tools.clone(),
                 )?;
+                if !settled {
+                    return Err(AgentError::Unavailable(format!(
+                        "MCP server open superseded by a newer attempt: {server_identifier}"
+                    )));
+                }
                 tools
             }
             Ok(Err(error)) => {
@@ -628,16 +637,32 @@ impl AgentBackend for NativeAgentBackend {
             Value::Null
         };
         let (thread_id, _) = self.create_thread(request.conversation_id).await?;
-        self.mcp_sessions
-            .lock()
-            .map_err(|_| AgentError::Backend("native MCP session registry poisoned".into()))?
-            .insert(
+        {
+            // Use the same lock order as reset_session (runnable sessions first,
+            // canonical server state second) so a reset cannot clear state and
+            // then be followed by an older in-flight open resurrecting a
+            // runnable session.
+            let mut sessions = self
+                .mcp_sessions
+                .lock()
+                .map_err(|_| AgentError::Backend("native MCP session registry poisoned".into()))?;
+            let state = self
+                .mcp_server_state
+                .lock()
+                .map_err(|_| AgentError::Backend("native MCP server state poisoned".into()))?;
+            if !state.is_current(&server_identifier, generation) {
+                return Err(AgentError::Unavailable(format!(
+                    "MCP server open superseded or reset before session commit: {server_identifier}"
+                )));
+            }
+            sessions.insert(
                 thread_id.to_string(),
                 NativeMcpSession {
                     plugin: resolved.clone(),
                     tools: tools.clone(),
                 },
             );
+        }
         Ok(McpAppSession {
             thread_id,
             plugin_id: request.plugin_id,
@@ -922,8 +947,8 @@ mod mcp_state_projection_tests {
     #[test]
     fn production_mcp_state_store_preserves_failure_detail_and_rejects_stale_settlement() {
         let mut store = NativeMcpServerStateStore::default();
-        let first = store.begin("calendar", "calendar-plugin");
-        let second = store.begin("calendar", "calendar-plugin");
+        let first = store.begin("calendar", "calendar-plugin").expect("first generation");
+        let second = store.begin("calendar", "calendar-plugin").expect("second generation");
         assert!(second > first);
 
         assert!(!store.settle(
@@ -949,9 +974,31 @@ mod mcp_state_projection_tests {
     }
 
     #[test]
+    fn production_mcp_state_store_keeps_generation_monotonic_across_reset() {
+        let mut store = NativeMcpServerStateStore::default();
+        let before_reset = store
+            .begin("calendar", "calendar-plugin")
+            .expect("pre-reset generation");
+        store.clear();
+        let after_reset = store
+            .begin("calendar", "calendar-plugin")
+            .expect("post-reset generation");
+
+        assert!(after_reset > before_reset);
+        assert!(!store.settle(
+            "calendar",
+            before_reset,
+            "connected",
+            None,
+            vec![json!({"name": "stale-after-reset"})],
+        ));
+        assert_eq!(store.projected()[0]["status"], "loading");
+    }
+
+    #[test]
     fn production_mcp_state_store_settles_tools_on_current_generation() {
         let mut store = NativeMcpServerStateStore::default();
-        let generation = store.begin("calendar", "calendar-plugin");
+        let generation = store.begin("calendar", "calendar-plugin").expect("generation");
         assert!(store.settle(
             "calendar",
             generation,
