@@ -1,13 +1,8 @@
 {
-  "sourceCommit": "9a748dc4acb3058815b24b662613e420445857e6",
+  "sourceCommit": "a59a8fce1495c8d770839ee9ebbc4c1ceba20a92",
   "group": "source-host",
-  "fileCount": 957,
+  "fileCount": 967,
   "files": [
-    {
-      "path": "source/host/Cargo.toml",
-      "blobSha": "ccf2786be3302a3aa5005291e82b906074b7ffbd",
-      "size": 1074
-    },
     {
       "path": "source/host/app/Cargo.toml",
       "blobSha": "c5997022b2f8b4b18ca1301ac6c40a6c2224f9b2",
@@ -15,13 +10,18 @@
     },
     {
       "path": "source/host/app/src/main.rs",
-      "blobSha": "28fd81624b0ca32c492ea4cb748dc21773bce808",
-      "size": 523101
+      "blobSha": "fb9ce38319650bc26af08c7a71f88b3c99d9e75b",
+      "size": 576113
     },
     {
       "path": "source/host/build.rs",
-      "blobSha": "a9e3d66151341c0ffbf6b55c49468852f540000e",
-      "size": 50178
+      "blobSha": "c9ae9d84176310741c75416524d4658fa56d050b",
+      "size": 69588
+    },
+    {
+      "path": "source/host/Cargo.toml",
+      "blobSha": "65432b0e16a02e8ea912bc3d4918f7f583ef104e",
+      "size": 1086
     },
     {
       "path": "source/host/local-exec/local-exec-daemon-protocol.ts",
@@ -149,11 +149,6 @@
       "size": 2169
     },
     {
-      "path": "source/host/src/automations/automation.rs",
-      "blobSha": "4b27d9f5a7c4174a26e1244c50bef683d2c01482",
-      "size": 8775
-    },
-    {
       "path": "source/host/src/automations/automation_id.rs",
       "blobSha": "7565275096e3351ffd18a6e55b7591e89292c534",
       "size": 565
@@ -177,6 +172,11 @@
       "path": "source/host/src/automations/automation_trigger.rs",
       "blobSha": "5cdc73f9c41bf469bb56dfc6fcf497e8995cb0d6",
       "size": 23273
+    },
+    {
+      "path": "source/host/src/automations/automation.rs",
+      "blobSha": "4b27d9f5a7c4174a26e1244c50bef683d2c01482",
+      "size": 8775
     },
     {
       "path": "source/host/src/automations/listener_integrations.rs",
@@ -325,8 +325,8 @@
     },
     {
       "path": "source/host/src/cursor_backend.rs",
-      "blobSha": "7f11541d3b95a32d0dfee419136e6015822973cd",
-      "size": 19524
+      "blobSha": "4b48a00341229a2500fe444293455339b6e42552",
+      "size": 19995
     },
     {
       "path": "source/host/src/durable_file_policy.rs",
@@ -445,8 +445,8 @@
     },
     {
       "path": "source/host/src/extensions/auto_review/sand_backend_smart_mode_classifier_exec.rs",
-      "blobSha": "b25ad0a61527f7628c458bbc7bd6b2f042e2f4d9",
-      "size": 16133
+      "blobSha": "02600c44505f82ebd2afdba2229ccc31d25aab78",
+      "size": 18379
     },
     {
       "path": "source/host/src/extensions/automations/automations_proto.rs",
@@ -479,14 +479,14 @@
       "size": 16482
     },
     {
-      "path": "source/host/src/extensions/automations/listener_connect_watcher.rs",
-      "blobSha": "11bdcdc6c99c761775a109dea45110191a44d42a",
-      "size": 3018
-    },
-    {
       "path": "source/host/src/extensions/automations/listener_connect_watcher_production.rs",
       "blobSha": "3e99ae3c54f637e64ab6bc025053dfd910a914ee",
       "size": 5509
+    },
+    {
+      "path": "source/host/src/extensions/automations/listener_connect_watcher.rs",
+      "blobSha": "11bdcdc6c99c761775a109dea45110191a44d42a",
+      "size": 3018
     },
     {
       "path": "source/host/src/extensions/automations/listener_integrations.rs",
@@ -499,14 +499,14 @@
       "size": 450
     },
     {
-      "path": "source/host/src/extensions/automations/production.rs",
-      "blobSha": "3927e9736bebd27302cd9c4c2139b583e80b7aa4",
-      "size": 10802
-    },
-    {
       "path": "source/host/src/extensions/automations/production_lifecycle.rs",
       "blobSha": "acc5d67aef35ede93a0f87e317f966013ee2eb8b",
       "size": 20741
+    },
+    {
+      "path": "source/host/src/extensions/automations/production.rs",
+      "blobSha": "3927e9736bebd27302cd9c4c2139b583e80b7aa4",
+      "size": 10802
     },
     {
       "path": "source/host/src/extensions/automations/sand_automation_cloud_sync.rs",
@@ -579,19 +579,14 @@
       "size": 3939
     },
     {
-      "path": "source/host/src/extensions/box_store_sync/box_store_manifest.rs",
-      "blobSha": "9fcc90bfb87a066b8d5d114415fa7f6821718672",
-      "size": 26663
-    },
-    {
       "path": "source/host/src/extensions/box_store_sync/box_store_manifest_format.rs",
       "blobSha": "869874485f1a595784c298df102ce7f26ac3418f",
       "size": 4098
     },
     {
-      "path": "source/host/src/extensions/box_store_sync/box_store_pack.rs",
-      "blobSha": "ccad8c8cd8961e7355f4778e08257eb65b886c7e",
-      "size": 15576
+      "path": "source/host/src/extensions/box_store_sync/box_store_manifest.rs",
+      "blobSha": "9fcc90bfb87a066b8d5d114415fa7f6821718672",
+      "size": 26663
     },
     {
       "path": "source/host/src/extensions/box_store_sync/box_store_pack_pipeline.rs",
@@ -599,9 +594,9 @@
       "size": 2308
     },
     {
-      "path": "source/host/src/extensions/box_store_sync/box_store_sync.rs",
-      "blobSha": "1e4568af72e58e4f69d7ca3266b3b2efa70327ad",
-      "size": 9785
+      "path": "source/host/src/extensions/box_store_sync/box_store_pack.rs",
+      "blobSha": "ccad8c8cd8961e7355f4778e08257eb65b886c7e",
+      "size": 15576
     },
     {
       "path": "source/host/src/extensions/box_store_sync/box_store_sync_error.rs",
@@ -612,6 +607,11 @@
       "path": "source/host/src/extensions/box_store_sync/box_store_sync_service.rs",
       "blobSha": "65d5079c1c64b45e2730b2909930ba2815def7e1",
       "size": 3354
+    },
+    {
+      "path": "source/host/src/extensions/box_store_sync/box_store_sync.rs",
+      "blobSha": "1e4568af72e58e4f69d7ca3266b3b2efa70327ad",
+      "size": 9785
     },
     {
       "path": "source/host/src/extensions/box_store_sync/box_store_transfer.rs",
@@ -670,8 +670,8 @@
     },
     {
       "path": "source/host/src/extensions/box_store_sync/sand_box_store_v2_client.rs",
-      "blobSha": "3a51da2b41675772ff39c7f951f19a9230da1e81",
-      "size": 36169
+      "blobSha": "6765b51ea7e996121f8ab1d88f7decefe48090aa",
+      "size": 36216
     },
     {
       "path": "source/host/src/extensions/box_store_sync/sqlite_snapshot.rs",
@@ -805,8 +805,8 @@
     },
     {
       "path": "source/host/src/extensions/codebase_telemetry/privacy_mode.rs",
-      "blobSha": "2e1aa022e54acad9042bf83fcdc4e36c291379fa",
-      "size": 10975
+      "blobSha": "0b3963b06a4806ef546e65b3e1ec3481d8d411b9",
+      "size": 11008
     },
     {
       "path": "source/host/src/extensions/content_search/agent_content_search.rs",
@@ -915,8 +915,8 @@
     },
     {
       "path": "source/host/src/extensions/experiments/extension.rs",
-      "blobSha": "2a71c533291d9fdd7ee3edf44f2e75312d1f6523",
-      "size": 48174
+      "blobSha": "b5c2bc88953a2416e048abe95af97605f84e5280",
+      "size": 48490
     },
     {
       "path": "source/host/src/extensions/experiments/mod.rs",
@@ -929,14 +929,14 @@
       "size": 4434
     },
     {
-      "path": "source/host/src/extensions/forever_box/disk_pressure.rs",
-      "blobSha": "46c0ed1d24a497e62aff51ac55d1e546bae86d4c",
-      "size": 17606
-    },
-    {
       "path": "source/host/src/extensions/forever_box/disk_pressure_guard.rs",
       "blobSha": "611736d4f753b65264d93a6a3f1cbba38465e0b1",
       "size": 11467
+    },
+    {
+      "path": "source/host/src/extensions/forever_box/disk_pressure.rs",
+      "blobSha": "46c0ed1d24a497e62aff51ac55d1e546bae86d4c",
+      "size": 17606
     },
     {
       "path": "source/host/src/extensions/forever_box/extension.rs",
@@ -945,8 +945,8 @@
     },
     {
       "path": "source/host/src/extensions/forever_box/forever_box_service.rs",
-      "blobSha": "77f4c74a76ea00418f7ed547fbec05473895b6ea",
-      "size": 16956
+      "blobSha": "2c549d54d607b567289a21e5c5a370f834bdbe37",
+      "size": 17264
     },
     {
       "path": "source/host/src/extensions/forever_box/host_box.rs",
@@ -955,13 +955,13 @@
     },
     {
       "path": "source/host/src/extensions/forever_box/mod.rs",
-      "blobSha": "ad58e0717fdd9a67973c4a28b0d39136e066e6a9",
-      "size": 1041
+      "blobSha": "98b5f6fcff63e5f4f6c70cd080a8d0071ab84d4d",
+      "size": 1078
     },
     {
       "path": "source/host/src/extensions/forever_box/runner_tools.rs",
-      "blobSha": "d0ab954a581666f6d58802eec6c35fa729172c93",
-      "size": 24553
+      "blobSha": "0c048cfe851d0695fff57f52ed977b4b8fe312da",
+      "size": 41142
     },
     {
       "path": "source/host/src/extensions/host_upgrade/extension.rs",
@@ -1000,13 +1000,13 @@
     },
     {
       "path": "source/host/src/extensions/inference/codex_direct_responses.rs",
-      "blobSha": "b9448fcae17f3e6fa3ccb247778d9bd9bd993f59",
-      "size": 13622
+      "blobSha": "e6997092da08f15852e324f46aa9177e21e03f33",
+      "size": 14617
     },
     {
       "path": "source/host/src/extensions/inference/cursor_inference_transport.rs",
-      "blobSha": "e3c40ba8714cdeb56697e28b17d27e6fe646281f",
-      "size": 38767
+      "blobSha": "0b5204cc323d0f6c35cdd59dc7f29749d9ceabbd",
+      "size": 40383
     },
     {
       "path": "source/host/src/extensions/inference/cursor_session.rs",
@@ -1045,8 +1045,8 @@
     },
     {
       "path": "source/host/src/extensions/inference/provider_session.rs",
-      "blobSha": "c71423e8fc22c1ea68b5ab66a058e4e88c5a170d",
-      "size": 66086
+      "blobSha": "73ae462c5e8241566afb408df6cb7440d1f3227c",
+      "size": 70160
     },
     {
       "path": "source/host/src/extensions/inference/sand_labeling.rs",
@@ -1070,8 +1070,8 @@
     },
     {
       "path": "source/host/src/extensions/local_exec/gateway_local_exec_sand_box.rs",
-      "blobSha": "3fa09ee33ecadf61f0524c913a3970c4a0b9abfb",
-      "size": 22918
+      "blobSha": "e02131a28aeaaf533fdec3a8329121664126dcd0",
+      "size": 24245
     },
     {
       "path": "source/host/src/extensions/local_exec/local_exec_bridge.rs",
@@ -1180,18 +1180,13 @@
     },
     {
       "path": "source/host/src/extensions/mcp/mcp_service.rs",
-      "blobSha": "bfc8e862421ca1fedeb097829d353fb4d151ce8f",
-      "size": 18733
+      "blobSha": "c7998a53fb6f23f6e0850b6ebe5ac5c1a69ea248",
+      "size": 19227
     },
     {
       "path": "source/host/src/extensions/mcp/mod.rs",
       "blobSha": "d19e113a3179578cb7ec87959c9e31b6be6b54bb",
       "size": 247
-    },
-    {
-      "path": "source/host/src/extensions/mcp/plugin_skills.rs",
-      "blobSha": "19e06a2ad57cf6caecdbf8263430f68a04641b14",
-      "size": 19353
     },
     {
       "path": "source/host/src/extensions/mcp/plugin_skills_cache.rs",
@@ -1204,14 +1199,19 @@
       "size": 14803
     },
     {
-      "path": "source/host/src/extensions/mcp/production.rs",
-      "blobSha": "c90cdc2eed0d22ccbc3ebaa8e4eb9877b6eb964f",
-      "size": 11565
+      "path": "source/host/src/extensions/mcp/plugin_skills.rs",
+      "blobSha": "19e06a2ad57cf6caecdbf8263430f68a04641b14",
+      "size": 19353
     },
     {
       "path": "source/host/src/extensions/mcp/production_box_state.rs",
       "blobSha": "ed10c6b76df61a0f3fdf5aa1f60844ace5f172b2",
       "size": 6158
+    },
+    {
+      "path": "source/host/src/extensions/mcp/production.rs",
+      "blobSha": "c90cdc2eed0d22ccbc3ebaa8e4eb9877b6eb964f",
+      "size": 11565
     },
     {
       "path": "source/host/src/extensions/mcp/skill_publish.rs",
@@ -1220,8 +1220,8 @@
     },
     {
       "path": "source/host/src/extensions/memory/agent_state.rs",
-      "blobSha": "19f763b8de1bfb9f6b15eda71bbba898a374696b",
-      "size": 18890
+      "blobSha": "6c2d53435579e35a557a63ee9981330f8b3d6fe8",
+      "size": 20575
     },
     {
       "path": "source/host/src/extensions/memory/extension.rs",
@@ -1309,11 +1309,6 @@
       "size": 15768
     },
     {
-      "path": "source/host/src/extensions/session/agent_db.rs",
-      "blobSha": "cb6b738518a60ec3497e315bd967de6d3bd95ced",
-      "size": 101815
-    },
-    {
       "path": "source/host/src/extensions/session/agent_db_recovery.rs",
       "blobSha": "03b6ac1255e9c18233d58a3f4f36710c71dd7b0e",
       "size": 10452
@@ -1332,6 +1327,11 @@
       "path": "source/host/src/extensions/session/agent_db_transcript_pages.rs",
       "blobSha": "a7bf6b9a24b84ee6b3be4163d44da02f22758e40",
       "size": 4201
+    },
+    {
+      "path": "source/host/src/extensions/session/agent_db.rs",
+      "blobSha": "cb6b738518a60ec3497e315bd967de6d3bd95ced",
+      "size": 101815
     },
     {
       "path": "source/host/src/extensions/session/agent_session.rs",
@@ -1389,14 +1389,14 @@
       "size": 4037
     },
     {
-      "path": "source/host/src/extensions/session/production.rs",
-      "blobSha": "5266f87ba14b5a0e0652f2eefd5d1834cb7a5c11",
-      "size": 48286
-    },
-    {
       "path": "source/host/src/extensions/session/production_agent_store.rs",
       "blobSha": "fc1263a0c71f5a1f3f811b6e456160c2e55cdc37",
       "size": 15569
+    },
+    {
+      "path": "source/host/src/extensions/session/production.rs",
+      "blobSha": "5266f87ba14b5a0e0652f2eefd5d1834cb7a5c11",
+      "size": 48286
     },
     {
       "path": "source/host/src/extensions/session/session_conversation_state.rs",
@@ -1650,8 +1650,8 @@
     },
     {
       "path": "source/host/src/extensions/telemetry/host_tracing.rs",
-      "blobSha": "af8c2a99311046abd0f8729454b3635b5d67460f",
-      "size": 27543
+      "blobSha": "3f7ccd235734984307a2563f689f3e6eff5e23a4",
+      "size": 28728
     },
     {
       "path": "source/host/src/extensions/telemetry/invariant_violation_telemetry.rs",
@@ -1770,8 +1770,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/async_task_union.rs",
-      "blobSha": "0cdae9bca93fac16fb93b18783d5cdb4be5833f7",
-      "size": 2787
+      "blobSha": "c05e484508737d8d9a7ec81712ac9fa755ea573c",
+      "size": 3465
     },
     {
       "path": "source/host/src/extensions/transcript/automation_event_fires.rs",
@@ -2010,8 +2010,8 @@
     },
     {
       "path": "source/host/src/extensions/transcript/turn_runtime.rs",
-      "blobSha": "44302a0a811ca9f0d68ba41cac4d1ead70f9fdf5",
-      "size": 10962
+      "blobSha": "c8b0c7bf734f3b82981da22f4c8c55878e756cca",
+      "size": 11014
     },
     {
       "path": "source/host/src/extensions/transcript/upgrade_recreate_resume.rs",
@@ -2200,8 +2200,8 @@
     },
     {
       "path": "source/host/src/host_runner_composition.rs",
-      "blobSha": "182c12cbf182f2c7ee84199aae1a7a9e39d9ba6b",
-      "size": 16653
+      "blobSha": "f1729d4af9a9e3b18431a06e28510252b262f7cf",
+      "size": 23405
     },
     {
       "path": "source/host/src/host_secret_store.rs",
@@ -2289,6 +2289,16 @@
       "size": 2854
     },
     {
+      "path": "source/host/src/runner_context_production_provider.rs",
+      "blobSha": "39359e83c8c17fe4fb6ab172b6763118d8f65050",
+      "size": 2209
+    },
+    {
+      "path": "source/host/src/runner_production_bridge.rs",
+      "blobSha": "56b1af467b70d7f2ac8f1f156e1e497441928801",
+      "size": 12747
+    },
+    {
       "path": "source/host/src/runner/agent_adapters.rs",
       "blobSha": "c772484a996b1180daba86a58be5999c4deb1833",
       "size": 10452
@@ -2310,8 +2320,8 @@
     },
     {
       "path": "source/host/src/runner/background_work.rs",
-      "blobSha": "6fca7389771202cea2435f08ea11637be9a21c7b",
-      "size": 27916
+      "blobSha": "85df5a9b8636e77e08678dac1de4756073b4da91",
+      "size": 30671
     },
     {
       "path": "source/host/src/runner/bot_block_detection.rs",
@@ -2325,8 +2335,8 @@
     },
     {
       "path": "source/host/src/runner/box_tool_access.rs",
-      "blobSha": "d4c8726097588435f1b52687a4c42f2e28d32e18",
-      "size": 11600
+      "blobSha": "9a84091770cd1c23debbdf5fbf6eb33a953158f7",
+      "size": 12309
     },
     {
       "path": "source/host/src/runner/checkpoint.rs",
@@ -2340,8 +2350,8 @@
     },
     {
       "path": "source/host/src/runner/computer_use.rs",
-      "blobSha": "5ce25d0408c2dc0d5872a23678e321fac85fac85",
-      "size": 6313
+      "blobSha": "c12158da88ce53a0d1d3b2d49ac7faabe4d9db67",
+      "size": 10039
     },
     {
       "path": "source/host/src/runner/conversation_outline.rs",
@@ -2360,23 +2370,33 @@
     },
     {
       "path": "source/host/src/runner/generated_agent_turn_stream.rs",
-      "blobSha": "743136dd1bc4388ec78be44ed01329a51e2977b6",
-      "size": 8938
+      "blobSha": "f0692b7d101626b6399c0ae59ec591ab881ee05f",
+      "size": 18766
     },
     {
       "path": "source/host/src/runner/host_computer_tool_dependencies.rs",
-      "blobSha": "941a8d1d491b2a0c3b8184f83e846b76a8d778b1",
-      "size": 23126
+      "blobSha": "8e95fa8b06810a56c265d81fd68fd1d92b2b9814",
+      "size": 23692
     },
     {
       "path": "source/host/src/runner/host_external_machine_dependencies.rs",
-      "blobSha": "f21a66a5f403adfe29b7d5f9c733e846932b81ae",
-      "size": 2764
+      "blobSha": "fda16620fb5099b08564786383222ff5d532c927",
+      "size": 5722
     },
     {
       "path": "source/host/src/runner/host_file_transfer_dependencies.rs",
-      "blobSha": "fc952e82fdb97ad956fc8c87fb3187e8cb64c4c0",
-      "size": 3452
+      "blobSha": "9aef047dc7611f1f3de3400650f3e1c93c6a69e9",
+      "size": 4281
+    },
+    {
+      "path": "source/host/src/runner/host_generate_image_dependencies.rs",
+      "blobSha": "2d2ec7c6d0437fd2ef56d9c47229455f023d539a",
+      "size": 1412
+    },
+    {
+      "path": "source/host/src/runner/host_web_dependencies.rs",
+      "blobSha": "b99ad5c1ae88a4b77b4bdb620e6a0395c2049ce9",
+      "size": 2129
     },
     {
       "path": "source/host/src/runner/inactive_turn_agent_stream.rs",
@@ -2390,53 +2410,53 @@
     },
     {
       "path": "source/host/src/runner/mod.rs",
-      "blobSha": "64c306ba6d6ae2a2885b1d27fd237fa72501fb28",
-      "size": 3592
+      "blobSha": "8b8d514a7c3e420b74bc4b23a48ec9163740a773",
+      "size": 3875
     },
     {
       "path": "source/host/src/runner/production_agent_checkpoint.rs",
-      "blobSha": "61d388889fbdab57ba8bf5928f2c02dfc6f769cf",
-      "size": 12207
+      "blobSha": "1280b916b6e89d640735b5f94732b39774180d4f",
+      "size": 18833
     },
     {
       "path": "source/host/src/runner/production_turn_agent_owner.rs",
-      "blobSha": "4ee30b2ee740a0d812563d152da85080c75e766f",
-      "size": 9456
+      "blobSha": "ace2a22bd5e540f210ba263a8a1ea2b46cf54502",
+      "size": 23283
     },
     {
       "path": "source/host/src/runner/production_turn_input_projection.rs",
-      "blobSha": "417ba00df7ee63c4450030755f4bbca05a983413",
-      "size": 3061
+      "blobSha": "aafecc44789664e698cac3259b59347a70ec0ed6",
+      "size": 5621
     },
     {
       "path": "source/host/src/runner/production_turn_run_shell_adapter.rs",
-      "blobSha": "f66ac4b86c4df78b37854fe5ca0151468c0175cc",
-      "size": 17241
+      "blobSha": "6dc76c13c1abf64014cde968089838f36509d9f3",
+      "size": 22970
     },
     {
       "path": "source/host/src/runner/prompt_collector_glue.rs",
-      "blobSha": "1c699a140ea6a999a9c348af750125245d3cdd00",
-      "size": 6468
+      "blobSha": "ae84322c9c4e9bdb2deb6585a61b9fce4b72c122",
+      "size": 28114
     },
     {
       "path": "source/host/src/runner/remote_box_resources.rs",
-      "blobSha": "53ba75396844ed67855db39b0d5403cafa2573c0",
-      "size": 8671
+      "blobSha": "fdcde82da1714113fd19442ec85cd826e3244232",
+      "size": 10033
     },
     {
       "path": "source/host/src/runner/routed_provider_runtime.rs",
-      "blobSha": "3925269c7cb76d86a19ae7d226ec9eb31ad1388e",
-      "size": 27219
+      "blobSha": "b9d03063bf15a8182396d18036116ffa15484dc3",
+      "size": 28924
     },
     {
       "path": "source/host/src/runner/runner_prompt_glue.rs",
-      "blobSha": "b8c41e1320b8788493115f2d4f6a36b68c394a72",
-      "size": 3016
+      "blobSha": "fed229ea2c4226eba00466bd5413ec9b85c6aee5",
+      "size": 8519
     },
     {
       "path": "source/host/src/runner/sand_action_audit.rs",
-      "blobSha": "4f13a669445c03d4d667b091073268b7f3f0078b",
-      "size": 7181
+      "blobSha": "ad4986cc8f6cfdf93029730503d31f6fb03241c2",
+      "size": 8022
     },
     {
       "path": "source/host/src/runner/sand_agent_profile_prompt.rs",
@@ -2445,18 +2465,13 @@
     },
     {
       "path": "source/host/src/runner/sand_agent_runner.rs",
-      "blobSha": "d9cbca3473e880efc8177dbddd48e0cb762c49dc",
-      "size": 5004
-    },
-    {
-      "path": "source/host/src/runner/sand_auto_review.rs",
-      "blobSha": "00ca2ab6f5df38b1424a83111c67ae4253b61939",
-      "size": 22607
+      "blobSha": "a7441d7900ec82decea7890e2df9d7a8413254ba",
+      "size": 15955
     },
     {
       "path": "source/host/src/runner/sand_auto_review_classifier_run.rs",
-      "blobSha": "9de9fc0707ec41a99187a589d56fd5d7220c65e7",
-      "size": 4270
+      "blobSha": "51df23ec6dfb4f4a08cc0345d320aa070055be68",
+      "size": 11804
     },
     {
       "path": "source/host/src/runner/sand_auto_review_summaries.rs",
@@ -2467,6 +2482,11 @@
       "path": "source/host/src/runner/sand_auto_review_tool_escalations.rs",
       "blobSha": "5d7219b7ec4cf502d0ab63616b9a4dfee96c6005",
       "size": 3911
+    },
+    {
+      "path": "source/host/src/runner/sand_auto_review.rs",
+      "blobSha": "b1d3ecf702e1bca6c92dbfa4876ef9e187d8d56a",
+      "size": 24871
     },
     {
       "path": "source/host/src/runner/sand_automation_auto_review.rs",
@@ -2485,8 +2505,8 @@
     },
     {
       "path": "source/host/src/runner/sand_computer_auto_review.rs",
-      "blobSha": "425bdb8adfa6c5f71cba8ca6f248506bb8a61f3a",
-      "size": 12875
+      "blobSha": "be850e62e5e376c24171d1b14f3b6fe563fa9977",
+      "size": 16316
     },
     {
       "path": "source/host/src/runner/sand_memory.rs",
@@ -2530,23 +2550,23 @@
     },
     {
       "path": "source/host/src/runner/stream_attempt.rs",
-      "blobSha": "92ebf1f560eb014b4fc08fd3926e10c047754fe5",
-      "size": 6965
+      "blobSha": "cb3cd26432102da6ad920c6349bd5deff15fa75b",
+      "size": 11743
     },
     {
       "path": "source/host/src/runner/subagent_runtime.rs",
-      "blobSha": "d0c745e59b013e3f4c12a097abc50fb0ce85405c",
-      "size": 16989
+      "blobSha": "72d4400eabe8a59643a8861f30feb5578202b01b",
+      "size": 18584
+    },
+    {
+      "path": "source/host/src/runner/system_prompt_assembly.rs",
+      "blobSha": "203993e17b4c3be2351d6d4730b64ec097ceedc5",
+      "size": 45908
     },
     {
       "path": "source/host/src/runner/system_prompt.rs",
       "blobSha": "a4974d000e86358c41688c1c1cc498ea5be12caa",
       "size": 119757
-    },
-    {
-      "path": "source/host/src/runner/system_prompt_assembly.rs",
-      "blobSha": "859f3ec7be12b9ce9d050533fc65dd5e2d13bfdc",
-      "size": 36858
     },
     {
       "path": "source/host/src/runner/tool_call_identity.rs",
@@ -2560,8 +2580,8 @@
     },
     {
       "path": "source/host/src/runner/tools/communicate_tool.rs",
-      "blobSha": "9c5294be6b09502119a16cdd26c63b91bd785efc",
-      "size": 10866
+      "blobSha": "a0a6e7df68016566e4e91e2d8d317bab337ca3e2",
+      "size": 11192
     },
     {
       "path": "source/host/src/runner/tools/listener_connect_cards.rs",
@@ -2570,13 +2590,13 @@
     },
     {
       "path": "source/host/src/runner/tools/mcp_host_service_management_sink.rs",
-      "blobSha": "13423198947d8d70a9f739d465dcd79ab0a8414e",
-      "size": 11069
+      "blobSha": "a59ff2d19419315cdf325a8c99e515ed3aac5496",
+      "size": 12222
     },
     {
       "path": "source/host/src/runner/tools/mcp_meta_tools.rs",
-      "blobSha": "7ac66585f226a5f44081cff084d47937c82708ec",
-      "size": 8390
+      "blobSha": "6a23f51cfbe549801d9a8cd48be82d646d76932b",
+      "size": 16817
     },
     {
       "path": "source/host/src/runner/tools/mcp_server_resolution.rs",
@@ -2585,13 +2605,18 @@
     },
     {
       "path": "source/host/src/runner/tools/mod.rs",
-      "blobSha": "7a899b1bf93e82d3c39825b8681f25ed4ab3e18d",
-      "size": 881
+      "blobSha": "acee2ce49c26b5e18d26d58e97e6cc26e543a91d",
+      "size": 971
     },
     {
       "path": "source/host/src/runner/tools/sand_agent_management_tools.rs",
       "blobSha": "17e728d052b7c9c9d0eab05c54037fadaf59cb83",
       "size": 7917
+    },
+    {
+      "path": "source/host/src/runner/tools/sand_await_shell_tool.rs",
+      "blobSha": "747731dd978ea276708179448bcfb992c4c0cc97",
+      "size": 12512
     },
     {
       "path": "source/host/src/runner/tools/sand_browser_driver_source.rs",
@@ -2600,8 +2625,8 @@
     },
     {
       "path": "source/host/src/runner/tools/sand_browser_tools.rs",
-      "blobSha": "ccf24cd0b61aa56a3fb379e80e310656da26c8fa",
-      "size": 32201
+      "blobSha": "f546880cdb67c6f61ec785c9d15d51f93dad8fd0",
+      "size": 33283
     },
     {
       "path": "source/host/src/runner/tools/sand_browser_use_subagent.rs",
@@ -2610,8 +2635,8 @@
     },
     {
       "path": "source/host/src/runner/tools/sand_computer_tool.rs",
-      "blobSha": "049b2d4e9d76f18a9ef53f2f9b82c067d88007d0",
-      "size": 24948
+      "blobSha": "4e0e2fb83ee078b9378969641462b447f0648020",
+      "size": 25444
     },
     {
       "path": "source/host/src/runner/tools/sand_computer_use_subagent.rs",
@@ -2620,8 +2645,8 @@
     },
     {
       "path": "source/host/src/runner/tools/sand_external_machine_tools.rs",
-      "blobSha": "1401fc49e1cd05996cc42d27ce77dd6cdc7252a7",
-      "size": 6352
+      "blobSha": "11a1bcdbaa18b3f7c4ac67793c96c897dc6f3051",
+      "size": 6697
     },
     {
       "path": "source/host/src/runner/tools/sand_file_transfer_tools.rs",
@@ -2629,9 +2654,14 @@
       "size": 12662
     },
     {
+      "path": "source/host/src/runner/tools/sand_generate_image_tool.rs",
+      "blobSha": "4a8827a3374f83501724e5628bd752b64dfe4506",
+      "size": 8877
+    },
+    {
       "path": "source/host/src/runner/tools/sand_mcp_management_tools.rs",
-      "blobSha": "c38a12caa75a5c32b949434bb6ed878df49d2298",
-      "size": 42550
+      "blobSha": "c5d9b19d64445b0a24106b947cfb98d0d7393b0a",
+      "size": 43308
     },
     {
       "path": "source/host/src/runner/tools/sand_multitask_todo_tool.rs",
@@ -2660,8 +2690,8 @@
     },
     {
       "path": "source/host/src/runner/tools/sand_state_tool.rs",
-      "blobSha": "5c667d0a0ef56331d33fd30eae84ee374922a8c6",
-      "size": 23122
+      "blobSha": "f80613c17f6494b96a4bd9a49354de14ce1adffd",
+      "size": 24781
     },
     {
       "path": "source/host/src/runner/tools/sand_subagent_management_tools.rs",
@@ -2670,8 +2700,13 @@
     },
     {
       "path": "source/host/src/runner/tools/sand_task_subagent_tool.rs",
-      "blobSha": "ddb2abb57312e40419eb714e22ae37fa9539046e",
-      "size": 3891
+      "blobSha": "1e0c000f6c116e63f6efd164c09dbdc2c295200c",
+      "size": 5322
+    },
+    {
+      "path": "source/host/src/runner/tools/sand_web_tools.rs",
+      "blobSha": "93818181532db4e6be68b465e8ae0a4da2d74bc1",
+      "size": 8487
     },
     {
       "path": "source/host/src/runner/tools/send_message_encoding.rs",
@@ -2685,8 +2720,8 @@
     },
     {
       "path": "source/host/src/runner/tools/send_message_tool.rs",
-      "blobSha": "74fec0b65b89a6ab2ae08743d3ff7e847641cfec",
-      "size": 11345
+      "blobSha": "2ae0c6d1bac8f8cd93b9a4ed52f1f8da423c76de",
+      "size": 16077
     },
     {
       "path": "source/host/src/runner/tools/tool_input_error.rs",
@@ -2695,8 +2730,8 @@
     },
     {
       "path": "source/host/src/runner/tools/turn_toolset.rs",
-      "blobSha": "aed3c73fe5c5b5b75884b60e74a840a3f708b60d",
-      "size": 7757
+      "blobSha": "018cd2b6906c6b9b18b7912602139dbba46bdec4",
+      "size": 32250
     },
     {
       "path": "source/host/src/runner/transient_stream_error.rs",
@@ -2705,8 +2740,8 @@
     },
     {
       "path": "source/host/src/runner/turn_agent_composition.rs",
-      "blobSha": "1dffb881bbd29b3c8f59537f6122f20c7949e978",
-      "size": 22259
+      "blobSha": "eefde7f77856070e62e4f8dbca7cfb7f28da0a17",
+      "size": 36145
     },
     {
       "path": "source/host/src/runner/turn_memory.rs",
@@ -2715,23 +2750,28 @@
     },
     {
       "path": "source/host/src/runner/turn_observation.rs",
-      "blobSha": "13a2ec98179df1addc187642afa8472cb5ae4712",
-      "size": 29818
+      "blobSha": "dc7a5cf1459a11297ffde859376aba3e6fcbe896",
+      "size": 31117
     },
     {
       "path": "source/host/src/runner/turn_run_shell.rs",
-      "blobSha": "0961697139e3829a32b8b50d291f4e42ddf5bd9d",
-      "size": 9888
+      "blobSha": "045813f301510e4e6f06804675b32a79d5bb34a6",
+      "size": 9979
     },
     {
       "path": "source/host/src/runner/turn_settle.rs",
-      "blobSha": "25c33fbd54d871c55bb1ada448bfe27a1ca11f6b",
-      "size": 4494
+      "blobSha": "14c05d725ea0a4c4e547cd2b21a78b62780c1884",
+      "size": 6714
     },
     {
       "path": "source/host/src/runner/turn_shape.rs",
       "blobSha": "0c2f2a423622983e8de38e65ad8e5fed203b46b6",
       "size": 15908
+    },
+    {
+      "path": "source/host/src/runner/turn_tool_session_reminders.rs",
+      "blobSha": "a6916fc3acb7587f7e179ed73ca4f5db42389941",
+      "size": 2489
     },
     {
       "path": "source/host/src/runner/turn_usage.rs",
@@ -2742,16 +2782,6 @@
       "path": "source/host/src/runner/video_container.rs",
       "blobSha": "3c5c756cfe3d6146245b058d3f7ab4856e65634a",
       "size": 630
-    },
-    {
-      "path": "source/host/src/runner_context_production_provider.rs",
-      "blobSha": "39359e83c8c17fe4fb6ab172b6763118d8f65050",
-      "size": 2209
-    },
-    {
-      "path": "source/host/src/runner_production_bridge.rs",
-      "blobSha": "abb7c8f33d955cab766b13af58deccbedb83ad50",
-      "size": 6309
     },
     {
       "path": "source/host/src/sand_activity.rs",
@@ -2785,8 +2815,8 @@
     },
     {
       "path": "source/host/src/send_trace_host.rs",
-      "blobSha": "c5e93bd8856c8f4439140eb7b3b517ce4d8cdb79",
-      "size": 12908
+      "blobSha": "6598c3d40fbf24307317e28d8893f9f18fa572df",
+      "size": 13883
     },
     {
       "path": "source/host/src/sha256.rs",
@@ -2825,13 +2855,13 @@
     },
     {
       "path": "source/host/src/transcript_mirror/conversation_state_binary.rs",
-      "blobSha": "289c984738c9ce54089096fad35eec5b529356fb",
-      "size": 13418
+      "blobSha": "d0cd9c66557514073bdc0e6ada670e52038df70b",
+      "size": 20177
     },
     {
       "path": "source/host/src/transcript_mirror/generated_occurrence_codec.rs",
-      "blobSha": "f67a89128bbb8658da06448c5d87c972f500fe4f",
-      "size": 10707
+      "blobSha": "94b30e7dd5d09a6857151bd162c4fda338fd7f14",
+      "size": 40313
     },
     {
       "path": "source/host/src/transcript_mirror/legacy_transcript_mirror.rs",
@@ -2854,14 +2884,14 @@
       "size": 10671
     },
     {
-      "path": "source/host/src/transcript_mirror/transcript_mirror.rs",
-      "blobSha": "49228f41095077bad1b28a64cf9f0fbda0e369d7",
-      "size": 30969
-    },
-    {
       "path": "source/host/src/transcript_mirror/transcript_mirror_router.rs",
       "blobSha": "418be73c77f2b2a1d793def4d674299740fa18b4",
       "size": 11089
+    },
+    {
+      "path": "source/host/src/transcript_mirror/transcript_mirror.rs",
+      "blobSha": "49228f41095077bad1b28a64cf9f0fbda0e369d7",
+      "size": 30969
     },
     {
       "path": "source/host/src/transcript_mirror/transcript_occurrence_deriver.rs",
@@ -3020,8 +3050,8 @@
     },
     {
       "path": "source/host/tests/agent_state_contract.rs",
-      "blobSha": "fc1a22245fdf55eff081256ddd8ce5a906c77e48",
-      "size": 5260
+      "blobSha": "52a4e0c19d0382a22a4fcc2aa90c10d6bb61ca32",
+      "size": 6388
     },
     {
       "path": "source/host/tests/agent_to_agent_messaging_contract.rs",
@@ -3045,8 +3075,8 @@
     },
     {
       "path": "source/host/tests/async_task_union_contract.rs",
-      "blobSha": "cb7204f641d4aeedda45d1561bd5097418db0169",
-      "size": 4768
+      "blobSha": "6aed898ce9356fad76247aafbce065da7936a272",
+      "size": 6075
     },
     {
       "path": "source/host/tests/attachments_helpers_contract.rs",
@@ -3070,13 +3100,13 @@
     },
     {
       "path": "source/host/tests/auto_review_gate_contract.rs",
-      "blobSha": "8446bb9af4bef4b6f9d456e4355428c9e05d7fe5",
-      "size": 8778
+      "blobSha": "b8d9fd2e9a21c74b84fdebcd03f4296ca1d9be4b",
+      "size": 9369
     },
     {
       "path": "source/host/tests/auto_review_production_wiring_contract.rs",
-      "blobSha": "75d12d98c280c250ae49422a0774e668ee61a7be",
-      "size": 1750
+      "blobSha": "dae1b320e4eb9094840bab0ee2bfb71379bd7fc3",
+      "size": 2055
     },
     {
       "path": "source/host/tests/auto_review_service_contract.rs",
@@ -3195,8 +3225,8 @@
     },
     {
       "path": "source/host/tests/background_work_contract.rs",
-      "blobSha": "43e5584e14bea29b27ae5b69a1cb78314e8b78a9",
-      "size": 16127
+      "blobSha": "65ef5b331f43d8523f21b7b42c62669abee84518",
+      "size": 17992
     },
     {
       "path": "source/host/tests/bootstrap_contract.rs",
@@ -3255,8 +3285,8 @@
     },
     {
       "path": "source/host/tests/box_generated_production_contract.rs",
-      "blobSha": "979a44bea76009cdc23851f0f2286b80fe8ae0d9",
-      "size": 38018
+      "blobSha": "13787b4f3e30c399b99eeb0ec8169ffff8479526",
+      "size": 38214
     },
     {
       "path": "source/host/tests/box_handoff_resume_contract.rs",
@@ -3425,8 +3455,8 @@
     },
     {
       "path": "source/host/tests/cloud_agent_pending_wake_rearm_production_contract.rs",
-      "blobSha": "84562ce95ef29e0b2207bdc1c538d7c1970a0af3",
-      "size": 3350
+      "blobSha": "8e79206f5da1a70a6a0bdf42dd17be190eeb575c",
+      "size": 3550
     },
     {
       "path": "source/host/tests/cloud_agent_poll_loop_contract.rs",
@@ -3505,13 +3535,13 @@
     },
     {
       "path": "source/host/tests/computer_tool_projection_contract.rs",
-      "blobSha": "9205aaf608eb251fff7a635cde97b6d4043bab0b",
-      "size": 15408
+      "blobSha": "f8a56e4f969fcb20ca4f0a8f1b70d17bdf7fa472",
+      "size": 16989
     },
     {
       "path": "source/host/tests/computer_use_coordination_contract.rs",
-      "blobSha": "2019bc505d695c90e3fe977e53937bf4b619a131",
-      "size": 4177
+      "blobSha": "3ff72265f085c2469ffae3856eaba8bf75a9fbea",
+      "size": 5717
     },
     {
       "path": "source/host/tests/connector_auth_production_wiring_contract.rs",
@@ -3695,13 +3725,13 @@
     },
     {
       "path": "source/host/tests/external_machine_shipping_contract.rs",
-      "blobSha": "d6bd5035263d6f56f2a3d6047fb7d56068edd8b7",
-      "size": 609
+      "blobSha": "7105c8af9c59319d0acf04925d9d2baae499c30d",
+      "size": 614
     },
     {
       "path": "source/host/tests/external_machine_tool_contract.rs",
-      "blobSha": "96a43567e191a73df5ac3eed84b8497df82cb0d6",
-      "size": 4450
+      "blobSha": "e36b2359e0731f3a68f1dae6ac1726ed1177a7ed",
+      "size": 5230
     },
     {
       "path": "source/host/tests/gateway_command_error_contract.rs",
@@ -3740,13 +3770,13 @@
     },
     {
       "path": "source/host/tests/generated_occurrence_codec_contract.rs",
-      "blobSha": "38c25a01c4de03297dabdfd87273ffe3b2533375",
-      "size": 4137
+      "blobSha": "ec21d874b177e235ac50a1eedb910238e8293def",
+      "size": 7363
     },
     {
       "path": "source/host/tests/generated_subagent_production_cutover_contract.rs",
-      "blobSha": "68e50bb055ddd4356da85644a00bf8ae0bdf59e6",
-      "size": 7236
+      "blobSha": "09c09a8990b554a7b2631a1759222502971ff39e",
+      "size": 11639
     },
     {
       "path": "source/host/tests/grok_small_foundation_parity_contract.rs",
@@ -3830,8 +3860,8 @@
     },
     {
       "path": "source/host/tests/host_runner_composition_production_wiring_contract.rs",
-      "blobSha": "b9357bf42ba11335a3546b450a7fe9145cfa6201",
-      "size": 10716
+      "blobSha": "118e22bd4ad3f80f2fe679b5f63d9b65821ea376",
+      "size": 14908
     },
     {
       "path": "source/host/tests/host_secret_store_contract.rs",
@@ -3860,8 +3890,8 @@
     },
     {
       "path": "source/host/tests/host_tracing_contract.rs",
-      "blobSha": "cce17d661cbbe37e2de6122b6094cb8f2fae80aa",
-      "size": 12157
+      "blobSha": "697c10933ad8ecf67fc85d782ac4ba1589faf28f",
+      "size": 12184
     },
     {
       "path": "source/host/tests/host_upgrade_extension_contract.rs",
@@ -3920,8 +3950,8 @@
     },
     {
       "path": "source/host/tests/journal_outcome_production_wiring_contract.rs",
-      "blobSha": "7d4700e748b15362718071204800ffcc92edf470",
-      "size": 1417
+      "blobSha": "e590d4c379d9ff2afebc7ea345b2cbe4f8907d83",
+      "size": 1429
     },
     {
       "path": "source/host/tests/large_output_spill_contract.rs",
@@ -4010,8 +4040,8 @@
     },
     {
       "path": "source/host/tests/mcp_meta_tools_contract.rs",
-      "blobSha": "24a067e6ebcae5709067eef72b59a45f07726af6",
-      "size": 4020
+      "blobSha": "6b09d4cfd11152952dda775a49ba21c67c0e8192",
+      "size": 5709
     },
     {
       "path": "source/host/tests/mcp_production_contract.rs",
@@ -4020,13 +4050,13 @@
     },
     {
       "path": "source/host/tests/mcp_service_contract.rs",
-      "blobSha": "e26651c215d99a122fedd9ca975cdc6967db2e6b",
-      "size": 10391
+      "blobSha": "6661f003699df0128cfa968eeed2f89bcc7e71e3",
+      "size": 10861
     },
     {
       "path": "source/host/tests/mcp_state_executor_contract.rs",
-      "blobSha": "e69ca6ca82568d6a27b1191059a1b9705faceda3",
-      "size": 5709
+      "blobSha": "c36d4f6c5b0314d6832962ad689a501e65bb1a99",
+      "size": 5746
     },
     {
       "path": "source/host/tests/media_mime_contract.rs",
@@ -4110,8 +4140,8 @@
     },
     {
       "path": "source/host/tests/production_agent_checkpoint_contract.rs",
-      "blobSha": "37905de1a2f072381b0e71c6c804f5d730b038a4",
-      "size": 15711
+      "blobSha": "0469b2ca1d937fe627603825637243bb39b68236",
+      "size": 19466
     },
     {
       "path": "source/host/tests/production_agent_store_contract.rs",
@@ -4130,18 +4160,18 @@
     },
     {
       "path": "source/host/tests/production_turn_agent_owner_contract.rs",
-      "blobSha": "8c01db817c6cd16125c25efa7eace047fb548c68",
-      "size": 9148
+      "blobSha": "d05fbe51194265f2a63ac3771f4f106bb81f594c",
+      "size": 19486
     },
     {
       "path": "source/host/tests/production_turn_input_projection_contract.rs",
-      "blobSha": "2463e020f17c5fa2136143ce77c6b76ff9712b99",
-      "size": 2886
+      "blobSha": "51527a072ef69a5b205b1d2fcf0e149bb02b4594",
+      "size": 11440
     },
     {
       "path": "source/host/tests/production_turn_run_shell_adapter_contract.rs",
-      "blobSha": "dde7379b7d5ae6426436cc4c3650e6d06fe0c61a",
-      "size": 15781
+      "blobSha": "3ed754c500f2b683600febc2e1eddbab00b6ed0e",
+      "size": 19710
     },
     {
       "path": "source/host/tests/profile_watch_contract.rs",
@@ -4155,8 +4185,8 @@
     },
     {
       "path": "source/host/tests/prompt_collector_glue_contract.rs",
-      "blobSha": "0da7016d90e0eece0e1970f0157d16189701de96",
-      "size": 4226
+      "blobSha": "27716961c3ef587bfeed6223012d31ea6e995c0a",
+      "size": 15874
     },
     {
       "path": "source/host/tests/remaining_planned_contract.rs",
@@ -4165,8 +4195,8 @@
     },
     {
       "path": "source/host/tests/remote_box_resources_contract.rs",
-      "blobSha": "91f9a54ae49bf9c2a373eb0fce0312ad4733ad86",
-      "size": 7153
+      "blobSha": "396f3cd7daf5da0e1dc0cf5dbeff3456de075c42",
+      "size": 9754
     },
     {
       "path": "source/host/tests/request_coalescer_contract.rs",
@@ -4200,8 +4230,8 @@
     },
     {
       "path": "source/host/tests/runner_communicate_listener_contract.rs",
-      "blobSha": "33f2a98dbdde90f09fd79d8204c27213ff461a8c",
-      "size": 10116
+      "blobSha": "0565a047746441e317be598f7fb8ab5767128384",
+      "size": 11256
     },
     {
       "path": "source/host/tests/runner_context_production_provider_contract.rs",
@@ -4225,13 +4255,13 @@
     },
     {
       "path": "source/host/tests/runner_production_bridge_contract.rs",
-      "blobSha": "73b5cc168d29edad000546403268c18197399495",
-      "size": 10650
+      "blobSha": "76a720b1e55da84b3e55dc201a839a4e49e3836f",
+      "size": 22159
     },
     {
       "path": "source/host/tests/runner_prompt_glue_contract.rs",
-      "blobSha": "01539e611c631497bd035e9cb90fd478380efb57",
-      "size": 4487
+      "blobSha": "f87f84dbf27343706a5d01ca0f4907fd7dfd7dbc",
+      "size": 12256
     },
     {
       "path": "source/host/tests/runner_pure_parity_contract.rs",
@@ -4265,8 +4295,8 @@
     },
     {
       "path": "source/host/tests/sand_action_audit_contract.rs",
-      "blobSha": "be5ed0743579adc4396fa7f366aa226cec4596d1",
-      "size": 4459
+      "blobSha": "e74e322922cbbf9ba6173ee8300c94cc84c492cf",
+      "size": 5400
     },
     {
       "path": "source/host/tests/sand_activity_contract.rs",
@@ -4285,18 +4315,18 @@
     },
     {
       "path": "source/host/tests/sand_auto_review_classifier_contract.rs",
-      "blobSha": "50a02cd0a63f539de688b152029e61200e8b76ea",
-      "size": 6855
+      "blobSha": "b1aba6b4b3161f098f1b6041eda126fa0f994ac1",
+      "size": 12713
     },
     {
       "path": "source/host/tests/sand_auto_review_contract.rs",
-      "blobSha": "760f7a9b1bf967db19304cd9cd8dd0b9c7b55a93",
-      "size": 9610
+      "blobSha": "00faed593b5f6df164bad1b5b85054e59edd5786",
+      "size": 11656
     },
     {
       "path": "source/host/tests/sand_auto_review_specialized_contract.rs",
-      "blobSha": "05750fc3d823bc726488676fc59c299638b1ef44",
-      "size": 13525
+      "blobSha": "566cfb0aec4f95a96e12de283c621baf5823750d",
+      "size": 16576
     },
     {
       "path": "source/host/tests/sand_auto_review_summaries_contract.rs",
@@ -4305,18 +4335,23 @@
     },
     {
       "path": "source/host/tests/sand_backend_smart_mode_classifier_exec_contract.rs",
-      "blobSha": "54f0df6cfe989050f974dec2f8ffd7d69f9df5cb",
-      "size": 13463
+      "blobSha": "697b815ac6c0cc7a61a83e56d55bcf5ca79e3313",
+      "size": 13407
     },
     {
       "path": "source/host/tests/sand_browser_tools_contract.rs",
-      "blobSha": "8056378898e9a882d4a0047fc00a81cd198baa7a",
-      "size": 13019
+      "blobSha": "a9aba3fff477efc49fe1e37a2c86794ddea74adb",
+      "size": 14616
     },
     {
       "path": "source/host/tests/sand_file_transfer_tools_contract.rs",
       "blobSha": "ddfcab3bc6533fc728059d2664a1badb1923aae7",
       "size": 9496
+    },
+    {
+      "path": "source/host/tests/sand_generate_image_tool_contract.rs",
+      "blobSha": "6e92d9ec482370a2528716b341736b93adc5f83b",
+      "size": 4533
     },
     {
       "path": "source/host/tests/sand_host_production_wiring_contract.rs",
@@ -4325,8 +4360,8 @@
     },
     {
       "path": "source/host/tests/sand_mcp_management_tools_contract.rs",
-      "blobSha": "52c71b2101862891389c9f6181a7a5553f9cff35",
-      "size": 11566
+      "blobSha": "d70b2b7e510926d9d2fb734b23b0f2baf5442cc6",
+      "size": 14178
     },
     {
       "path": "source/host/tests/sand_memory_contract.rs",
@@ -4360,13 +4395,18 @@
     },
     {
       "path": "source/host/tests/sand_state_tool_contract.rs",
-      "blobSha": "9b5b823b944fd474e6593326c53e2c0d627764a1",
-      "size": 12052
+      "blobSha": "061432560d5ff7f042e340dd778fa1905830da3d",
+      "size": 14932
     },
     {
       "path": "source/host/tests/sand_subagent_management_tools_contract.rs",
-      "blobSha": "dd19979f5fd9c49461c99f5006d6f328623c7a1b",
-      "size": 9923
+      "blobSha": "ebc5c484bb122fe0432f7a18ac7ec6377b9ec5b4",
+      "size": 10315
+    },
+    {
+      "path": "source/host/tests/sand_web_tools_contract.rs",
+      "blobSha": "e7196c35f05e2b79a1900d300c5c170207cd1dbf",
+      "size": 3063
     },
     {
       "path": "source/host/tests/search_index_db_contract.rs",
@@ -4405,13 +4445,13 @@
     },
     {
       "path": "source/host/tests/send_message_tool_contract.rs",
-      "blobSha": "40c4a3e7acdebf301026efb5d709ae81b23ada2f",
-      "size": 17741
+      "blobSha": "84efaed7bf499b516923bf4435da45be830a85cd",
+      "size": 23396
     },
     {
       "path": "source/host/tests/send_trace_host_contract.rs",
-      "blobSha": "00eac022edf19c5d308cfde839d927c8854ad36d",
-      "size": 7007
+      "blobSha": "9fd7198138715b5055dcca803032871a127f257c",
+      "size": 8285
     },
     {
       "path": "source/host/tests/session_conversation_state_contract.rs",
@@ -4525,8 +4565,8 @@
     },
     {
       "path": "source/host/tests/stream_attempt_outer_lifecycle_contract.rs",
-      "blobSha": "d03445ffa49230c5babc008f316a7f794651ad67",
-      "size": 5853
+      "blobSha": "e87038891c5ba02f85f9ec797507247cebf27188",
+      "size": 6918
     },
     {
       "path": "source/host/tests/structured_log_lifecycle_facade_contract.rs",
@@ -4540,23 +4580,23 @@
     },
     {
       "path": "source/host/tests/subagent_runtime_adapter_contract.rs",
-      "blobSha": "ab095292de01b336bee3d5060c282c28cf94f7dd",
-      "size": 12327
+      "blobSha": "9d6eb44830c6822dad9aee7af88a1d47eae03b2e",
+      "size": 12915
     },
     {
       "path": "source/host/tests/system_prompt_contract.rs",
-      "blobSha": "71266aa294d0450d56cdd1a69fef1ee22e6d6745",
-      "size": 13461
+      "blobSha": "bb1b50731e336f6050fd035dfce77bdab4d6eb23",
+      "size": 14925
     },
     {
       "path": "source/host/tests/system_prompt_dynamic_sections_production_contract.rs",
-      "blobSha": "689585a8b1f483ece4b17028e7afca787b9904a5",
-      "size": 1553
+      "blobSha": "5b0dc9320e0f70b3080a932d4fcb3687f6d831b4",
+      "size": 4996
     },
     {
       "path": "source/host/tests/system_prompt_shipping_wiring_contract.rs",
-      "blobSha": "2e841675cb4464f0bd99628a492b79e0af417768",
-      "size": 3894
+      "blobSha": "349e685f31ed6ba51b340dfa6dbf3b4f71881002",
+      "size": 7127
     },
     {
       "path": "source/host/tests/teach_recording_extension_contract.rs",
@@ -4595,8 +4635,8 @@
     },
     {
       "path": "source/host/tests/transcript_manager_contract.rs",
-      "blobSha": "915db46e1b39788b6b09c10623690d5fec7a4a19",
-      "size": 29143
+      "blobSha": "7097f86175e506bc16b2b6de9b29269e44faf6c3",
+      "size": 29322
     },
     {
       "path": "source/host/tests/transcript_mirror_contract.rs",
@@ -4605,8 +4645,8 @@
     },
     {
       "path": "source/host/tests/transcript_mirror_conversation_state_binary_contract.rs",
-      "blobSha": "30326b2131317f4db533e3e05e0a3893e0305eed",
-      "size": 3133
+      "blobSha": "61aeddcfed419b3b70f574278f6a5d9b8a1ee179",
+      "size": 4121
     },
     {
       "path": "source/host/tests/transcript_mirror_offload_contract.rs",
@@ -4615,8 +4655,8 @@
     },
     {
       "path": "source/host/tests/transcript_mirror_production_provider_contract.rs",
-      "blobSha": "ba9e955d305bc0d1583a7fea37dc444c005edfd9",
-      "size": 7152
+      "blobSha": "aa1b901789ca70ad85628133d4b38c4556d93372",
+      "size": 11557
     },
     {
       "path": "source/host/tests/transcript_mirror_router_contract.rs",
@@ -4675,18 +4715,18 @@
     },
     {
       "path": "source/host/tests/turn_observation_contract.rs",
-      "blobSha": "30e39b8dd8fc0e7a0be0d54a1792df76d37553a5",
-      "size": 16187
+      "blobSha": "28648bdebf02840d46956479f352db0df4d45992",
+      "size": 23345
     },
     {
       "path": "source/host/tests/turn_runtime_recovery_contract.rs",
-      "blobSha": "cb971e7734b261d310d2fe6dccce045be6227e0d",
-      "size": 10431
+      "blobSha": "494cdc3f83721417255b914ebe40b886a334271d",
+      "size": 10887
     },
     {
       "path": "source/host/tests/turn_settle_checkpoint_contract.rs",
-      "blobSha": "93b0c3f262f658fd564c16d85a66acbad8f20cef",
-      "size": 4945
+      "blobSha": "732c0d56530ecf3c5dd63a5b805fb165e416af76",
+      "size": 6935
     },
     {
       "path": "source/host/tests/turn_telemetry_mappers_contract.rs",
@@ -4695,13 +4735,23 @@
     },
     {
       "path": "source/host/tests/turn_telemetry_production_wiring_contract.rs",
-      "blobSha": "91ae76ed3f0fc6d8992ca9b03ba039ca80bf62f2",
-      "size": 6082
+      "blobSha": "ad72a0a9e0a8c03c85f128de38a2f2a1c64f3364",
+      "size": 7194
+    },
+    {
+      "path": "source/host/tests/turn_tool_session_reminder_contract.rs",
+      "blobSha": "e47ad331cb2d0c319d58cfc17a8e53f8e18ff10c",
+      "size": 1775
+    },
+    {
+      "path": "source/host/tests/turn_toolset_await_mcp_contract.rs",
+      "blobSha": "f09ab4839e4d2e6ab33aadab5b1e8000b2d9e2ce",
+      "size": 7314
     },
     {
       "path": "source/host/tests/turn_toolset_contract.rs",
-      "blobSha": "2cee8d4338ebdcbe7b8350313d696f66b83582b2",
-      "size": 7200
+      "blobSha": "53089dc76cf5f53d5be0cf4b427881d4ae9c8799",
+      "size": 11445
     },
     {
       "path": "source/host/tests/upgrade_recreate_resume_contract.rs",
