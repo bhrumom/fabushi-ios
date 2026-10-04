@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `9a748dc4acb3058815b24b662613e420445857e6`
+- pinned source commit for this baseline: `a59a8fce1495c8d770839ee9ebbc4c1ceba20a92`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -1044,3 +1044,16 @@ Current iOS 380c6dc8 Actions evidence is partial: Rust Host and unsigned device 
 ### Recovery follow-up authority: 9a748dc4
 
 Desktop advanced to `9a748dc4acb3058815b24b662613e420445857e6` after the recovery commit. The only changed blob is `source/host/tests/system_prompt_shipping_wiring_contract.rs`: assertions now follow HostRunnerComposition computer preparation/lease/finish delegation instead of the superseded direct owner calls. This is a Desktop contract correction, not new iOS shipping behavior. All 7,927 source identities are rebound; the changed row requires independent review and no acceptance status is promoted.
+
+
+### Recovery rebaseline 2026-10-04: `a59a8fce`
+
+Desktop PR #20 remains open and draft on `refactor/grok-018-architecture-rebuild`, but its exact HEAD advanced from the iOS repository's previously pinned authority `9a748dc4acb3058815b24b662613e420445857e6` to `a59a8fce1495c8d770839ee9ebbc4c1ceba20a92`. All Desktop-bound source identity and acceptance claims for changed rows are therefore invalid until independently revalidated against this exact HEAD.
+
+A direct GitHub compare from `9a748dc4` to `a59a8fce` contains 229 upstream commits and 127 selected source changes, all under `source/host/**`: 117 existing source-bearing blobs changed, 10 source-bearing files were added, and no selected source file was deleted or renamed. The authoritative selected `frontend/** + source/**` inventory is now 7,937 files; `source/host/**` increases from 957 to 967 files.
+
+The rebaseline is intentionally fail-closed. Every one of the 117 changed existing Host rows has its old iOS disposition, implementation status, production evidence, and test evidence invalidated to `unreviewed`; the 10 new Host rows also begin `unreviewed`. Historical target paths and notes may remain only as investigation context. Unchanged Desktop blobs keep their prior review status, but every manifest/ledger chunk is rebound to the current Desktop exact HEAD. No parity status is promoted by this rebaseline.
+
+The new Host source responsibilities include generated-image and web dependency/tool owners, an await-shell tool, turn tool-session reminders, and focused contracts for those owners plus MCP await handling. Existing shipping responsibilities also changed across HostRunnerComposition, turn-agent composition/checkpoint/input projection, system prompt assembly, computer/external-machine routing, MCP state/management, Auto Review, telemetry, transcript-mirror codecs, reply/recovery and subagent execution. Each must be reviewed as responsibility + owner + state machine + product effect; a generic Host facade or ledger-only assertion is not sufficient.
+
+Desktop PR #26 remains observation-only at this baseline. Its unmerged FBCP/Human communication work is not a formal iOS source until that work is merged into PR #20 and PR #20 advances to a new exact HEAD.
