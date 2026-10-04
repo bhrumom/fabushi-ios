@@ -12,6 +12,7 @@ enum MobileChatEntryKind: String, Equatable {
     case message
     case action
     case thinking
+    case handoff
 }
 
 enum MahayanaChatPumpOutcome: Equatable {
@@ -30,8 +31,60 @@ struct MobileChatMessage: Identifiable, Equatable {
     var actionTitle: String?
     var actionDetail: String?
     var actionStatus: String?
+    var handoffRequestId: String?
+    var handoffAgentId: String?
+    var canonicalMessageId: String?
+    var replyToMessageId: String?
+    var attachmentBatchId: String?
+    var attachmentURL: String?
+    var attachmentFileName: String?
+    var attachmentAlt: String?
+    var branched = false
     var streaming = false
     var createdAt = Date()
+}
+
+func projectListenerConnectTranscriptCard(
+    event: [String: Any],
+    operationId: String?
+) -> MobileChatMessage? {
+    guard let card = event["card"] as? [String: Any],
+          card["kind"] as? String == "listenerConnect",
+          let platform = card["platform"] as? String,
+          !platform.isEmpty
+    else { return nil }
+
+    let displayName: String
+    switch platform.lowercased() {
+    case "slack": displayName = "Slack"
+    case "github": displayName = "GitHub"
+    case "git": displayName = "Git"
+    case "teams": displayName = "Microsoft Teams"
+    case "linear": displayName = "Linear"
+    case "sentry": displayName = "Sentry"
+    case "pagerduty": displayName = "PagerDuty"
+    default: displayName = platform
+    }
+
+    let connected = card["connected"] as? Bool ?? false
+    let pending = card["pending"] as? Bool ?? false
+    let reason = (card["reason"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let detail = reason?.isEmpty == false
+        ? reason
+        : (connected ? "\(displayName) 已连接。" : "连接 \(displayName) 后，此例程才能接收对应事件。")
+    let entryId = (event["entryId"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        ?? "listener-connect:\(platform.lowercased())"
+
+    return MobileChatMessage(
+        id: entryId,
+        role: .assistant,
+        text: "",
+        kind: .action,
+        operationId: operationId,
+        actionTitle: connected ? "\(displayName) 已连接" : "连接 \(displayName)",
+        actionDetail: detail,
+        actionStatus: connected ? "completed" : (pending ? "pending" : "waiting")
+    )
 }
 
 struct MiniAppToolContract: Equatable, Sendable {
@@ -101,6 +154,9 @@ final class MarketplaceModel {
     var loggedIn = false
     var accountName = "Fabushi"
     var accountEmail = ""
+    var accountUsage: AccountUsageProjection?
+    var accountUsageLoading = false
+    var accountUsageError: String?
     var onboardingStep: Int
     var browserLoginAttemptId: String?
     var browserLoginURL: URL?
@@ -112,24 +168,27 @@ final class MarketplaceModel {
     var activeOperationId: String?
     let globalDharmaCommerce: GlobalDharmaCommerceModel
 
-    private let host: MahayanaHost
+    private let bridge: IOSPreloadBridge
     private let onboardingKey = "fabushi.mobile.onboarding-complete.v1"
     @ObservationIgnored private let browserAuthPresentationContext = BrowserAuthPresentationContext()
     @ObservationIgnored private var webAuthenticationSession: ASWebAuthenticationSession?
 
-    init(host: MahayanaHost) {
-        self.host = host
-        globalDharmaCommerce = GlobalDharmaCommerceModel(host: host)
+    init(bridge: IOSPreloadBridge) {
+        self.bridge = bridge
+        globalDharmaCommerce = GlobalDharmaCommerceModel(bridge: bridge)
         onboardingStep = UserDefaults.standard.bool(forKey: onboardingKey) ? 3 : 0
     }
 
     func initializeApp() async {
         authResolved = false
         do {
-            let result = try await host.request(method: "feature.auth.status")
+            let result = try await bridge.request(method: "feature.auth.status")
             applyAuth(result.value as? [String: Any])
             authResolved = true
-            if loggedIn { await refresh() }
+            if loggedIn {
+                await refreshAccountUsage()
+                await refresh()
+            }
         } catch {
             authResolved = true
             message = "账号状态加载失败：\(error.localizedDescription)"
@@ -138,6 +197,10 @@ final class MarketplaceModel {
 
     private func applyAuth(_ object: [String: Any]?, defaultLoggedIn: Bool = false) {
         loggedIn = object?["loggedIn"] as? Bool ?? defaultLoggedIn
+        if !loggedIn {
+            accountUsage = nil
+            accountUsageError = nil
+        }
         guard let user = object?["user"] as? [String: Any] else {
             accountName = "Fabushi"
             accountEmail = ""
@@ -162,12 +225,12 @@ final class MarketplaceModel {
         loginBusy = true
         loginError = nil
         do {
-            let result = try await host.request(method: "feature.auth.browserStart")
+            let result = try await bridge.request(method: "feature.auth.browserStart")
             guard let object = result.value as? [String: Any],
                   let attemptId = object["attemptId"] as? String,
                   let loginURLString = (object["loginUrl"] as? String) ?? (object["authorizationUrl"] as? String),
                   let loginURL = URL(string: loginURLString)
-            else { throw MahayanaHost.HostError.invalidResponse }
+            else { throw MahayanaCoordinator.CoordinatorError.invalidResponse }
             browserLoginAttemptId = attemptId
             browserLoginURL = loginURL
             loginBusy = false
@@ -187,11 +250,11 @@ final class MarketplaceModel {
     func reopenBrowserLogin() async {
         guard let attemptId = browserLoginAttemptId else { return }
         do {
-            let result = try await host.request(method: "feature.auth.browserReopen", params: ["attemptId": attemptId])
+            let result = try await bridge.request(method: "feature.auth.browserReopen", params: ["attemptId": attemptId])
             guard let object = result.value as? [String: Any],
                   let loginURLString = (object["loginUrl"] as? String) ?? (object["authorizationUrl"] as? String),
                   let loginURL = URL(string: loginURLString)
-            else { throw MahayanaHost.HostError.invalidResponse }
+            else { throw MahayanaCoordinator.CoordinatorError.invalidResponse }
             browserLoginURL = loginURL
             if loginURLString.hasPrefix("about:blank#fabushi-test-browser-login") {
                 await completeBrowserLogin(attemptId: attemptId)
@@ -210,7 +273,7 @@ final class MarketplaceModel {
     private func cancelBrowserLoginAttempt() async {
         guard let attemptId = browserLoginAttemptId else { return }
         do {
-            _ = try await host.request(method: "feature.auth.browserCancel", params: ["attemptId": attemptId])
+            _ = try await bridge.request(method: "feature.auth.browserCancel", params: ["attemptId": attemptId])
         } catch { loginError = error.localizedDescription }
         browserLoginAttemptId = nil
         browserLoginURL = nil
@@ -255,41 +318,41 @@ final class MarketplaceModel {
         guard ProcessInfo.processInfo.environment["FABUSHI_FEATURE_HOST_SMOKE"] == "1" else { return }
         featureHostSmokeStatus = "running"
         do {
-            let infoResult = try await host.request(method: "feature.info")
+            let infoResult = try await bridge.request(method: "feature.info")
             guard let info = infoResult.value as? [String: Any],
                   info["platform"] as? String == "ios",
                   let protocolVersion = info["protocolVersion"] as? String,
                   !protocolVersion.isEmpty,
                   (info["runtimeVersion"] as? String)?.contains("test") == true
             else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
 
-            _ = try await host.request(method: "feature.auth.status")
-            let providers = try await host.request(method: "feature.auth.providers")
+            _ = try await bridge.request(method: "feature.auth.status")
+            let providers = try await bridge.request(method: "feature.auth.providers")
             guard let providerRows = providers.value as? [[String: Any]],
                   providerRows.contains(where: { $0["id"] as? String == "google" })
             else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
 
-            let oauth = try await host.request(
+            let oauth = try await bridge.request(
                 method: "feature.auth.oauthStart",
                 params: ["provider": "google"]
             )
             guard let oauthObject = oauth.value as? [String: Any],
                   let attemptId = oauthObject["attemptId"] as? String
             else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
-            let oauthCompleted = try await host.request(
+            let oauthCompleted = try await bridge.request(
                 method: "feature.auth.oauthPoll",
                 params: ["attemptId": attemptId]
             )
             guard let completedObject = oauthCompleted.value as? [String: Any],
                   completedObject["status"] as? String == "completed"
             else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
 
             _ = try await executeFeatureCommand(
@@ -318,9 +381,9 @@ final class MarketplaceModel {
             )
             let approval = try await receiveFeatureEvent(type: "approval.requested")
             guard let approvalId = approval["approvalId"] as? String else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
-            _ = try await host.request(
+            _ = try await bridge.request(
                 method: "feature.approval.resolve",
                 params: [
                     "resolution": [
@@ -336,9 +399,9 @@ final class MarketplaceModel {
                 fields: ["label": "iOS simulated user operation"]
             )
             guard let operationId = longTask["operationId"] as? String else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
-            _ = try await host.request(
+            _ = try await bridge.request(
                 method: "feature.interrupt",
                 params: ["operationId": operationId]
             )
@@ -361,25 +424,25 @@ final class MarketplaceModel {
         var command = fields
         command["type"] = type
         command["requestId"] = requestId
-        let result = try await host.request(
+        let result = try await bridge.request(
             method: "feature.execute",
             params: ["command": command]
         )
         guard let accepted = result.value as? [String: Any],
               accepted["requestId"] as? String == requestId
         else {
-            throw MahayanaHost.HostError.invalidResponse
+            throw MahayanaCoordinator.CoordinatorError.invalidResponse
         }
         return accepted
     }
 
     private func receiveFeatureEvent(type expectedType: String) async throws -> [String: Any] {
         for _ in 0..<64 {
-            let result = try await host.request(method: "feature.receive")
+            let result = try await bridge.request(method: "feature.receive")
             guard let event = result.value as? [String: Any] else { continue }
             if event["type"] as? String == expectedType { return event }
         }
-        throw MahayanaHost.HostError.requestFailed("未收到 FeatureHost 事件 \(expectedType)")
+        throw MahayanaCoordinator.CoordinatorError.requestFailed("未收到 FeatureHost 事件 \(expectedType)")
     }
 
     func handleDeepLink(_ url: URL) {
@@ -409,14 +472,14 @@ final class MarketplaceModel {
     func completeBrowserLogin(attemptId: String) async {
         message = "登录授权已完成，正在通过 Rust Host 同步账号状态"
         do {
-            let result = try await host.request(
+            let result = try await bridge.request(
                 method: "feature.auth.browserPoll",
                 params: ["attemptId": attemptId]
             )
             guard let object = result.value as? [String: Any],
                   let status = object["status"] as? String
             else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
             switch status {
             case "completed":
@@ -429,6 +492,7 @@ final class MarketplaceModel {
                 browserLoginURL = nil
                 webAuthenticationSession = nil
                 loginError = nil
+                await refreshAccountUsage()
                 await refresh()
                 message = "登录成功，账号状态已同步"
             case "cancelled":
@@ -445,16 +509,18 @@ final class MarketplaceModel {
 
     func logout() async {
         if let operationId = activeOperationId {
-            _ = try? await host.request(method: "feature.interrupt", params: ["operationId": operationId])
+            _ = try? await bridge.request(method: "feature.interrupt", params: ["operationId": operationId])
         }
         do {
-            let result = try await host.request(method: "feature.auth.logout")
+            let result = try await bridge.request(method: "feature.auth.logout")
             applyAuth(result.value as? [String: Any])
         } catch {
             message = "退出登录失败：\(error.localizedDescription)"
             return
         }
         loggedIn = false
+        accountUsage = nil
+        accountUsageError = nil
         chatMessages = []
         activeOperationId = nil
         chatBusy = false
@@ -502,21 +568,85 @@ final class MarketplaceModel {
         }
     }
 
+    func resolveBoxHandoff(_ entry: MobileChatMessage, resolution: String) async {
+        guard entry.actionStatus == "pending",
+              let handoffRequestId = entry.handoffRequestId,
+              let handoffAgentId = entry.handoffAgentId
+        else { return }
+        do {
+            let accepted = try await executeFeatureCommand(
+                type: "box.handoff.resolve",
+                requestId: "ios-box-handoff-\(UUID().uuidString.lowercased())",
+                fields: [
+                    "handoffRequestId": handoffRequestId,
+                    "agentId": handoffAgentId,
+                    "resolution": resolution,
+                ]
+            )
+            if let index = chatMessages.firstIndex(where: { $0.handoffRequestId == handoffRequestId }) {
+                chatMessages[index].actionStatus = resolution
+            }
+            guard let operationId = accepted["operationId"] as? String, !operationId.isEmpty else { return }
+            chatBusy = true
+            activeOperationId = operationId
+            chatMessages.append(MobileChatMessage(
+                id: "thinking:\(operationId)",
+                role: .assistant,
+                text: "",
+                kind: .thinking,
+                operationId: operationId,
+                actionTitle: "正在从接管状态恢复",
+                actionStatus: "running"
+            ))
+            let outcome = await pumpChatEvents(operationId: operationId)
+            if outcome.shouldSettleLifecycle {
+                chatBusy = false
+                activeOperationId = nil
+            }
+        } catch {
+            message = "恢复 Agent 失败：\(error.localizedDescription)"
+        }
+    }
+
     func stopChat() async {
         guard let operationId = activeOperationId else { return }
-        _ = try? await host.request(method: "feature.interrupt", params: ["operationId": operationId])
+        _ = try? await bridge.request(method: "feature.interrupt", params: ["operationId": operationId])
     }
 
     private func pumpChatEvents(operationId: String) async -> MahayanaChatPumpOutcome {
         for _ in 0..<1800 {
             if Task.isCancelled { return .nonTerminal }
             do {
-                let result = try await host.request(method: "feature.receive")
+                let result = try await bridge.request(method: "feature.receive")
                 guard let event = result.value as? [String: Any], let type = event["type"] as? String else {
                     try? await Task.sleep(nanoseconds: 80_000_000)
                     continue
                 }
                 switch type {
+                case "box.handoff.requested":
+                    let eventOperationId = event["operationId"] as? String ?? operationId
+                    guard eventOperationId == operationId,
+                          let requestId = event["requestId"] as? String,
+                          let agentId = event["agentId"] as? String
+                    else { continue }
+                    let row = MobileChatMessage(
+                        id: "handoff:\(requestId)",
+                        role: .assistant,
+                        text: event["instruction"] as? String ?? "请完成 Agent 请求的本机步骤。",
+                        kind: .handoff,
+                        operationId: operationId,
+                        actionTitle: "等待用户接管",
+                        actionDetail: [event["reason"] as? String, event["domain"] as? String].compactMap { $0 }.joined(separator: " · "),
+                        actionStatus: "pending",
+                        handoffRequestId: requestId,
+                        handoffAgentId: agentId
+                    )
+                    if let index = chatMessages.firstIndex(where: { $0.handoffRequestId == requestId }) { chatMessages[index] = row } else { chatMessages.append(row) }
+                case "box.handoff.resolved":
+                    guard let requestId = event["requestId"] as? String else { continue }
+                    if let index = chatMessages.firstIndex(where: { $0.handoffRequestId == requestId }) {
+                        chatMessages[index].actionStatus = event["resolution"] as? String ?? "completed"
+                    }
                 case "model.routed":
                     guard (event["operationId"] as? String ?? operationId) == operationId else { continue }
                     let provider = event["provider"] as? String ?? ""
@@ -534,7 +664,23 @@ final class MarketplaceModel {
                     let eventText = event["text"] as? String ?? ""
                     if role == .assistant {
                         removeThinking(operationId: operationId)
-                        upsertAssistantMessage(operationId: operationId, text: eventText, append: false)
+                        let generatedAttachment = event["attachment"] as? [String: Any]
+                        if eventText.isEmpty, generatedAttachment != nil, !chatMessages.contains(where: { $0.kind == .message && $0.role == .assistant && $0.operationId == operationId }) {
+                            chatMessages.append(MobileChatMessage(id: "assistant:\(operationId)", role: .assistant, text: "", operationId: operationId))
+                        } else {
+                            upsertAssistantMessage(operationId: operationId, text: eventText, append: false)
+                        }
+                        if let index = chatMessages.lastIndex(where: { $0.kind == .message && $0.role == .assistant && $0.operationId == operationId }) {
+                            chatMessages[index].canonicalMessageId = event["messageId"] as? String
+                            chatMessages[index].replyToMessageId = event["replyToMessageId"] as? String
+                            chatMessages[index].attachmentBatchId = event["attachmentBatchId"] as? String
+                            if let attachment = event["attachment"] as? [String: Any] {
+                                chatMessages[index].attachmentURL = attachment["url"] as? String
+                                chatMessages[index].attachmentFileName = attachment["file_name"] as? String
+                                chatMessages[index].attachmentAlt = attachment["alt"] as? String
+                            }
+                            chatMessages[index].branched = event["branched"] as? Bool ?? false
+                        }
                     } else if !chatMessages.contains(where: { $0.role == .user && $0.text == eventText }) {
                         chatMessages.append(MobileChatMessage(id: "user:\(UUID().uuidString)", role: .user, text: eventText))
                     }
@@ -548,6 +694,16 @@ final class MarketplaceModel {
                     let title = event["title"] as? String ?? "助手动作"
                     let stepId = event["stepId"] as? String ?? "step-\(UUID().uuidString)"
                     upsertAction(operationId: operationId, stepId: stepId, title: title, detail: event["detail"] as? String, status: event["status"] as? String ?? "completed")
+                case "transcript.card":
+                    guard let row = projectListenerConnectTranscriptCard(
+                        event: event,
+                        operationId: event["operationId"] as? String ?? operationId
+                    ) else { continue }
+                    if let index = chatMessages.firstIndex(where: { $0.id == row.id }) {
+                        chatMessages[index] = row
+                    } else {
+                        chatMessages.append(row)
+                    }
                 case "operation.completed", "operation.interrupted":
                     guard event["operationId"] as? String == operationId else { continue }
                     removeThinking(operationId: operationId)
@@ -601,11 +757,40 @@ final class MarketplaceModel {
         if let index = chatMessages.firstIndex(where: { $0.id == id }) { chatMessages[index] = entry } else { chatMessages.append(entry) }
     }
 
+    func refreshAccountUsage() async {
+        guard loggedIn else {
+            accountUsage = nil
+            accountUsageError = nil
+            accountUsageLoading = false
+            return
+        }
+
+        accountUsageLoading = true
+        defer { accountUsageLoading = false }
+
+        do {
+            let result = try await bridge.request(method: "feature.usage.status")
+            guard let payload = result.value as? [String: Any],
+                  let usage = AccountUsageProjection(payload: payload)
+            else {
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
+            }
+            accountUsage = usage
+            accountUsageError = nil
+        } catch {
+            // Usage is supplementary account UI. A temporarily unavailable
+            // budget endpoint must not turn a valid authenticated session into
+            // a login/marketplace failure.
+            accountUsage = nil
+            accountUsageError = "usage_unavailable"
+        }
+    }
+
     func refresh() async {
         loading = true
         defer { loading = false }
         do {
-            let result = try await host.request(
+            let result = try await bridge.request(
                 method: "feature.marketplace.browse",
                 params: ["query": query.isEmpty ? NSNull() : query, "platform": "ios"]
             )
@@ -644,12 +829,12 @@ final class MarketplaceModel {
         installingPluginId = plugin.pluginId
         message = "正在安装 \(plugin.pluginId)@\(version)…"
         do {
-            let metadata = try await host.request(
+            let metadata = try await bridge.request(
                 method: "feature.marketplace.release",
                 params: ["pluginId": plugin.pluginId, "version": version]
             )
             guard let release = (metadata.value as? [String: Any])?["releaseManifest"] as? [String: Any] else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
             let install = (metadata.value as? [String: Any])?["install"] as? [String: Any]
                 ?? release["install"] as? [String: Any]
@@ -659,18 +844,18 @@ final class MarketplaceModel {
                   let sourceRef = source["sourceRef"] as? String,
                   !sourceRef.isEmpty,
                   source["marketplaceHostsPackage"] as? Bool != true
-            else { throw MahayanaHost.HostError.invalidResponse }
-            let installed = try await host.request(
+            else { throw MahayanaCoordinator.CoordinatorError.invalidResponse }
+            let installed = try await bridge.request(
                 method: "feature.plugin.install",
                 params: ["release": release, "platform": "ios"]
             )
             guard let object = installed.value as? [String: Any] else {
-                throw MahayanaHost.HostError.invalidResponse
+                throw MahayanaCoordinator.CoordinatorError.invalidResponse
             }
             let pluginId = object["pluginId"] as? String ?? plugin.pluginId
             let runtime = object["runtime"] as? String ?? "unknown"
             let permissions = object["requestedPermissions"] as? [String] ?? []
-            let accountInstall = try await host.request(
+            let accountInstall = try await bridge.request(
                 method: "feature.marketplace.add",
                 params: ["pluginId": pluginId, "platform": "ios"]
             )
@@ -680,7 +865,7 @@ final class MarketplaceModel {
                   let botId = bot["id"] as? String,
                   !botId.isEmpty
             else {
-                throw MahayanaHost.HostError.requestFailed("Mini App 已本地安装，但 Fabushi 账号/Bot 同步未完成")
+                throw MahayanaCoordinator.CoordinatorError.requestFailed("Mini App 已本地安装，但 Fabushi 账号/Bot 同步未完成")
             }
             installingPluginId = nil
             if permissions.isEmpty {
@@ -706,7 +891,7 @@ final class MarketplaceModel {
         message = "正在授权 \(request.pluginId)…"
         do {
             for permission in request.permissions {
-                _ = try await host.request(
+                _ = try await bridge.request(
                     method: "plugin.permission.grant",
                     params: ["pluginId": request.pluginId, "permission": permission]
                 )
@@ -733,14 +918,14 @@ final class MarketplaceModel {
         }
         installingPluginId = pluginId
         do {
-            let compatibility = try await host.request(
+            let compatibility = try await bridge.request(
                 method: "plugin.compatibility",
                 params: ["pluginId": pluginId]
             )
             guard let object = compatibility.value as? [String: Any], object["portableCompatible"] as? Bool == true else {
-                throw MahayanaHost.HostError.requestFailed("插件不满足移动端 portable runtime 约束")
+                throw MahayanaCoordinator.CoordinatorError.requestFailed("插件不满足移动端 portable runtime 约束")
             }
-            _ = try await host.request(
+            _ = try await bridge.request(
                 method: "runtime.start",
                 params: ["pluginId": pluginId, "config": [String: Any]()]
             )
@@ -753,7 +938,7 @@ final class MarketplaceModel {
 
     func loadLocalMiniAppHtml(pluginId: String) async -> String? {
         do {
-            let result = try await host.request(
+            let result = try await bridge.request(
                 method: "feature.plugin.uiDocument",
                 params: ["pluginId": pluginId]
             )
@@ -766,9 +951,9 @@ final class MarketplaceModel {
 
     func callRuntimeTool(pluginId: String, name: String, arguments: [String: Any]) async throws -> Any {
         guard name.range(of: #"^[A-Za-z0-9_.-]{1,128}$"#, options: .regularExpression) != nil else {
-            throw MahayanaHost.HostError.requestFailed("Invalid WebMCP tool name")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Invalid WebMCP tool name")
         }
-        let result = try await host.request(
+        let result = try await bridge.request(
             method: "runtime.call",
             params: [
                 "pluginId": pluginId,

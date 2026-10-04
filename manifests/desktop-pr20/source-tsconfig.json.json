@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "c92a2ccae3e022942475c4d3db00c8f910f8243a",
+  "group": "source-tsconfig.json",
+  "fileCount": 1,
+  "files": [
+    {
+      "path": "source/tsconfig.json",
+      "blobSha": "be1cd18a8f6f9c914bc9711f29c717e41c0dc125",
+      "size": 309
+    }
+  ]
+}

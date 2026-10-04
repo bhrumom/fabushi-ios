@@ -18,11 +18,11 @@ final class GlobalDharmaMiniAppBridge {
 
     private static let apiBase = URL(string: "https://api.ombhrum.com")!
     private static let mcpProtocol = "2025-06-18"
-    private let host: MahayanaHost
+    private let bridge: IOSPreloadBridge
     private let session: URLSession
 
-    init(host: MahayanaHost, session: URLSession = .shared) {
-        self.host = host
+    init(bridge: IOSPreloadBridge, session: URLSession = .shared) {
+        self.bridge = bridge
         self.session = session
     }
 
@@ -74,7 +74,7 @@ final class GlobalDharmaMiniAppBridge {
         try Self.requirePluginId(pluginId)
         let cleanInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanInput.isEmpty else {
-            throw MahayanaHost.HostError.requestFailed("Mini App input must not be blank")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Mini App input must not be blank")
         }
         return try await platform(
             method: "POST",
@@ -90,7 +90,7 @@ final class GlobalDharmaMiniAppBridge {
     ) async throws -> [String: Any] {
         try Self.requirePluginId(pluginId)
         guard Self.validToolName(name) else {
-            throw MahayanaHost.HostError.requestFailed("Invalid Mini App MCP tool name")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Invalid Mini App MCP tool name")
         }
         let token = try await delegatedPluginToken(pluginId: pluginId)
         let endpoint = Self.apiBase.appending(path: "/api/mcp/apps/\(pluginId)")
@@ -112,7 +112,7 @@ final class GlobalDharmaMiniAppBridge {
             expectJSON: true
         )
         guard let sessionId = initialized.sessionId, !sessionId.isEmpty else {
-            throw MahayanaHost.HostError.requestFailed("Mini App MCP initialize did not return mcp-session-id")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Mini App MCP initialize did not return mcp-session-id")
         }
         try Self.ensureNoMcpError(initialized.body, phase: "initialize")
         defer { Task { try? await self.mcpDelete(endpoint: endpoint, token: token, sessionId: sessionId) } }
@@ -144,7 +144,7 @@ final class GlobalDharmaMiniAppBridge {
         try Self.ensureNoMcpError(listed.body, phase: "tools/list")
         let tools = ((listed.body?["result"] as? [String: Any])?["tools"] as? [[String: Any]]) ?? []
         guard tools.contains(where: { ($0["name"] as? String) == name }) else {
-            throw MahayanaHost.HostError.requestFailed("Mini App MCP tool \(name) is not advertised by tools/list")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Mini App MCP tool \(name) is not advertised by tools/list")
         }
 
         let called = try await mcpPost(
@@ -161,7 +161,7 @@ final class GlobalDharmaMiniAppBridge {
         )
         try Self.ensureNoMcpError(called.body, phase: "tools/call")
         guard let result = (called.body?["result"] as? [String: Any]) else {
-            throw MahayanaHost.HostError.requestFailed("Mini App MCP tools/call did not return result")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Mini App MCP tools/call did not return result")
         }
         try await enforceProtectedHostRequest(pluginId: pluginId, result: result)
         return result
@@ -173,7 +173,7 @@ final class GlobalDharmaMiniAppBridge {
     ) async throws -> [String: Any] {
         try Self.requirePluginId(pluginId)
         guard capability.range(of: #"^[a-z0-9][a-z0-9_.-]{1,127}$"#, options: .regularExpression) != nil else {
-            throw MahayanaHost.HostError.requestFailed("Invalid entitlement capability")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Invalid entitlement capability")
         }
         return try await platform(
             method: "GET",
@@ -183,11 +183,11 @@ final class GlobalDharmaMiniAppBridge {
 
     func purchaseLifetimeTest(idempotencyKey: String) async throws -> [String: Any] {
         guard testCommerceEnabled else {
-            throw MahayanaHost.HostError.requestFailed("Production payment rail must use provider checkout; CI test purchase is disabled")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Production payment rail must use provider checkout; CI test purchase is disabled")
         }
         let cleanKey = idempotencyKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard (12...160).contains(cleanKey.count), !cleanKey.contains(where: \.isWhitespace) else {
-            throw MahayanaHost.HostError.requestFailed("Invalid purchase idempotency key")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Invalid purchase idempotency key")
         }
         return try await platform(
             method: "POST",
@@ -205,16 +205,16 @@ final class GlobalDharmaMiniAppBridge {
 
     func validateLifetimeCatalog(_ entitlement: [String: Any]) throws -> (allowed: Bool, reason: String, activeRails: [String]) {
         guard let access = entitlement["access"] as? [String: Any], access["protected"] as? Bool == true else {
-            throw MahayanaHost.HostError.requestFailed("Canonical service did not mark local.prayer-wheel.start protected")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Canonical service did not mark local.prayer-wheel.start protected")
         }
         let options = entitlement["purchaseOptions"] as? [[String: Any]] ?? []
         guard let lifetime = options.first(where: { ($0["sku"] as? String) == Self.prayerWheelLifetimeSku }) else {
-            throw MahayanaHost.HostError.requestFailed("Canonical lifetime SKU is missing")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Canonical lifetime SKU is missing")
         }
         let currency = lifetime["currency"] as? String
         let amount = Self.int64(lifetime["amount"])
         guard currency == "CNY", amount == Self.prayerWheelLifetimeCNYMinor else {
-            throw MahayanaHost.HostError.requestFailed("Server lifetime SKU drifted from the governed CNY 1080 contract")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Server lifetime SKU drifted from the governed CNY 1080 contract")
         }
         let rails = lifetime["activeRails"] as? [String] ?? []
         return (
@@ -245,15 +245,15 @@ final class GlobalDharmaMiniAppBridge {
               (hostRequest["capability"] as? String) == Self.prayerWheelCapability
         else { return }
         guard pluginId == Self.globalDharmaId else {
-            throw MahayanaHost.HostError.requestFailed("Protected prayer-wheel capability is owned by Global Dharma")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Protected prayer-wheel capability is owned by Global Dharma")
         }
         let response = try await entitlement(pluginId: pluginId, capability: Self.prayerWheelCapability)
         guard let access = response["access"] as? [String: Any], access["protected"] as? Bool == true else {
-            throw MahayanaHost.HostError.requestFailed("Prayer-wheel capability is not marked protected by the canonical entitlement service")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Prayer-wheel capability is not marked protected by the canonical entitlement service")
         }
         guard access["allowed"] as? Bool == true else {
             let reason = access["reason"] as? String ?? "not_entitled"
-            throw MahayanaHost.HostError.requestFailed("本地转经轮尚未获得有效权益：\(reason)")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("本地转经轮尚未获得有效权益：\(reason)")
         }
     }
 
@@ -268,7 +268,7 @@ final class GlobalDharmaMiniAppBridge {
             ]
         )
         guard let token = (response["accessToken"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), token.count >= 24 else {
-            throw MahayanaHost.HostError.requestFailed("Fabushi did not issue a delegated Mini App token")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Fabushi did not issue a delegated Mini App token")
         }
         return token
     }
@@ -280,14 +280,14 @@ final class GlobalDharmaMiniAppBridge {
             "authenticated": true,
         ]
         if let body { params["body"] = body }
-        let result = try await host.request(method: "platform.request", params: params)
+        let result = try await bridge.request(method: "platform.request", params: params)
         guard let response = result.value as? [String: Any] else {
-            throw MahayanaHost.HostError.invalidResponse
+            throw MahayanaCoordinator.CoordinatorError.invalidResponse
         }
         guard response["ok"] as? Bool == true else {
             let statusCode = Self.int64(response["statusCode"])
             let data = response["data"] ?? response["bodyText"] ?? ""
-            throw MahayanaHost.HostError.requestFailed("Fabushi platform request failed: \(method) \(path) -> HTTP \(statusCode) \(data)")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Fabushi platform request failed: \(method) \(path) -> HTTP \(statusCode) \(data)")
         }
         if let data = response["data"] as? [String: Any] { return data }
         if let array = response["data"] as? [[String: Any]] { return ["items": array] }
@@ -324,12 +324,12 @@ final class GlobalDharmaMiniAppBridge {
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             let text = String(data: data, encoding: .utf8) ?? ""
-            throw MahayanaHost.HostError.requestFailed("Mini App MCP HTTP \(status): \(String(text.prefix(800)))")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Mini App MCP HTTP \(status): \(String(text.prefix(800)))")
         }
         let returnedSession = http.value(forHTTPHeaderField: "Mcp-Session-Id")?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
         if !expectJSON || data.isEmpty { return MCPResponse(body: nil, sessionId: returnedSession ?? sessionId) }
         guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw MahayanaHost.HostError.requestFailed("Mini App MCP returned non-JSON response")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Mini App MCP returned non-JSON response")
         }
         return MCPResponse(body: object, sessionId: returnedSession ?? sessionId)
     }
@@ -348,12 +348,12 @@ final class GlobalDharmaMiniAppBridge {
     private nonisolated static func ensureNoMcpError(_ body: [String: Any]?, phase: String) throws {
         guard let error = body?["error"] as? [String: Any] else { return }
         let message = error["message"] as? String ?? String(describing: error)
-        throw MahayanaHost.HostError.requestFailed("Mini App MCP \(phase) failed: \(message)")
+        throw MahayanaCoordinator.CoordinatorError.requestFailed("Mini App MCP \(phase) failed: \(message)")
     }
 
     private nonisolated static func requirePluginId(_ pluginId: String) throws {
         guard validPluginId(pluginId) else {
-            throw MahayanaHost.HostError.requestFailed("Invalid Mini App id")
+            throw MahayanaCoordinator.CoordinatorError.requestFailed("Invalid Mini App id")
         }
     }
 

@@ -1,0 +1,39 @@
+import Foundation
+
+@MainActor
+final class ProductionCoordinatorProvider {
+    let main: IOSMainRuntime
+    let runtime: IOSCoordinatorRuntime
+    let auxiliary: ProductionCoordinatorAuxiliaryPorts
+
+    init(main: IOSMainRuntime, auxiliary: ProductionCoordinatorAuxiliaryPorts = .live()) {
+        self.main = main
+        self.auxiliary = auxiliary
+        runtime = IOSCoordinatorRuntime(main: main)
+    }
+
+    func start() -> IOSCoordinatorLaunchHandle {
+        runtime.start()
+    }
+
+    func restart() {
+        runtime.restart()
+    }
+
+    func sceneDidResume() {
+        auxiliary.onTransportConnected(currentGeneration)
+    }
+
+    func transportDown(reason: String) {
+        auxiliary.onTransportDown(currentGeneration, reason)
+    }
+
+    var currentGeneration: UInt64 {
+        switch runtime.state {
+        case .running(let generation), .restarting(let generation):
+            generation
+        case .stopped, .disposed:
+            0
+        }
+    }
+}

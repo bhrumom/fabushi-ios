@@ -1,0 +1,289 @@
+name: iOS protected session acceptance
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact source SHA to exercise with the bounded Fabushi CI account.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-protected-session-${{ github.event.pull_request.number || inputs.source_sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  protected-account-ui:
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      FABUSHI_CI_TEST_USERNAME: ${{ secrets.FABUSHI_CI_TEST_USERNAME }}
+      FABUSHI_CI_TEST_PASSWORD: ${{ secrets.FABUSHI_CI_TEST_PASSWORD }}
+      FABUSHI_API_BASE_URL: ${{ vars.FABUSHI_API_BASE_URL || 'https://api.ombhrum.com' }}
+      MAHAYANA_API_BASE_URL: ${{ vars.FABUSHI_API_BASE_URL || 'https://api.ombhrum.com' }}
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || inputs.source_sha }}
+          fetch-depth: 1
+
+      - name: Verify exact source identity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$EXPECTED_SHA"
+          {
+            echo "SOURCE_SHA=$actual"
+            echo "EVIDENCE_DIR=$GITHUB_WORKSPACE/ios-protected-session-evidence"
+          } >> "$GITHUB_ENV"
+          mkdir -p ios-protected-session-evidence/screenshots
+          {
+            echo "source_sha=$actual"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "run_attempt=$GITHUB_RUN_ATTEMPT"
+          } > ios-protected-session-evidence/source.env
+
+      - name: Require protected Fabushi CI account
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${FABUSHI_CI_TEST_USERNAME:-}" ] || [ -z "${FABUSHI_CI_TEST_PASSWORD:-}" ]; then
+            echo "FABUSHI_CI_TEST_USERNAME and FABUSHI_CI_TEST_PASSWORD are required." >&2
+            exit 2
+          fi
+
+      - name: Install simulator build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          rustup target add aarch64-apple-ios-sim
+
+      - name: Select and boot simulator
+        id: sim
+        shell: bash
+        run: |
+          set -euo pipefail
+          UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for xs in d.values() for x in xs if x["name"].startswith("iPhone")))')"
+          xcrun simctl shutdown "$UDID" 2>/dev/null || true
+          xcrun simctl erase "$UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/screenshots/000-fresh-simulator.png"
+
+      - name: Start protected-session video
+        shell: bash
+        env:
+          UDID: ${{ steps.sim.outputs.udid }}
+        run: |
+          set -euo pipefail
+          xcrun simctl io "$UDID" recordVideo --codec=h264 "$EVIDENCE_DIR/session.mp4" > "$EVIDENCE_DIR/video-recorder.log" 2>&1 &
+          echo $! > "$EVIDENCE_DIR/video-recorder.pid"
+
+      - name: Prepare bounded refresh-token-free account session
+        shell: bash
+        env:
+          DEVICE_ID: gha-${{ github.run_id }}-${{ github.run_attempt }}-ios-app
+          FABUSHI_CI_ACCOUNT_SESSION_FILE: ${{ runner.temp }}/fabushi-ci/account-session.json
+        run: |
+          set -euo pipefail
+          node .github/scripts/prepare-ios-ci-session.mjs
+          test -s "$FABUSHI_CI_ACCOUNT_SESSION_FILE"
+          test "$(stat -f '%Lp' "$FABUSHI_CI_ACCOUNT_SESSION_FILE")" = "600"
+          echo "HOST_CI_SESSION=$FABUSHI_CI_ACCOUNT_SESSION_FILE" >> "$GITHUB_ENV"
+
+      - name: Build iOS-owned Rust runtime for simulator
+        run: scripts/build-mahayana-ios.sh iphonesimulator arm64
+
+      - name: Generate Xcode project
+        working-directory: mobile/ios
+        run: xcodegen generate
+
+      - name: Build app and UI tests for protected acceptance
+        working-directory: mobile/ios
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild build-for-testing \
+            -project Fabushi.xcodeproj \
+            -scheme Fabushi \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath "$RUNNER_TEMP/FabushiProtectedDerivedData"
+
+      - name: Inject bounded session into protected UI runner
+        shell: bash
+        env:
+          UDID: ${{ steps.sim.outputs.udid }}
+        run: |
+          set -euo pipefail
+          test -s "$HOST_CI_SESSION"
+
+          xctestrun="$(find "$RUNNER_TEMP/FabushiProtectedDerivedData/Build/Products" -name '*.xctestrun' -type f -print -quit)"
+          test -n "$xctestrun"
+          test -f "$xctestrun"
+          python3 - "$xctestrun" "$HOST_CI_SESSION" <<'PY'
+          import base64
+          import os
+          import plistlib
+          import sys
+
+          path = sys.argv[1]
+          session_path = sys.argv[2]
+          session = open(session_path, "rb").read()
+          if not session or len(session) > 64 * 1024:
+              raise SystemExit("Protected Fabushi CI session has an invalid size")
+          encoded_session = base64.b64encode(session).decode("ascii")
+
+          with open(path, "rb") as handle:
+              payload = plistlib.load(handle)
+
+          forwarded = {
+              "FABUSHI_CI_ACCOUNT_SESSION_BASE64": encoded_session,
+              "FABUSHI_API_BASE_URL": os.environ["FABUSHI_API_BASE_URL"],
+              "FABUSHI_E2E_SOURCE_SHA": os.environ["SOURCE_SHA"],
+              "FABUSHI_DEVICE_NAME": "Fabushi Protected iOS Simulator",
+          }
+          for key in (
+              "GITHUB_ACTIONS",
+              "GITHUB_REPOSITORY",
+              "GITHUB_WORKFLOW",
+              "GITHUB_JOB",
+              "GITHUB_RUN_ID",
+              "GITHUB_RUN_ATTEMPT",
+              "RUNNER_NAME",
+              "RUNNER_OS",
+              "RUNNER_ARCH",
+          ):
+              value = os.environ.get(key)
+              if value:
+                  forwarded[key] = value
+
+          patched = 0
+
+          def visit(value):
+              global patched
+              if isinstance(value, dict):
+                  marker = " ".join(
+                      str(value.get(key, ""))
+                      for key in ("BlueprintName", "TestBundlePath", "TestHostBundleIdentifier")
+                  )
+                  if "FabushiUITests" in marker:
+                      environment = value.setdefault("EnvironmentVariables", {})
+                      environment.update(forwarded)
+                      testing_environment = value.setdefault("TestingEnvironmentVariables", {})
+                      testing_environment.update(forwarded)
+                      patched += 1
+                  for child in value.values():
+                      visit(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      visit(child)
+
+          visit(payload)
+          if patched == 0:
+              raise SystemExit("FabushiUITests xctestrun target was not found")
+
+          with open(path, "wb") as handle:
+              plistlib.dump(payload, handle)
+          print(f"Injected protected-session runner context into {patched} xctestrun target(s).")
+          PY
+          echo "PROTECTED_XCTESTRUN=$xctestrun" >> "$GITHUB_ENV"
+
+          xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/screenshots/010-session-ready.png"
+
+      - name: Run real protected-session Global Dharma journey
+        working-directory: mobile/ios
+        shell: bash
+        env:
+          FABUSHI_E2E_SOURCE_SHA: ${{ github.event.pull_request.head.sha || inputs.source_sha }}
+          FABUSHI_DEVICE_NAME: Fabushi Protected iOS Simulator
+        run: |
+          set -euo pipefail
+          rm -rf "$EVIDENCE_DIR/FabushiProtectedSession.xcresult"
+          set -o pipefail
+          test -f "$PROTECTED_XCTESTRUN"
+          xcodebuild test-without-building \
+            -xctestrun "$PROTECTED_XCTESTRUN" \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath "$EVIDENCE_DIR/FabushiProtectedSession.xcresult" \
+            -only-testing:FabushiUITests/GlobalDharmaJourneyUITests/testGlobalDharmaMarketplaceBotWebMcpCommerceJourney \
+            2>&1 | tee "$EVIDENCE_DIR/protected-xcodebuild.log"
+          python3 - "$EVIDENCE_DIR/protected-xcodebuild.log" "$EVIDENCE_DIR/state.json" <<'PY'
+          import base64
+          import pathlib
+          import re
+          import sys
+
+          log = pathlib.Path(sys.argv[1]).read_text(errors="replace")
+          matches = re.findall(r"FABUSHI_E2E_STATE_BASE64=([A-Za-z0-9+/=]+)", log)
+          if not matches:
+              raise SystemExit("protected UI test produced no state marker")
+          payload = base64.b64decode(matches[-1], validate=True)
+          pathlib.Path(sys.argv[2]).write_bytes(payload)
+          PY
+
+      - name: Require complete protected journey state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$EVIDENCE_DIR/state.json"
+          jq -e '
+            .autoLogin == true and
+            .searchedMiniApps == true and
+            .globalDharmaVisible == true and
+            .installedOrAlreadyInstalled == true and
+            .botVisible == true and
+            .naturalLanguageSent == true and
+            .webMcpReady == true and
+            .sharedRuntimeSynced == true and
+            .entitlementAllowed == true and
+            .restoreTapped == true
+          ' "$EVIDENCE_DIR/state.json" >/dev/null
+
+      - name: Collect evidence and remove protected session
+        if: always()
+        shell: bash
+        env:
+          UDID: ${{ steps.sim.outputs.udid }}
+        run: |
+          set +e
+          if [ -f "$EVIDENCE_DIR/video-recorder.pid" ]; then
+            video_pid="$(cat "$EVIDENCE_DIR/video-recorder.pid")"
+            kill -INT "$video_pid" 2>/dev/null || true
+            wait "$video_pid" 2>/dev/null || true
+          fi
+          if [ -n "${UDID:-}" ]; then
+            xcrun simctl io "$UDID" screenshot "$EVIDENCE_DIR/screenshots/999-final.png" || true
+            xcrun simctl spawn "$UDID" log show --style compact --last 20m --predicate 'process == "Fabushi"' > "$EVIDENCE_DIR/fabushi-system.log" 2>&1 || true
+          fi
+          rm -f "${HOST_CI_SESSION:-}"
+
+      - name: Upload protected-session evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fabushi-ios-protected-session-${{ github.event.pull_request.head.sha || inputs.source_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ios-protected-session-evidence/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Erase protected-session Simulator
+        if: always()
+        shell: bash
+        env:
+          UDID: ${{ steps.sim.outputs.udid }}
+        run: |
+          set +e
+          if [ -n "${UDID:-}" ]; then
+            xcrun simctl shutdown "$UDID" || true
+            xcrun simctl erase "$UDID" || true
+          fi

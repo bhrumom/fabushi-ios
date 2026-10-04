@@ -59,6 +59,12 @@ final class GlobalDharmaCommerceTests: XCTestCase {
             "GITHUB_SHA": "8595a50196309c8ebb91c3f8077125d7dc9e3ffa",
             "FABUSHI_CI_ACCOUNT_SESSION_FILE": "/app/Documents/fabushi-ci-session.json",
         ]))
+        XCTAssertTrue(GlobalDharmaCommerceModel.detectCanonicalLedgerTestMode(environment: [
+            "GITHUB_ACTIONS": "true",
+            "GITHUB_REPOSITORY": "bhrumom/fabushi-ios",
+            "GITHUB_SHA": "8595a50196309c8ebb91c3f8077125d7dc9e3ffa",
+            "FABUSHI_CI_ACCOUNT_SESSION_FILE": "/app/Documents/fabushi-ci-session.json",
+        ]))
         XCTAssertFalse(GlobalDharmaCommerceModel.detectCanonicalLedgerTestMode(environment: [
             "GITHUB_ACTIONS": "true",
             "GITHUB_REPOSITORY": "bhrumom/fabushi",

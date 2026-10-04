@@ -38,7 +38,7 @@ final class FabushiRemoteDeviceGateway {
         }
     }
 
-    private let host: MahayanaHost
+    private let bridge: IOSPreloadBridge
     private let surface: FabushiAppAgentSurface
     private let traceURL: URL
     private let urlSession: URLSession
@@ -50,8 +50,8 @@ final class FabushiRemoteDeviceGateway {
     private var activeSession: AgentSession?
     private var registered = false
 
-    init(host: MahayanaHost, surface: FabushiAppAgentSurface, traceURL: URL) {
-        self.host = host
+    init(bridge: IOSPreloadBridge, surface: FabushiAppAgentSurface, traceURL: URL) {
+        self.bridge = bridge
         self.surface = surface
         self.traceURL = traceURL
         let configuration = URLSessionConfiguration.ephemeral
@@ -79,6 +79,11 @@ final class FabushiRemoteDeviceGateway {
         }
     }
 
+    func resumeAfterBackground() async {
+        guard desiredLoggedIn else { return }
+        await refreshConnection()
+    }
+
     func stop() {
         desiredLoggedIn = false
         monitorTask?.cancel()
@@ -89,7 +94,7 @@ final class FabushiRemoteDeviceGateway {
     private func refreshConnection() async {
         guard desiredLoggedIn else { return }
         do {
-            let raw = try await host.request(method: "feature.auth.deviceAgentSession")
+            let raw = try await bridge.request(method: "feature.auth.deviceAgentSession")
             let candidate = try Self.parseAgentSession(raw.value)
             if let activeSession,
                activeSession.deviceId == candidate.deviceId,

@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "c92a2ccae3e022942475c4d3db00c8f910f8243a",
+  "group": "source-mime-types.d.ts",
+  "fileCount": 1,
+  "files": [
+    {
+      "path": "source/mime-types.d.ts",
+      "blobSha": "7fd5597f98cec1d5b3ccad838bcd0a5f8ff104da",
+      "size": 128
+    }
+  ]
+}

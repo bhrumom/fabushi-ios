@@ -1,0 +1,15 @@
+import Foundation
+
+enum CoordinatorMainMethodRegistry {
+    static let methods: Set<String> = [
+        "uploadAttachment", "readAttachmentImage", "readAttachmentText", "readAttachmentChunk",
+        "getHostSettings", "setHostSettings", "setBoxSecrets", "refreshMcp", "listBoxMcpServers",
+        "updateForeverBox", "setWindowFocused", "getHostStatus", "listAgents", "createAgent",
+        "deleteAgents", "getConversationOutline", "getSubagents", "setDevGatewayOffline",
+        "setGatewayPaused"
+    ]
+
+    static func contains(_ method: String) -> Bool {
+        methods.contains(method)
+    }
+}
