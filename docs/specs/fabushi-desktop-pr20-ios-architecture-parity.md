@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `1fbc34fba5739edf303bc5fb9ca4cae4d0a08a5c`
+- pinned source commit for this baseline: `c92a2ccae3e022942475c4d3db00c8f910f8243a`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -1069,3 +1069,12 @@ Desktop PR #20 advanced from `a59a8fce1495c8d770839ee9ebbc4c1ceba20a92` to `1fbc
 The upstream change strengthens Desktop signed-packaged acceptance by recognizing both the legacy `app://bundle/` renderer and the shipping `file:.../dist/renderer/index.html` renderer, extending the attachment deadline to 120 seconds, and binding `SAND_USER_DATA_DIR` to the isolated packaged acceptance data directory. This is Desktop packaging-test mechanism, not a new iOS runtime/product responsibility. Therefore existing iOS row dispositions/statuses are not downgraded solely because of this delta, but all Desktop-bound authority metadata is rebound to `1fbc34fba5739edf303bc5fb9ca4cae4d0a08a5c` and all older exact-HEAD CI/acceptance remains historical only.
 
 The iOS acceptance consequence is fail-closed: the current iOS exact HEAD must rerun its own architecture, Rust Host/Runner, simulator UI/unit, and device-archive workflow against this rebased authority before any new acceptance claim is made. No Desktop packaged-acceptance success is treated as evidence for iOS archive/install behavior.
+
+### Recovery rebaseline 2026-10-04: `c92a2cca`
+
+Desktop PR #20 advanced one commit from `1fbc34fba5739edf303bc5fb9ca4cae4d0a08a5c` to `c92a2ccae3e022942475c4d3db00c8f910f8243a` while remaining open and draft on `refactor/grok-018-architecture-rebuild`. A direct GitHub compare reports exactly one changed file, `desktop/e2e/openbot-packaged-acceptance.spec.ts`, and zero changes under the authoritative iOS-selected `frontend/** + source/**` roots. The selected inventory therefore remains exactly 7,937 files and every selected Desktop blob identity is unchanged.
+
+The upstream commit, `test: launch signed macOS candidate through production path`, changes only Desktop signed-packaged acceptance mechanics: it launches the installed signed app as a normal production process, exposes loopback CDP only for readiness discovery/attachment, polls Chromium's real target registry, and binds Playwright only after the shipping renderer target exists. This is Desktop packaging/acceptance behavior rather than a new iOS product responsibility. Existing iOS row dispositions and implementation statuses are therefore preserved, but all Desktop-bound sourceCommit/index/checker authority is rebound to `c92a2ccae3e022942475c4d3db00c8f910f8243a`.
+
+All CI, archive, protected-session, and acceptance evidence tied to the prior Desktop authority remains historical only. The new iOS exact HEAD created by this rebaseline must obtain its own required GitHub Actions and protected-account evidence before any current-head acceptance promotion.
+
