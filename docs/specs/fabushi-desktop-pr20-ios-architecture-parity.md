@@ -1057,3 +1057,6 @@ The rebaseline is intentionally fail-closed. Every one of the 117 changed existi
 The new Host source responsibilities include generated-image and web dependency/tool owners, an await-shell tool, turn tool-session reminders, and focused contracts for those owners plus MCP await handling. Existing shipping responsibilities also changed across HostRunnerComposition, turn-agent composition/checkpoint/input projection, system prompt assembly, computer/external-machine routing, MCP state/management, Auto Review, telemetry, transcript-mirror codecs, reply/recovery and subagent execution. Each must be reviewed as responsibility + owner + state machine + product effect; a generic Host facade or ledger-only assertion is not sufficient.
 
 Desktop PR #26 remains observation-only at this baseline. Its unmerged FBCP/Human communication work is not a formal iOS source until that work is merged into PR #20 and PR #20 advances to a new exact HEAD.
+
+
+Rebaseline recovery note: the generated `source-mahayana` ledger chunk was restored byte-for-byte from its pre-rebaseline Git blob and only its `sourceCommit` authority was rebound to `a59a8fce1495c8d770839ee9ebbc4c1ceba20a92`. The earlier intermediate SHA with a zero-byte chunk is rejected evidence and must not be used for acceptance.
