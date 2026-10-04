@@ -2,7 +2,7 @@
 
 Status: active  
 Owner: Fabushi iOS  
-Last updated: 2026-10-03
+Last updated: 2026-10-04
 Related PR: `bhrumom/fabushi-ios#3`
 
 ## 1. Decision and authority
@@ -14,7 +14,7 @@ The direct migration source and product/architecture authority for this work is:
 - source repository: `bhrumom/fabushi-desktop`
 - source pull request: `#20`
 - source branch: `refactor/grok-018-architecture-rebuild`
-- pinned source commit for this baseline: `a59a8fce1495c8d770839ee9ebbc4c1ceba20a92`
+- pinned source commit for this baseline: `1fbc34fba5739edf303bc5fb9ca4cae4d0a08a5c`
 - source specification: `docs/specs/grok-bot-018-runtime-product-parity-recovery.md`
 
 The previous direct iOS baseline, `b-nnett/grok-bot-0.18-reconstructed@a9f633e09d49a85829b8236331b9e21f7e612634`, is **no longer the direct iOS migration authority**. Grok Bot 0.18 remains historical architecture/provenance context because Desktop PR #20 itself derives from that work, but iOS parity, implementation status, completion, and acceptance are judged against the pinned Desktop PR #20 source and product behavior.
@@ -1060,3 +1060,12 @@ Desktop PR #26 remains observation-only at this baseline. Its unmerged FBCP/Huma
 
 
 Rebaseline recovery note: the generated `source-mahayana` ledger chunk was restored byte-for-byte from its pre-rebaseline Git blob and only its `sourceCommit` authority was rebound to `a59a8fce1495c8d770839ee9ebbc4c1ceba20a92`. The earlier intermediate SHA with a zero-byte chunk is rejected evidence and must not be used for acceptance.
+
+
+### Recovery rebaseline 2026-10-04: `1fbc34fb`
+
+Desktop PR #20 advanced from `a59a8fce1495c8d770839ee9ebbc4c1ceba20a92` to `1fbc34fba5739edf303bc5fb9ca4cae4d0a08a5c` while remaining open and draft on `refactor/grok-018-architecture-rebuild`. A direct GitHub compare reports three upstream commits and exactly one changed file: `desktop/e2e/openbot-packaged-acceptance.spec.ts`. There are zero changes under the authoritative iOS-selected `frontend/** + source/**` roots, so the selected inventory remains exactly 7,937 files and all selected Desktop blob identities are unchanged.
+
+The upstream change strengthens Desktop signed-packaged acceptance by recognizing both the legacy `app://bundle/` renderer and the shipping `file:.../dist/renderer/index.html` renderer, extending the attachment deadline to 120 seconds, and binding `SAND_USER_DATA_DIR` to the isolated packaged acceptance data directory. This is Desktop packaging-test mechanism, not a new iOS runtime/product responsibility. Therefore existing iOS row dispositions/statuses are not downgraded solely because of this delta, but all Desktop-bound authority metadata is rebound to `1fbc34fba5739edf303bc5fb9ca4cae4d0a08a5c` and all older exact-HEAD CI/acceptance remains historical only.
+
+The iOS acceptance consequence is fail-closed: the current iOS exact HEAD must rerun its own architecture, Rust Host/Runner, simulator UI/unit, and device-archive workflow against this rebased authority before any new acceptance claim is made. No Desktop packaged-acceptance success is treated as evidence for iOS archive/install behavior.
